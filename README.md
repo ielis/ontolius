@@ -1,2 +1,2 @@
 # ontolius
-Empower ontology-driven  algorithms
+Empower ontology-driven algorithms
