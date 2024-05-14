@@ -91,10 +91,11 @@ where
     Parser: OntologyDataParser,
 {
     /// Load ontology from a path.
-    pub fn load_from_path<O>(&self, path: &Path) -> Result<O, OntographError>
+    pub fn load_from_path<O, P>(&self, path: P) -> Result<O, OntographError>
     where
         O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntographError>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
+        P: AsRef<Path>,
     {
         if let Ok(mut file) = File::open(path) {
             self.load_from_read(&mut file)
