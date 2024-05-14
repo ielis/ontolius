@@ -1,14 +1,8 @@
-//! Ontolius is a library for empowering ontology-driven algorithms.
-//!
-//! # Usage
-//! 
-//! The usage will arrive in time.
-//! 
-//! ```
-//! use ontolius::hello_world;
-//! 
-//! println!("{}", hello_world());
-//! ```
-pub fn hello_world() -> &'static str {
-    "Hello World!"
-}
+#![doc = include_str!("../README.md")]//! `ontolius` is a library to empower algorithms 
+
+pub mod base;
+pub mod error;
+pub mod hierarchy;
+pub mod io;
+pub mod ontology;
+pub mod prelude;

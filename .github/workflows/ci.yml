@@ -1,0 +1,27 @@
+name: Run tests
+
+on:
+    push:
+      branches: [ development ]
+    pull_request:
+      branches: [ master, development ]
+
+jobs:
+    run-tests:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+                toolchain: [stable]
+      
+        steps:
+            - uses: actions/checkout@v4    
+            
+            - name: Install ${{ matrix.toolchain }}
+              uses: dtolnay/rust-toolchain@master
+              with:
+                toolchain: ${{ matrix.toolchain }}
+            
+            - name: Run tests
+              run: cargo test --features obographs
