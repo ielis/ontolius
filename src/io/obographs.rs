@@ -6,7 +6,7 @@ use curie_util::{CurieUtil, TrieCurieUtil};
 use obographs::model::{Edge, GraphDocument, Meta, Node};
 
 use crate::{
-    base::{Identified, SimpleMinimalTerm, TermId},
+    base::{term::simple::SimpleMinimalTerm, Identified, TermId},
     error::OntographError,
     hierarchy::{GraphEdge, HierarchyIdx, Relationship},
     ontology::TermIdx,
