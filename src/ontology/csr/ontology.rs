@@ -4,7 +4,7 @@ use std::{collections::HashMap, iter::once};
 
 use graph_builder::index::Idx as CsrIdx;
 
-use crate::base::{Identified, MinimalTerm, TermId};
+use crate::base::{term::MinimalTerm, Identified, TermId};
 use crate::error::OntographError;
 use crate::hierarchy::HierarchyIdx;
 use crate::io::OntologyData;
@@ -132,7 +132,7 @@ mod test {
 
     use super::*;
     use crate::{
-        base::SimpleMinimalTerm,
+        base::term::simple::SimpleMinimalTerm,
         ontology::{AllTermIdsIter, State, TermIdIter},
     };
 
