@@ -4,6 +4,8 @@ use std::fmt::{Display, Formatter, Write};
 use std::hash::Hash;
 use std::str::FromStr;
 
+use super::Identified;
+
 /// Identifier of an ontology concept.
 ///
 /// ## Examples
@@ -356,24 +358,6 @@ impl std::hash::Hash for InnerTermId {
             }
         }
     }
-}
-
-/// `Identified` is implemented by entities that have a [`TermId`] as an identifier.
-///
-/// ## Examples
-///
-/// [`crate::base::SimpleMinimalTerm`] implements `Identified`.
-/// ```
-/// use ontolius::prelude::*;
-/// use ontolius::base::SimpleMinimalTerm;
-///
-/// let term_id = TermId::from(("HP", "1234567"));
-/// let term = SimpleMinimalTerm::new(term_id, "Sample term", vec![], false);
-///
-/// assert_eq!(term.identifier().to_string(), "HP:1234567")
-/// ```
-pub trait Identified {
-    fn identifier(&self) -> &TermId;
 }
 
 impl Identified for TermId {
