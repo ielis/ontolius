@@ -8,4 +8,4 @@ pub mod ontology;
 pub mod prelude;
 
 #[cfg(feature = "pyo3")]
-mod py;
+pub mod py;
