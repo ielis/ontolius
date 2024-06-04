@@ -1,6 +1,6 @@
-///! The base building blocks for working with ontology data.
+//! The base building blocks for working with ontology data.
 
-use crate::error::OntographError;
+use crate::error::OntoliusError;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter, Write};
 use std::hash::Hash;
@@ -77,7 +77,7 @@ pub struct TermId(InnerTermId);
 /// assert_eq!(term_id.to_string(), "HP:0001250");
 /// ```
 impl FromStr for TermId {
-    type Err = OntographError;
+    type Err = OntoliusError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         InnerTermId::try_from(s).map(TermId::from)
@@ -238,7 +238,6 @@ impl TryFrom<&str> for Prefix {
     }
 }
 
-///
 #[derive(Debug, Clone)]
 enum InnerTermId {
     // Most of the time we will have a CURIE that has a known Prefix and an integral id.
@@ -252,13 +251,13 @@ enum InnerTermId {
 }
 
 impl InnerTermId {
-    fn find_delimiter(curie: &str) -> Result<usize, OntographError> {
+    fn find_delimiter(curie: &str) -> Result<usize, OntoliusError> {
         if let Some(idx) = curie.find(':') {
             Ok(idx)
         } else if let Some(idx) = curie.find('_') {
             Ok(idx)
         } else {
-            Err(OntographError::Other(format!(
+            Err(OntoliusError::Other(format!(
                 "Did not find delimiter in {curie}"
             )))
         }
@@ -266,7 +265,7 @@ impl InnerTermId {
 }
 
 impl TryFrom<&str> for InnerTermId {
-    type Error = OntographError;
+    type Error = OntoliusError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let delimiter = InnerTermId::find_delimiter(value)?;
