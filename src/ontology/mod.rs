@@ -1,11 +1,39 @@
 //! A module with the ontology parts.
 pub mod csr;
-pub mod index;
 
-use crate::base::{Identified, MinimalTerm, TermId};
+use crate::base::{term::MinimalTerm, Identified, TermId};
 use crate::hierarchy::{HierarchyIdx, OntologyHierarchy};
 
-pub use index::TermIdx;
+/// The implementors can be used to index the [`super::TermAware`].
+pub trait TermIdx: Copy {
+
+    // Convert the index to `usize` for indexing.
+    fn index(self) -> usize;
+
+}
+
+macro_rules! impl_idx {
+    ($TYPE:ty) => {
+        impl TermIdx for $TYPE {
+            fn index(self) -> usize {
+                self as usize
+            }
+        }
+    }
+}
+
+impl_idx!(u8);
+impl_idx!(u16);
+impl_idx!(u32);
+impl_idx!(u64);
+impl_idx!(usize);
+
+impl_idx!(i8);
+impl_idx!(i16);
+impl_idx!(i32);
+impl_idx!(i64);
+impl_idx!(isize);
+
 
 /// A trait for types that act as a containers of the ontology terms.
 ///
@@ -156,7 +184,7 @@ where
 
 /// The implementors know about the [`OntologyHierarchy`].
 pub trait HierarchyAware {
-    /// The indexer for the graph nodes. 
+    /// The indexer for the graph nodes.
     type HI: HierarchyIdx;
     /// The hierarchy type.
     type Hierarchy: OntologyHierarchy<HI = Self::HI>;
@@ -166,7 +194,7 @@ pub trait HierarchyAware {
 }
 
 /// Trait for describing ontology metadata.
-/// 
+///
 /// Only the version is supported at the moment but the info will likely grow
 /// in future.
 pub trait MetadataAware {
@@ -176,18 +204,18 @@ pub trait MetadataAware {
 
 /// The specification of an ontology.
 ///
-/// The ontology has several functionalities. First, it acts as a container 
-/// of ontology terms and supports iterating over all terms/term IDs 
+/// The ontology has several functionalities. First, it acts as a container
+/// of ontology terms and supports iterating over all terms/term IDs
 /// and getting a term either by its index or term ID (including obsolete IDs).
 /// See [`TermAware`] for more details.
-/// 
-/// Next, the ontology has the hierarchy - a directed acyclyc graph of term 
-/// relations. Currently, only `is_a` relationship is supported. 
+///
+/// Next, the ontology has the hierarchy - a directed acyclyc graph of term
+/// relations. Currently, only `is_a` relationship is supported.
 /// See [`OntologyHierarchy`] for more details.
-/// 
+///
 /// Last, ontology includes the metadata such as its release version.
 /// See [`MetadataAware`] for more details.
-/// 
+///
 pub trait Ontology:
     TermAware<TI = Self::Idx, Term = Self::T> + HierarchyAware<HI = Self::Idx> + MetadataAware
 {

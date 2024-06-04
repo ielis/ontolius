@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::{
-    base::MinimalTerm,
+    base::term::MinimalTerm,
     hierarchy::{GraphEdge, HierarchyIdx},
     prelude::{OntographError, Ontology, TermIdx},
 };
