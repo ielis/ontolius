@@ -8,10 +8,8 @@
 //! Check out the [`OntologyHierarchy`] documentation
 //! for more info on the provided functionality.
 mod edge;
-mod index;
 
 pub use edge::{GraphEdge, Relationship};
-pub use index::HierarchyIdx;
 
 /// Trait for types that can provide the child nodes of an ontology node.
 pub trait ChildNodes {
@@ -25,7 +23,7 @@ pub trait ChildNodes {
     /// Returns an iterator of all nodes which are children of `node`.
     fn children_of(&self, node: Self::I) -> Self::ChildIter<'_>;
 
-    /// Test if `sub` is child of the `obj` node. 
+    /// Test if `sub` is child of the `obj` node.
     fn is_child_of(&self, sub: Self::I, obj: Self::I) -> bool {
         self.children_of(obj).any(|&child| child == sub)
     }
@@ -37,8 +35,7 @@ pub trait ChildNodes {
 }
 
 /// Trait for types that can provide the descendant nodes of an ontology node.
-pub trait DescendantNodes
-{
+pub trait DescendantNodes {
     // Type used to index the ontology nodes.
     type I: HierarchyIdx;
     type DescendantIter<'a>: Iterator<Item = &'a Self::I>
@@ -51,8 +48,7 @@ pub trait DescendantNodes
 }
 
 /// Trait for types that can provide the parent nodes of an ontology node.
-pub trait ParentNodes
-{
+pub trait ParentNodes {
     // Type used to index the ontology nodes.
     type I: HierarchyIdx;
     type ParentIter<'a>: Iterator<Item = &'a Self::I>
@@ -67,12 +63,10 @@ pub trait ParentNodes
     fn is_parent_of(&self, sub: Self::I, obj: Self::I) -> bool {
         self.parents_of(obj).any(|&parent| parent == sub)
     }
-
 }
 
 /// Trait for types that can provide the ancestor nodes of an ontology node.
-pub trait AncestorNodes
-{
+pub trait AncestorNodes {
     // Type used to index the ontology nodes.
     type I: HierarchyIdx;
     type AncestorIter<'a>: Iterator<Item = &'a Self::I>
@@ -94,8 +88,8 @@ pub trait AncestorNodes
     }
 }
 
-/// Trait for types that support all basic ontology hierarchy operations, 
-/// such as getting the parents, ancestors, children and descendants 
+/// Trait for types that support all basic ontology hierarchy operations,
+/// such as getting the parents, ancestors, children and descendants
 /// of an ontology node.
 pub trait OntologyHierarchy:
     ChildNodes<I = Self::HI>
@@ -105,13 +99,40 @@ pub trait OntologyHierarchy:
 {
     // Type used to index the ontology nodes.
     type HI: HierarchyIdx;
-    
+
     /// Get index of the root element.
     fn root(&self) -> &Self::HI;
 
     // TODO: augment a container with ancestors & self
     // TODO: augment a container with descendants & self
 
-    fn subhierarchy(&self, subroot_idx: Self::HI) -> Self;   
-
+    fn subhierarchy(&self, subroot_idx: Self::HI) -> Self;
 }
+
+/// The implementors can be used to index the [`super::OntologyHierarchy`].
+pub trait HierarchyIdx: Copy + Ord {
+    fn new(idx: usize) -> Self;
+}
+
+macro_rules! impl_idx {
+    ($TYPE:ty) => {
+        impl HierarchyIdx for $TYPE {
+            fn new(idx: usize) -> Self {
+                assert!(idx <= <$TYPE>::MAX as usize);
+                idx as $TYPE
+            }
+        }
+    };
+}
+
+impl_idx!(u8);
+impl_idx!(u16);
+impl_idx!(u32);
+impl_idx!(u64);
+impl_idx!(usize);
+
+impl_idx!(i8);
+impl_idx!(i16);
+impl_idx!(i32);
+impl_idx!(i64);
+impl_idx!(isize);

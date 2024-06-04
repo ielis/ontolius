@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]//! `ontolius` is a library to empower algorithms 
+#![doc = include_str!("../README.md")]
 
 pub mod base;
 pub mod error;
