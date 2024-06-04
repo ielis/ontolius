@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{ops::Deref, str::FromStr};
 
 use pyo3::{exceptions::PyValueError, intern, prelude::*, pyclass::CompareOp, types::PyString};
 
@@ -14,7 +14,15 @@ pub(crate) fn init_submodule(_py: &Python<'_>, m: &PyModule) -> PyResult<()> {
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[pyclass(name = "TermId")]
-pub(crate) struct PyTermId(TermId);
+pub struct PyTermId(TermId);
+
+impl Deref for PyTermId {
+    type Target = TermId;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[pymethods]
 impl PyTermId {
