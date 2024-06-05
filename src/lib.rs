@@ -6,6 +6,3 @@ pub mod hierarchy;
 pub mod io;
 pub mod ontology;
 pub mod prelude;
-
-#[cfg(feature = "pyo3")]
-pub mod py;

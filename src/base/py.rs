@@ -4,12 +4,6 @@ use pyo3::{exceptions::PyValueError, intern, prelude::*, pyclass::CompareOp, typ
 
 use super::TermId;
 
-pub(crate) fn init_submodule(_py: &Python<'_>, m: &PyModule) -> PyResult<()> {
-    // Make TermId available at the top-level module.
-    m.add_class::<PyTermId>()?;
-    Ok(())
-}
-
 /// `TermId` represents validated compact identifier (CURIE).
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
