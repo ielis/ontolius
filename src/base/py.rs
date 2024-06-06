@@ -1,15 +1,30 @@
+//! Module to support using Ontolius from Python.
 use std::{ops::Deref, str::FromStr};
 
 use pyo3::{exceptions::PyValueError, intern, prelude::*, pyclass::CompareOp, types::PyString};
 
 use super::TermId;
 
-/// `TermId` represents validated compact identifier (CURIE).
+/// `PyTermId` is a transparent wrapper around [`TermId`], a validated compact identifier (CURIE),
+/// that works in Python.
+///
+/// In Python, the class is denoted as `TermId` and we can create an instance from a CURIE `str`
+/// by running `TermId.from_curie(curie)`, where `curie` is e.g. `HP:0001250`.
+///
+/// When a Python object is sent to Rust, depending on context, `PyTermId`
+/// can be created from a Python CURIE `str` (e.g. `HP:0001250`)
+/// or from a Python object that has `prefix` and `id` properties/attributes
+/// that return *prefix* (e.g. `HP`) and *id* (e.g. `0001250`) CURIE parts.
+///
+/// `PyTermId` implements `__eq__()`, `__hash__()`, `__richcmp__()`,
+/// `__repr__()`, and `__str__()` Python magic methods.
+///
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[pyclass(name = "TermId")]
 pub struct PyTermId(TermId);
 
+/// Get the inner [`TermId`].
 impl Deref for PyTermId {
     type Target = TermId;
 
@@ -57,12 +72,12 @@ impl<'source> FromPyObject<'source> for PyTermId {
                     ob_to_py_string(id)?,
                 ))))
             } else {
-                // TODO: better error string
-                Err(PyValueError::new_err("Ooops"))
+                Err(PyValueError::new_err("Cannot create `PyTermId` from an object with non-str `prefix` and `id` attributes"))
             }
         } else {
-            // TODO: better error string
-            Err(PyValueError::new_err("Ooops"))
+            Err(PyValueError::new_err(
+                "Cannot create `PyTermId` from the provided object",
+            ))
         }
     }
 }
