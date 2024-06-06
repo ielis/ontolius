@@ -7,7 +7,7 @@ use obographs::model::{Edge, GraphDocument, Meta, Node};
 
 use crate::{
     base::{term::simple::SimpleMinimalTerm, Identified, TermId},
-    error::OntographError,
+    error::OntoliusError,
     hierarchy::{GraphEdge, HierarchyIdx, Relationship},
     ontology::TermIdx,
 };
@@ -48,7 +48,7 @@ where
         }
     }
 
-    fn create(&self, data: &Node) -> Result<SimpleMinimalTerm, OntographError> {
+    fn create(&self, data: &Node) -> Result<SimpleMinimalTerm, OntoliusError> {
         let cp = self.curie_util.get_curie_data(&data.id);
         let name = &data.lbl;
 
@@ -66,16 +66,16 @@ where
                     is_obsolete,
                 ))
             }
-            (Some(cp), None) => Err(OntographError::OntologyDataParseError(format!(
+            (Some(cp), None) => Err(OntoliusError::OntologyDataParseError(format!(
                 "Missing term label for {}:{}",
                 cp.get_prefix(),
                 cp.get_id()
             ))),
-            (None, Some(lbl)) => Err(OntographError::OntologyDataParseError(format!(
+            (None, Some(lbl)) => Err(OntoliusError::OntologyDataParseError(format!(
                 "Unparsable term id of {lbl}: {}",
                 &data.id
             ))),
-            _ => Err(OntographError::OntologyDataParseError(
+            _ => Err(OntoliusError::OntologyDataParseError(
                 "Unparsable node".to_owned(),
             )),
         }
@@ -93,11 +93,11 @@ where
     fn load_from_buf_read<R: BufRead>(
         &self,
         read: &mut R,
-    ) -> Result<OntologyData<Self::HI, Self::T>, OntographError> {
+    ) -> Result<OntologyData<Self::HI, Self::T>, OntoliusError> {
         let gd = match GraphDocument::from_reader(read) {
             Ok(g) => g,
             Err(_) => {
-                return Err(OntographError::OntologyDataParseError(
+                return Err(OntoliusError::OntologyDataParseError(
                     "Unable to read obographs document".into(),
                 ))
             }
@@ -131,7 +131,7 @@ where
                 metadata,
             )))
         } else {
-            Err(OntographError::OntologyDataParseError(format!(
+            Err(OntoliusError::OntologyDataParseError(format!(
                 "Graph document had {}!=1 graphs",
                 gd.graphs.len()
             )))
@@ -165,11 +165,11 @@ fn parse_edge<HI: HierarchyIdx>(
     }
 }
 
-fn parse_relationship(pred: &str) -> Result<Relationship, OntographError> {
+fn parse_relationship(pred: &str) -> Result<Relationship, OntoliusError> {
     match pred {
         // This may be too simplistic
         "is_a" => Ok(Relationship::Child),
-        _ => Err(OntographError::OntologyDataParseError(format!(
+        _ => Err(OntoliusError::OntologyDataParseError(format!(
             "Unknown predicate {}",
             pred
         ))),

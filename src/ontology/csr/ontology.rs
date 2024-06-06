@@ -5,7 +5,7 @@ use std::{collections::HashMap, iter::once};
 use graph_builder::index::Idx as CsrIdx;
 
 use crate::base::{term::MinimalTerm, Identified, TermId};
-use crate::error::OntographError;
+use crate::error::OntoliusError;
 use crate::hierarchy::HierarchyIdx;
 use crate::io::OntologyData;
 use crate::ontology::{HierarchyAware, MetadataAware, Ontology, TermAware, TermIdx};
@@ -32,7 +32,7 @@ where
     HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
     T: MinimalTerm,
 {
-    type Error = OntographError;
+    type Error = OntoliusError;
 
     fn try_from(value: OntologyData<HI, T>) -> Result<Self, Self::Error> {
         // TODO: I am not sure this is the most efficient way to build the ontology.

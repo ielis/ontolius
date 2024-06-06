@@ -15,7 +15,7 @@ to allow reading HPO from Obographs JSON file.
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = {git = 'https://github.com/ielis/ontolius.git', tag = 'v0.0.1', features = ["obographs"]}
+ontolius = {git = 'https://github.com/ielis/ontolius.git', tag = 'v0.1.1', features = ["obographs"]}
 ```
 
 ## Examples
@@ -160,6 +160,13 @@ Similar methods exist for getting ancestors, children, and descendent terms.
 See [`crate::hierarchy::OntologyHierarchy`] for more details.
 
 That's it for now.
+
+## Features
+
+Ontolius has the following features:
+
+* `obographs` - support loading Ontology from Obographs JSON file.
+* `pyo3` - add PyO3 bindings to selected data structs to support using from Python.
 
 
 ## Run tests

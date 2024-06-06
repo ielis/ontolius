@@ -12,7 +12,7 @@ use std::{
 use crate::{
     base::term::MinimalTerm,
     hierarchy::{GraphEdge, HierarchyIdx},
-    prelude::{OntographError, Ontology, TermIdx},
+    prelude::{OntoliusError, Ontology, TermIdx},
 };
 
 pub struct OntologyData<HI, T>
@@ -63,7 +63,7 @@ pub trait OntologyDataParser {
     fn load_from_buf_read<R>(
         &self,
         read: &mut R,
-    ) -> Result<OntologyData<Self::HI, Self::T>, OntographError>
+    ) -> Result<OntologyData<Self::HI, Self::T>, OntoliusError>
     where
         R: BufRead;
 }
@@ -91,24 +91,24 @@ where
     Parser: OntologyDataParser,
 {
     /// Load ontology from a path.
-    pub fn load_from_path<O, P>(&self, path: P) -> Result<O, OntographError>
+    pub fn load_from_path<O, P>(&self, path: P) -> Result<O, OntoliusError>
     where
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntographError>
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntoliusError>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
         P: AsRef<Path>,
     {
         if let Ok(mut file) = File::open(path) {
             self.load_from_read(&mut file)
         } else {
-            Err(OntographError::Other("Unable".into()))
+            Err(OntoliusError::Other("Unable".into()))
         }
     }
 
     /// Load ontology from a reader.
-    pub fn load_from_read<R, O>(&self, read: &mut R) -> Result<O, OntographError>
+    pub fn load_from_read<R, O>(&self, read: &mut R) -> Result<O, OntoliusError>
     where
         R: Read,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntographError>
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntoliusError>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
         let mut read = BufReader::new(read);
@@ -116,10 +116,10 @@ where
     }
 
     /// Load ontology from a buffered reader.
-    pub fn load_from_buf_read<R, O>(&self, read: &mut R) -> Result<O, OntographError>
+    pub fn load_from_buf_read<R, O>(&self, read: &mut R) -> Result<O, OntoliusError>
     where
         R: BufRead,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntographError>
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntoliusError>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
         let data = self.parser.load_from_buf_read(read)?;
