@@ -15,7 +15,7 @@ to allow reading HPO from Obographs JSON file.
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = {git = 'https://github.com/ielis/ontolius.git', tag = 'v0.0.1', features = ["obographs"]}
+ontolius = {git = 'https://github.com/ielis/ontolius.git', tag = 'v0.1.1', features = ["obographs"]}
 ```
 
 ## Examples
