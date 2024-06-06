@@ -161,6 +161,13 @@ See [`crate::hierarchy::OntologyHierarchy`] for more details.
 
 That's it for now.
 
+## Features
+
+Ontolius has the following features:
+
+* `obographs` - support loading Ontology from Obographs JSON file.
+* `pyo3` - add PyO3 bindings to selected data structs to support using from Python.
+
 
 ## Run tests
 

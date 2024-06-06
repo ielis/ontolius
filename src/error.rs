@@ -4,7 +4,7 @@ use thiserror::Error;
 
 /// The error
 #[derive(Error, Debug)]
-pub enum OntographError {
+pub enum OntoliusError {
     
     /// Returned when the input data cannot be parsed into
     /// [`crate::io::OntologyData`].
@@ -21,6 +21,6 @@ pub enum OntographError {
     Other(String),
 
     /// Fallback error with no message.
-    #[error("Unknown ontograph error")]
+    #[error("Unknown ontolius error")]
     Unknown,
 }

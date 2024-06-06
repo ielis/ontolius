@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
-use crate::error::OntographError;
+use crate::error::OntoliusError;
 use crate::hierarchy::{
     AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, HierarchyIdx, OntologyHierarchy,
     ParentNodes, Relationship,
@@ -25,10 +25,10 @@ impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx + Hash,
 {
-    type Error = OntographError;
+    type Error = OntoliusError;
     // TODO: we do not need an array, we need IntoIterator!
     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-        let root_idx = find_root_idx(graph_edges).map(Clone::clone)?;
+        let root_idx = find_root_idx(graph_edges).copied()?;
 
         let adjacency_matrix = GraphBuilder::new()
             .csr_layout(graph_builder::CsrLayout::Sorted)
@@ -42,7 +42,7 @@ where
     }
 }
 
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I, OntographError>
+fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I, OntoliusError>
 where
     I: Hash + HierarchyIdx,
 {
@@ -65,11 +65,11 @@ where
     let candidates: Vec<_> = root_candidate_set.difference(&remove_mark_set).collect();
 
     match candidates.len() {
-        0 => Err(OntographError::OntologyAssemblyError(
+        0 => Err(OntoliusError::OntologyAssemblyError(
             "No root candidate found!".into(),
         )),
         1 => Ok(*candidates[0]),
-        _ => Err(OntographError::OntologyAssemblyError(
+        _ => Err(OntoliusError::OntologyAssemblyError(
             "More than one root candidate found".into(),
         )),
     }
