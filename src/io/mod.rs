@@ -2,6 +2,7 @@
 #[cfg(feature = "obographs")]
 pub mod obographs;
 
+use flate2::read::GzDecoder;
 use std::{
     collections::HashMap,
     fs::File,
@@ -91,16 +92,33 @@ where
     Parser: OntologyDataParser,
 {
     /// Load ontology from a path.
+    /// 
+    /// Gzipped content is uncompressed on the fly,
+    /// as long as the `path` is suffixed with `*.gz`.
     pub fn load_from_path<O, P>(&self, path: P) -> Result<O, OntoliusError>
     where
         O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntoliusError>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
         P: AsRef<Path>,
     {
+        let path = path.as_ref();
         if let Ok(mut file) = File::open(path) {
-            self.load_from_read(&mut file)
+            if let Some(extension) = path.extension() {
+                if extension == "gz" {
+                    // Decompress gzipped file on the fly.
+                    let mut read = GzDecoder::new(file);
+                    self.load_from_read(&mut read)
+                } else {
+                    // All other extensions, e.g. JSON
+                    self.load_from_read(&mut file)
+                }
+            } else {
+                // We will also read from a file with no extension,
+                // assuming plain text.
+                self.load_from_read(&mut file)
+            }
         } else {
-            Err(OntoliusError::Other("Unable".into()))
+            Err(OntoliusError::Other(format!("Cannot load ontology from {path:?}")))
         }
     }
 

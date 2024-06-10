@@ -4,8 +4,6 @@
 //! # Example 
 //! 
 //! ```rust
-//! use std::path::Path;
-//! 
 //! use curie_util::TrieCurieUtil;
 //! use ontolius::io::obographs::ObographsParser;
 //! use ontolius::ontology::csr::CsrOntology;
@@ -18,7 +16,7 @@
 //! 
 //! // Load a small Obographs JSON file into `CsrOntology`.
 //! // Use `usize` as ontology graph indices.
-//! let path = Path::new("resources/hp.small.json");
+//! let path = "resources/hp.small.json.gz";
 //! let ontology: CsrOntology<usize, _> = loader.load_from_path(path)
 //!                                         .expect("Obographs JSON should be parsable");
 //! 
