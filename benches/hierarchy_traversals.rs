@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use std::str::FromStr;
 use std::vec;
 
@@ -11,7 +9,7 @@ use ontolius::ontology::csr::CsrOntology;
 use ontolius::prelude::*;
 
 fn hierarchy_traversals(c: &mut Criterion) {
-    let path = Path::new("/home/ielis/data/ontologies/hpo/2023-10-09/hp.json");
+    let path = "resources/hp.2023-10-09.json.gz";
     let loader = OntologyLoaderBuilder::new()
         .parser(ObographsParser::new(TrieCurieUtil::default()))
         .build();

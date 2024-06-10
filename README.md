@@ -24,8 +24,10 @@ in applications.
 
 ### Load HPO
 
-`ontolius` can load HPO from Obographs JSON file. 
-However, the API is built to support other formats in future.
+`ontolius` can load HPO from Obographs JSON file 
+and the input file will be decompressed on the fly,
+as long as the file ends with a `*.gz` suffix.
+
 We can load the JSON file as follows:
 
 ```rust
@@ -35,7 +37,7 @@ use ontolius::io::OntologyLoaderBuilder;
 use ontolius::ontology::csr::CsrOntology;
 
 // Load a toy Obographs file from the repo
-let path = "resources/hp.small.json";
+let path = "resources/hp.small.json.gz";
 
 // Configure the loader to parse the input as an Obographs file
 let loader = OntologyLoaderBuilder::new()
@@ -80,7 +82,7 @@ We can get a term by its `TermId`:
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
 # let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
-# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json")
+# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
@@ -102,7 +104,7 @@ or iterate over the all ontology terms or their corresponding term IDs:
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
 # let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
-# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json")
+# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
@@ -137,7 +139,7 @@ Let's see how to use the ontology hierarchy. For instance, to get the parent ter
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
 # let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
-# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json")
+# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;

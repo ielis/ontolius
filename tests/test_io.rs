@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
 
     use curie_util::TrieCurieUtil;
     use ontolius::io::{obographs::ObographsParser, OntologyLoaderBuilder};
@@ -8,7 +7,7 @@ mod tests {
 
     #[test]
     fn test_csr_ontology_loader() {
-        let path = Path::new("resources/hp.small.json");
+        let path = "resources/hp.small.json.gz";
 
         let loader = OntologyLoaderBuilder::new()
             .parser(ObographsParser::new(TrieCurieUtil::default()))

@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use curie_util::TrieCurieUtil;
@@ -7,7 +5,7 @@ use ontolius::io::{OntologyLoaderBuilder, obographs::ObographsParser};
 use ontolius::ontology::csr::CsrOntology;
 
 fn load_csr_ontology(c: &mut Criterion) {
-    let path = Path::new("/home/ielis/data/ontologies/hpo/2023-10-09/hp.json");
+    let path = "resources/hp.2023-10-09.json.gz";
 
     let loader = OntologyLoaderBuilder::new()
         .parser(ObographsParser::new(TrieCurieUtil::default()))
