@@ -24,6 +24,7 @@ curie-util = { git = "https://github.com/ielis/curie-util.git", tag = "v0.0.1" }
 criterion = "0.5.1"
 
 [features]
+default = ["obographs"]
 obographs = ["dep:obographs", "dep:curie-util"]
 pyo3 = ["dep:pyo3"]
 

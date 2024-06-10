@@ -9,14 +9,13 @@ The crate is *NOT* deployed on `crates.io` yet.
 
 ## Usage
 
-Most of the time, `ontolius` should be used with `obographs` feature enabled,
-to allow reading HPO from Obographs JSON file.
-
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = {git = 'https://github.com/ielis/ontolius.git', tag = 'v0.1.1', features = ["obographs"]}
+ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.1.1' }
 ```
+
+The `obographs` feature is enabled by deafult, to allow reading HPO from Obographs JSON file.
 
 ## Examples
 
@@ -163,10 +162,11 @@ That's it for now.
 
 ## Features
 
-Ontolius has the following features:
+Ontolius includes several features, with the features marked by `(*)` being enabled
+by default:
 
-* `obographs` - support loading Ontology from Obographs JSON file.
-* `pyo3` - add PyO3 bindings to selected data structs to support using from Python.
+* `obographs` `(*)` - support loading Ontology from Obographs JSON file
+* `pyo3` - add PyO3 bindings to selected data structs to support using from Python
 
 
 ## Run tests
@@ -174,7 +174,7 @@ Ontolius has the following features:
 The tests can be run by invoking:
 
 ```shell
-cargo test --all-features
+cargo test
 ```
 
 ## Run benches
