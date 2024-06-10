@@ -9,14 +9,13 @@ The crate is *NOT* deployed on `crates.io` yet.
 
 ## Usage
 
-Most of the time, `ontolius` should be used with `obographs` feature enabled,
-to allow reading HPO from Obographs JSON file.
-
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = {git = 'https://github.com/ielis/ontolius.git', tag = 'v0.1.1', features = ["obographs"]}
+ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.1.1' }
 ```
+
+The `obographs` feature is enabled by deafult, to allow reading HPO from Obographs JSON file.
 
 ## Examples
 
@@ -25,8 +24,10 @@ in applications.
 
 ### Load HPO
 
-`ontolius` can load HPO from Obographs JSON file. 
-However, the API is built to support other formats in future.
+`ontolius` can load HPO from Obographs JSON file 
+and the input file will be decompressed on the fly,
+as long as the file ends with a `*.gz` suffix.
+
 We can load the JSON file as follows:
 
 ```rust
@@ -36,7 +37,7 @@ use ontolius::io::OntologyLoaderBuilder;
 use ontolius::ontology::csr::CsrOntology;
 
 // Load a toy Obographs file from the repo
-let path = "resources/hp.small.json";
+let path = "resources/hp.small.json.gz";
 
 // Configure the loader to parse the input as an Obographs file
 let loader = OntologyLoaderBuilder::new()
@@ -81,7 +82,7 @@ We can get a term by its `TermId`:
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
 # let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
-# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json")
+# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
@@ -103,7 +104,7 @@ or iterate over the all ontology terms or their corresponding term IDs:
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
 # let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
-# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json")
+# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
@@ -138,7 +139,7 @@ Let's see how to use the ontology hierarchy. For instance, to get the parent ter
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
 # let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
-# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json")
+# let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
@@ -163,10 +164,11 @@ That's it for now.
 
 ## Features
 
-Ontolius has the following features:
+Ontolius includes several features, with the features marked by `(*)` being enabled
+by default:
 
-* `obographs` - support loading Ontology from Obographs JSON file.
-* `pyo3` - add PyO3 bindings to selected data structs to support using from Python.
+* `obographs` `(*)` - support loading Ontology from Obographs JSON file
+* `pyo3` - add PyO3 bindings to selected data structs to support using from Python
 
 
 ## Run tests
@@ -174,7 +176,7 @@ Ontolius has the following features:
 The tests can be run by invoking:
 
 ```shell
-cargo test --all-features
+cargo test
 ```
 
 ## Run benches
