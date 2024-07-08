@@ -1,12 +1,12 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
-use crate::error::OntoliusError;
 use crate::hierarchy::{
     AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, HierarchyIdx, OntologyHierarchy,
     ParentNodes, Relationship,
 };
 
+use anyhow::{bail, Error, Result};
 use graph_builder::index::Idx as CsrIdx;
 use graph_builder::GraphBuilder;
 use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
@@ -25,7 +25,7 @@ impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx + Hash,
 {
-    type Error = OntoliusError;
+    type Error = Error;
     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
         let root_idx = find_root_idx(graph_edges)?;
@@ -42,7 +42,7 @@ where
     }
 }
 
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I, OntoliusError>
+fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I>
 where
     I: Hash + HierarchyIdx + Eq,
 {
@@ -65,13 +65,9 @@ where
     let candidates: Vec<_> = root_candidate_set.difference(&remove_mark_set).collect();
 
     match candidates.len() {
-        0 => Err(OntoliusError::OntologyAssemblyError(
-            "No root candidate found!".into(),
-        )),
+        0 => bail!("No root candidate found!"),
         1 => Ok(*candidates[0]),
-        _ => Err(OntoliusError::OntologyAssemblyError(
-            "More than one root candidate found".into(),
-        )),
+        _ => bail!("More than one root candidate found"),
     }
 }
 

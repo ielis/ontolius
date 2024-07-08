@@ -2,12 +2,12 @@ use std::io::BufRead;
 use std::str::FromStr;
 use std::{collections::HashMap, marker::PhantomData};
 
+use anyhow::{bail, Result};
 use curie_util::{CurieUtil, TrieCurieUtil};
 use obographs::model::{Edge, GraphDocument, Meta, Node};
 
 use crate::{
     base::{term::simple::SimpleMinimalTerm, Identified, TermId},
-    error::OntoliusError,
     hierarchy::{GraphEdge, HierarchyIdx, Relationship},
     ontology::OntologyIdx,
 };
@@ -54,7 +54,7 @@ where
         }
     }
 
-    fn create(&self, data: &Node) -> Result<SimpleMinimalTerm, OntoliusError> {
+    fn create(&self, data: &Node) -> Result<SimpleMinimalTerm> {
         let cp = self.curie_util.get_curie_data(&data.id);
         let name = &data.lbl;
 
@@ -72,18 +72,9 @@ where
                     is_obsolete,
                 ))
             }
-            (Some(cp), None) => Err(OntoliusError::OntologyDataParseError(format!(
-                "Missing term label for {}:{}",
-                cp.get_prefix(),
-                cp.get_id()
-            ))),
-            (None, Some(lbl)) => Err(OntoliusError::OntologyDataParseError(format!(
-                "Unparsable term id of {lbl}: {}",
-                &data.id
-            ))),
-            _ => Err(OntoliusError::OntologyDataParseError(
-                "Unparsable node".to_owned(),
-            )),
+            (Some(cp), None) => bail!("Missing term label for {}:{}", cp.get_prefix(), cp.get_id()),
+            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, &data.id),
+            _ => bail!("Unparsable node"),
         }
     }
 }
@@ -99,14 +90,10 @@ where
     fn load_from_buf_read<R: BufRead>(
         &self,
         read: &mut R,
-    ) -> Result<OntologyData<Self::HI, Self::T>, OntoliusError> {
+    ) -> Result<OntologyData<Self::HI, Self::T>> {
         let gd = match GraphDocument::from_reader(read) {
             Ok(g) => g,
-            Err(_) => {
-                return Err(OntoliusError::OntologyDataParseError(
-                    "Unable to read obographs document".into(),
-                ))
-            }
+            Err(_) => bail!("Unable to read obographs document"),
         };
 
         if let Some(graph) = gd.graphs.first() {
@@ -133,10 +120,7 @@ where
 
             Ok(OntologyData::from((terms, edges, metadata)))
         } else {
-            Err(OntoliusError::OntologyDataParseError(format!(
-                "Graph document had {}!=1 graphs",
-                gd.graphs.len()
-            )))
+            bail!("Graph document had {}!=1 graphs", gd.graphs.len())
         }
     }
 }
@@ -167,14 +151,11 @@ fn parse_edge<HI: HierarchyIdx>(
     }
 }
 
-fn parse_relationship(pred: &str) -> Result<Relationship, OntoliusError> {
+fn parse_relationship(pred: &str) -> Result<Relationship> {
     match pred {
         // This may be too simplistic
         "is_a" => Ok(Relationship::Child),
-        _ => Err(OntoliusError::OntologyDataParseError(format!(
-            "Unknown predicate {}",
-            pred
-        ))),
+        _ => bail!("Unknown predicate {}", pred),
     }
 }
 

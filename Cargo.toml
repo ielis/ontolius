@@ -9,7 +9,7 @@ readme = "README.md"
 
 [dependencies]
 graph_builder = "0.3.1"
-thiserror = ">=1.0.30"
+anyhow = "1.0.86"
 flate2 = "1.0.30"
 pyo3 = { version = "0.21.2", optional = true, features = ["abi3-py310"] }
 obographs = { git = "https://github.com/ielis/obographs.git", tag = "v0.1.0", optional = true, features = [
