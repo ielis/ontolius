@@ -12,7 +12,7 @@ The crate is *NOT* deployed on `crates.io` yet.
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.2.0' }
+ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.3.0' }
 ```
 
 The `obographs` feature is enabled by deafult, to allow reading HPO from Obographs JSON file.
