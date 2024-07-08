@@ -36,7 +36,20 @@ where
 
     fn try_from(value: OntologyData<HI, T>) -> Result<Self, Self::Error> {
         // TODO: I am not sure this is the most efficient way to build the ontology.
-        let terms = value.terms().to_vec().into_boxed_slice();
+        let OntologyData {
+            terms,
+            edges,
+            metadata,
+        } = value;
+
+        // Only keep the primary terms.
+        let terms: Box<[_]> = terms
+            .into_iter()
+            .filter(|x| x.is_current())
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
+
+        // let terms = terms.to_vec().into_boxed_slice();
         let term_id_to_idx = terms
             .iter()
             .enumerate()
@@ -48,8 +61,8 @@ where
             })
             .collect();
 
-        let hierarchy = CsrOntologyHierarchy::try_from(value.edges())?;
-        let metadata = value.metadata().clone();
+        let hierarchy = CsrOntologyHierarchy::try_from(&*edges)?;
+
         Ok(Self {
             terms,
             term_id_to_idx,
@@ -87,19 +100,23 @@ where
         self.terms.iter()
     }
 
-    fn idx_to_term(&self, idx: Self::TI) -> Option<&T> {
+    fn idx_to_term(&self, idx: &Self::TI) -> Option<&T> {
         self.terms.get(TermIdx::index(idx))
     }
 
-    fn id_to_idx<ID>(&self, id: &ID) -> Option<Self::TI>
+    fn id_to_idx<ID>(&self, id: &ID) -> Option<&Self::TI>
     where
         ID: Identified,
     {
-        self.term_id_to_idx.get(id.identifier()).copied()
+        self.term_id_to_idx.get(id.identifier())
     }
 
     fn len(&self) -> usize {
         self.terms.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.terms.is_empty()
     }
 }
 

@@ -12,7 +12,7 @@ The crate is *NOT* deployed on `crates.io` yet.
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.1.2' }
+ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.2.0' }
 ```
 
 The `obographs` feature is enabled by deafult, to allow reading HPO from Obographs JSON file.
@@ -150,8 +150,8 @@ let arachnodactyly: TermId = ("HP", "0001166").into();
 
 let idx = hpo.id_to_idx(&arachnodactyly)
             .expect("Arachnodacyly should be in HPO");
-let parents: Vec<_> = hierarchy.parents_of(idx)
-                        .flat_map(|idx| hpo.idx_to_term(*idx))
+let parents: Vec<_> = hierarchy.iter_parents_of(idx)
+                        .flat_map(|idx| hpo.idx_to_term(idx))
                         .collect();
 let names: Vec<_> = parents.iter().map(|term| term.name()).collect();
 assert_eq!(vec!["Slender finger", "Long fingers"], names);
@@ -186,7 +186,7 @@ We use `criterion` for crate benchmarks.
 Run the following to run the bench suite:
 
 ```shell
-cargo bench --features obographs
+cargo bench
 ```
 
 The benchmark report will be written into the `target/criterion/report` directory.
