@@ -151,7 +151,7 @@ let arachnodactyly: TermId = ("HP", "0001166").into();
 let idx = hpo.id_to_idx(&arachnodactyly)
             .expect("Arachnodacyly should be in HPO");
 let parents: Vec<_> = hierarchy.parents_of(idx)
-                        .flat_map(|idx| hpo.idx_to_term(*idx))
+                        .flat_map(|idx| hpo.idx_to_term(idx))
                         .collect();
 let names: Vec<_> = parents.iter().map(|term| term.name()).collect();
 assert_eq!(vec!["Slender finger", "Long fingers"], names);

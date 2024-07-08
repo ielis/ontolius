@@ -26,9 +26,9 @@ where
     I: CsrIdx + HierarchyIdx + Hash,
 {
     type Error = OntoliusError;
-    // TODO: we do not need an array, we need IntoIterator!
+    // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-        let root_idx = find_root_idx(graph_edges).copied()?;
+        let root_idx = find_root_idx(graph_edges)?;
 
         let adjacency_matrix = GraphBuilder::new()
             .csr_layout(graph_builder::CsrLayout::Sorted)
@@ -42,22 +42,22 @@ where
     }
 }
 
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I, OntoliusError>
+fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I, OntoliusError>
 where
     I: Hash + HierarchyIdx,
 {
-    let mut root_candidate_set: HashSet<&I> = HashSet::new();
-    let mut remove_mark_set: HashSet<&I> = HashSet::new();
+    let mut root_candidate_set = HashSet::new();
+    let mut remove_mark_set = HashSet::new();
 
     for edge in graph_edges.iter() {
         match edge.pred {
             Relationship::Child => {
-                root_candidate_set.insert(&edge.obj);
-                remove_mark_set.insert(&edge.sub);
+                root_candidate_set.insert(edge.obj);
+                remove_mark_set.insert(edge.sub);
             }
             Relationship::Parent => {
-                root_candidate_set.insert(&edge.obj);
-                remove_mark_set.insert(&edge.sub);
+                root_candidate_set.insert(edge.obj);
+                remove_mark_set.insert(edge.sub);
             }
         }
     }
@@ -95,8 +95,8 @@ where
     type I = I;
     type ChildIter<'a> = std::slice::Iter<'a, I> where I: 'a;
 
-    fn children_of(&self, node: I) -> Self::ChildIter<'_> {
-        self.adjacency_matrix.in_neighbors(node)
+    fn children_of(&self, node: &I) -> Self::ChildIter<'_> {
+        self.adjacency_matrix.in_neighbors(*node)
     }
 }
 
@@ -107,8 +107,8 @@ where
     type I = I;
     type ParentIter<'a> = std::slice::Iter<'a, I> where I: 'a;
 
-    fn parents_of(&self, node: I) -> Self::ParentIter<'_> {
-        self.adjacency_matrix.out_neighbors(node)
+    fn parents_of(&self, node: &I) -> Self::ParentIter<'_> {
+        self.adjacency_matrix.out_neighbors(*node)
     }
 }
 
@@ -119,11 +119,11 @@ where
     type I = I;
     type DescendantIter<'a> = DescendantsIter<'a, I>;
 
-    fn descendants_of(&self, node: I) -> Self::DescendantIter<'_> {
+    fn descendants_of(&self, node: &I) -> Self::DescendantIter<'_> {
         DescendantsIter {
             adjacency_matrix: &self.adjacency_matrix,
             seen: HashSet::new(),
-            queue: VecDeque::from_iter(self.adjacency_matrix.in_neighbors(node)),
+            queue: VecDeque::from_iter(self.adjacency_matrix.in_neighbors(*node)),
         }
     }
 }
@@ -164,11 +164,11 @@ where
     where
         Self: 'a;
 
-    fn ancestors_of(&self, node: I) -> Self::AncestorIter<'_> {
+    fn ancestors_of(&self, node: &I) -> Self::AncestorIter<'_> {
         AncestorIter {
             adjacency_matrix: &self.adjacency_matrix,
             seen: HashSet::new(),
-            queue: VecDeque::from_iter(self.adjacency_matrix.out_neighbors(node)),
+            queue: VecDeque::from_iter(self.adjacency_matrix.out_neighbors(*node)),
         }
     }
 }
@@ -211,11 +211,11 @@ where
         &self.root_idx
     }
 
-    fn subhierarchy(&self, subroot: I) -> Self {
+    fn subhierarchy(&self, subroot: &I) -> Self {
         // TODO: implement
         let mut edge_map: HashMap<&I, HashSet<&I>> = HashMap::new();
-        for descendant in std::iter::once(&subroot).chain(self.descendants_of(subroot)) {
-            for child in self.children_of(*descendant) {
+        for descendant in std::iter::once(subroot).chain(self.descendants_of(subroot)) {
+            for child in self.children_of(descendant) {
                 edge_map.entry(child).or_default().insert(descendant);
             }
         }
@@ -232,7 +232,7 @@ where
             .edges(edges)
             .build();
         let _hierarchy = CsrOntologyHierarchy {
-            root_idx: subroot,
+            root_idx: *subroot,
             adjacency_matrix,
         };
         // TODO: may not be right, because it assumes we'll keep the same array of nodes!
@@ -263,16 +263,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::children_of;
 
-        check_members!(hierarchy, func, 0, [1, 5, 9]);
-        check_members!(hierarchy, func, 1, [2, 3]);
-        check_members!(hierarchy, func, 2, [4]);
-        check_members!(hierarchy, func, 3, [4]);
-        check_members!(hierarchy, func, 4, [0; 0]);
-        check_members!(hierarchy, func, 5, [6, 7, 8]);
-        check_members!(hierarchy, func, 6, [0; 0]);
-        check_members!(hierarchy, func, 7, [0; 0]);
-        check_members!(hierarchy, func, 8, [0; 0]);
-        check_members!(hierarchy, func, 9, [0; 0]);
+        check_members!(hierarchy, func, &0, [1, 5, 9]);
+        check_members!(hierarchy, func, &1, [2, 3]);
+        check_members!(hierarchy, func, &2, [4]);
+        check_members!(hierarchy, func, &3, [4]);
+        check_members!(hierarchy, func, &4, [0; 0]);
+        check_members!(hierarchy, func, &5, [6, 7, 8]);
+        check_members!(hierarchy, func, &6, [0; 0]);
+        check_members!(hierarchy, func, &7, [0; 0]);
+        check_members!(hierarchy, func, &8, [0; 0]);
+        check_members!(hierarchy, func, &9, [0; 0]);
     }
 
     #[test]
@@ -280,16 +280,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::descendants_of;
 
-        check_members!(hierarchy, func, 0, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        check_members!(hierarchy, func, 1, [2, 3, 4]);
-        check_members!(hierarchy, func, 2, [4]);
-        check_members!(hierarchy, func, 3, [4]);
-        check_members!(hierarchy, func, 4, [0; 0]);
-        check_members!(hierarchy, func, 5, [6, 7, 8]);
-        check_members!(hierarchy, func, 6, [0; 0]);
-        check_members!(hierarchy, func, 7, [0; 0]);
-        check_members!(hierarchy, func, 8, [0; 0]);
-        check_members!(hierarchy, func, 9, [0; 0]);
+        check_members!(hierarchy, func, &0, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        check_members!(hierarchy, func, &1, [2, 3, 4]);
+        check_members!(hierarchy, func, &2, [4]);
+        check_members!(hierarchy, func, &3, [4]);
+        check_members!(hierarchy, func, &4, [0; 0]);
+        check_members!(hierarchy, func, &5, [6, 7, 8]);
+        check_members!(hierarchy, func, &6, [0; 0]);
+        check_members!(hierarchy, func, &7, [0; 0]);
+        check_members!(hierarchy, func, &8, [0; 0]);
+        check_members!(hierarchy, func, &9, [0; 0]);
     }
 
     #[test]
@@ -297,16 +297,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::parents_of;
 
-        check_members!(hierarchy, func, 0, [0; 0]);
-        check_members!(hierarchy, func, 1, [0]);
-        check_members!(hierarchy, func, 2, [1]);
-        check_members!(hierarchy, func, 3, [1]);
-        check_members!(hierarchy, func, 4, [2, 3]);
-        check_members!(hierarchy, func, 5, [0]);
-        check_members!(hierarchy, func, 6, [5]);
-        check_members!(hierarchy, func, 7, [5]);
-        check_members!(hierarchy, func, 8, [5]);
-        check_members!(hierarchy, func, 9, [0]);
+        check_members!(hierarchy, func, &0, [0; 0]);
+        check_members!(hierarchy, func, &1, [0]);
+        check_members!(hierarchy, func, &2, [1]);
+        check_members!(hierarchy, func, &3, [1]);
+        check_members!(hierarchy, func, &4, [2, 3]);
+        check_members!(hierarchy, func, &5, [0]);
+        check_members!(hierarchy, func, &6, [5]);
+        check_members!(hierarchy, func, &7, [5]);
+        check_members!(hierarchy, func, &8, [5]);
+        check_members!(hierarchy, func, &9, [0]);
     }
 
     #[test]
@@ -314,16 +314,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::ancestors_of;
 
-        check_members!(hierarchy, func, 0, [0; 0]);
-        check_members!(hierarchy, func, 1, [0]);
-        check_members!(hierarchy, func, 2, [0, 1]);
-        check_members!(hierarchy, func, 3, [0, 1]);
-        check_members!(hierarchy, func, 4, [0, 1, 2, 3]);
-        check_members!(hierarchy, func, 5, [0]);
-        check_members!(hierarchy, func, 6, [0, 5]);
-        check_members!(hierarchy, func, 7, [0, 5]);
-        check_members!(hierarchy, func, 8, [0, 5]);
-        check_members!(hierarchy, func, 9, [0]);
+        check_members!(hierarchy, func, &0, [0; 0]);
+        check_members!(hierarchy, func, &1, [0]);
+        check_members!(hierarchy, func, &2, [0, 1]);
+        check_members!(hierarchy, func, &3, [0, 1]);
+        check_members!(hierarchy, func, &4, [0, 1, 2, 3]);
+        check_members!(hierarchy, func, &5, [0]);
+        check_members!(hierarchy, func, &6, [0, 5]);
+        check_members!(hierarchy, func, &7, [0, 5]);
+        check_members!(hierarchy, func, &8, [0, 5]);
+        check_members!(hierarchy, func, &9, [0]);
     }
 
     fn build_example_hierarchy() -> CsrOntologyHierarchy<u16> {

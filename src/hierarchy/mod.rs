@@ -21,15 +21,15 @@ pub trait ChildNodes {
         Self::I: 'a;
 
     /// Returns an iterator of all nodes which are children of `node`.
-    fn children_of(&self, node: Self::I) -> Self::ChildIter<'_>;
+    fn children_of(&self, node: &Self::I) -> Self::ChildIter<'_>;
 
     /// Test if `sub` is child of the `obj` node.
-    fn is_child_of(&self, sub: Self::I, obj: Self::I) -> bool {
-        self.children_of(obj).any(|&child| child == sub)
+    fn is_child_of(&self, sub: &Self::I, obj: &Self::I) -> bool {
+        self.children_of(obj).any(|child| *child == *sub)
     }
 
     /// Test if `node` is a leaf, i.e. a node with no child nodes.
-    fn is_leaf(&self, node: Self::I) -> bool {
+    fn is_leaf(&self, node: &Self::I) -> bool {
         self.children_of(node).count() == 0
     }
 }
@@ -44,7 +44,7 @@ pub trait DescendantNodes {
         Self::I: 'a;
 
     /// Returns an iterator of all nodes which are descendants of `node`.
-    fn descendants_of(&self, node: Self::I) -> Self::DescendantIter<'_>;
+    fn descendants_of(&self, node: &Self::I) -> Self::DescendantIter<'_>;
 }
 
 /// Trait for types that can provide the parent nodes of an ontology node.
@@ -57,11 +57,11 @@ pub trait ParentNodes {
         Self::I: 'a;
 
     /// Returns an iterator of all nodes which are parents of `node`.
-    fn parents_of(&self, node: Self::I) -> Self::ParentIter<'_>;
+    fn parents_of(&self, node: &Self::I) -> Self::ParentIter<'_>;
 
     /// Test if `sub` is parent of the `obj` node.
-    fn is_parent_of(&self, sub: Self::I, obj: Self::I) -> bool {
-        self.parents_of(obj).any(|&parent| parent == sub)
+    fn is_parent_of(&self, sub: &Self::I, obj: &Self::I) -> bool {
+        self.parents_of(obj).any(|parent| *parent == *sub)
     }
 }
 
@@ -75,16 +75,16 @@ pub trait AncestorNodes {
         Self::I: 'a;
 
     /// Returns an iterator of all nodes which are ancestors of `node`.
-    fn ancestors_of(&self, node: Self::I) -> Self::AncestorIter<'_>;
+    fn ancestors_of(&self, node: &Self::I) -> Self::AncestorIter<'_>;
 
     /// Test if `sub` is an ancestor of `obj`.
-    fn is_ancestor_of(&self, sub: Self::I, obj: Self::I) -> bool {
-        self.ancestors_of(obj).any(|&anc| anc == sub)
+    fn is_ancestor_of(&self, sub: &Self::I, obj: &Self::I) -> bool {
+        self.ancestors_of(obj).any(|anc| *anc == *sub)
     }
 
     /// Test if `sub`` is a descendant of `obj`.
-    fn is_descendant_of(&self, sub: Self::I, obj: Self::I) -> bool {
-        self.ancestors_of(sub).any(|&parent| parent == obj)
+    fn is_descendant_of(&self, sub: &Self::I, obj: &Self::I) -> bool {
+        self.ancestors_of(sub).any(|parent| *parent == *obj)
     }
 }
 
@@ -105,8 +105,7 @@ pub trait OntologyHierarchy:
 
     // TODO: augment a container with ancestors & self
     // TODO: augment a container with descendants & self
-
-    fn subhierarchy(&self, subroot_idx: Self::HI) -> Self;
+    fn subhierarchy(&self, subroot_idx: &Self::HI) -> Self;
 }
 
 /// The implementors can be used to index the [`super::OntologyHierarchy`].

@@ -17,36 +17,18 @@ use crate::{
 };
 
 pub struct OntologyData<HI, T>
+{
+    pub terms: Vec<T>,
+    pub edges: Vec<GraphEdge<HI>>,
+    pub metadata: HashMap<String, String>,
+}
+
+impl<HI, T> From<(Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)> for OntologyData<HI, T>
 where
     HI: HierarchyIdx,
     T: MinimalTerm,
 {
-    terms: Box<[T]>,
-    edges: Box<[GraphEdge<HI>]>,
-    metadata: HashMap<String, String>,
-}
-
-impl<HI: HierarchyIdx, T: MinimalTerm> OntologyData<HI, T> {
-    pub fn terms(&self) -> &[T] {
-        &self.terms
-    }
-
-    pub fn edges(&self) -> &[GraphEdge<HI>] {
-        &self.edges
-    }
-
-    pub fn metadata(&self) -> &HashMap<String, String> {
-        // TODO: the signature overpromises. We should probably only promise an iterator over (String, String).
-        &self.metadata
-    }
-}
-
-impl<HI, T> From<(Box<[T]>, Box<[GraphEdge<HI>]>, HashMap<String, String>)> for OntologyData<HI, T>
-where
-    HI: HierarchyIdx,
-    T: MinimalTerm,
-{
-    fn from(value: (Box<[T]>, Box<[GraphEdge<HI>]>, HashMap<String, String>)) -> Self {
+    fn from(value: (Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)) -> Self {
         Self {
             terms: value.0,
             edges: value.1,
