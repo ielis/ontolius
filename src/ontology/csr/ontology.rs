@@ -5,10 +5,10 @@ use std::{collections::HashMap, iter::once};
 use graph_builder::index::Idx as CsrIdx;
 
 use crate::base::{term::MinimalTerm, Identified, TermId};
-use crate::error::OntoliusError;
+use anyhow::Error;
 use crate::hierarchy::HierarchyIdx;
 use crate::io::OntologyData;
-use crate::ontology::{HierarchyAware, MetadataAware, Ontology, TermAware, TermIdx};
+use crate::ontology::{HierarchyAware, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
 
 use super::hierarchy::CsrOntologyHierarchy;
 
@@ -17,8 +17,7 @@ use super::hierarchy::CsrOntologyHierarchy;
 /// with a CSR adjacency matrix.
 pub struct CsrOntology<HI, T>
 where
-    HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
-    T: MinimalTerm,
+    HI: CsrIdx,
 {
     terms: Box<[T]>,
     term_id_to_idx: HashMap<TermId, HI>,
@@ -29,10 +28,10 @@ where
 /// `CsrOntology` can be built from [`OntologyData`].
 impl<HI, T> TryFrom<OntologyData<HI, T>> for CsrOntology<HI, T>
 where
-    HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
+    HI: HierarchyIdx + CsrIdx + Hash,
     T: MinimalTerm,
 {
-    type Error = OntoliusError;
+    type Error = Error;
 
     fn try_from(value: OntologyData<HI, T>) -> Result<Self, Self::Error> {
         // TODO: I am not sure this is the most efficient way to build the ontology.
@@ -75,7 +74,6 @@ where
 impl<HI, T> HierarchyAware for CsrOntology<HI, T>
 where
     HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
-    T: MinimalTerm,
 {
     type HI = HI;
     type Hierarchy = CsrOntologyHierarchy<HI>;
@@ -87,16 +85,13 @@ where
 
 impl<HI, T> TermAware for CsrOntology<HI, T>
 where
-    HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
+    HI: TermIdx + CsrIdx,
     T: MinimalTerm,
 {
     type TI = HI;
     type Term = T;
-    type TermIter<'a> = std::slice::Iter<'a, Self::Term>
-    where
-        Self: 'a;
 
-    fn iter_terms(&self) -> Self::TermIter<'_> {
+    fn iter_terms(&self) -> impl Iterator<Item = &Self::Term> {
         self.terms.iter()
     }
 
@@ -122,8 +117,7 @@ where
 
 impl<HI, T> MetadataAware for CsrOntology<HI, T>
 where
-    HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
-    T: MinimalTerm,
+    HI: CsrIdx,
 {
     fn version(&self) -> &str {
         self.metadata
@@ -133,12 +127,12 @@ where
     }
 }
 
-impl<HI, T> Ontology for CsrOntology<HI, T>
+impl<I, T> Ontology for CsrOntology<I, T>
 where
-    HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
+    I: OntologyIdx + CsrIdx,
     T: MinimalTerm,
 {
-    type Idx = HI;
+    type Idx = I;
     type T = T;
 }
 

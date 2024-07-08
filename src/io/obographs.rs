@@ -2,14 +2,14 @@ use std::io::BufRead;
 use std::str::FromStr;
 use std::{collections::HashMap, marker::PhantomData};
 
+use anyhow::{bail, Context, Result};
 use curie_util::{CurieUtil, TrieCurieUtil};
 use obographs::model::{Edge, GraphDocument, Meta, Node};
 
 use crate::{
     base::{term::simple::SimpleMinimalTerm, Identified, TermId},
-    error::OntoliusError,
     hierarchy::{GraphEdge, HierarchyIdx, Relationship},
-    ontology::TermIdx,
+    ontology::OntologyIdx,
 };
 
 use super::{OntologyData, OntologyDataParser, OntologyLoaderBuilder, Uninitialized, WithParser};
@@ -29,15 +29,21 @@ fn parse_alt_term_ids(node_meta: &Meta) -> Vec<TermId> {
         .collect()
 }
 
-pub struct ObographsParser<CU, HI>
-where
-    CU: CurieUtil,
-{
+pub struct ObographsParser<CU, HI> {
     curie_util: CU,
     _marker: PhantomData<HI>,
 }
 
-impl<CU, HI> ObographsParser<CU, HI>
+impl<HI> Default for ObographsParser<TrieCurieUtil, HI> {
+    fn default() -> Self {
+        Self {
+            curie_util: TrieCurieUtil::default(),
+            _marker: Default::default(),
+        }
+    }
+}
+
+impl<CU, I> ObographsParser<CU, I>
 where
     CU: CurieUtil,
 {
@@ -48,7 +54,7 @@ where
         }
     }
 
-    fn create(&self, data: &Node) -> Result<SimpleMinimalTerm, OntoliusError> {
+    fn create(&self, data: &Node) -> Result<SimpleMinimalTerm> {
         let cp = self.curie_util.get_curie_data(&data.id);
         let name = &data.lbl;
 
@@ -66,18 +72,9 @@ where
                     is_obsolete,
                 ))
             }
-            (Some(cp), None) => Err(OntoliusError::OntologyDataParseError(format!(
-                "Missing term label for {}:{}",
-                cp.get_prefix(),
-                cp.get_id()
-            ))),
-            (None, Some(lbl)) => Err(OntoliusError::OntologyDataParseError(format!(
-                "Unparsable term id of {lbl}: {}",
-                &data.id
-            ))),
-            _ => Err(OntoliusError::OntologyDataParseError(
-                "Unparsable node".to_owned(),
-            )),
+            (Some(cp), None) => bail!("Missing term label for {}:{}", cp.get_prefix(), cp.get_id()),
+            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, &data.id),
+            _ => bail!("Unparsable node"),
         }
     }
 }
@@ -85,57 +82,38 @@ where
 impl<CU, I> OntologyDataParser for ObographsParser<CU, I>
 where
     CU: CurieUtil,
-    I: HierarchyIdx + TermIdx,
+    I: OntologyIdx,
 {
     type HI = I;
     type T = SimpleMinimalTerm;
 
-    fn load_from_buf_read<R: BufRead>(
-        &self,
-        read: &mut R,
-    ) -> Result<OntologyData<Self::HI, Self::T>, OntoliusError> {
-        let gd = match GraphDocument::from_reader(read) {
-            Ok(g) => g,
-            Err(_) => {
-                return Err(OntoliusError::OntologyDataParseError(
-                    "Unable to read obographs document".into(),
-                ))
-            }
-        };
+    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<Self::HI, Self::T>> {
+        let gd = GraphDocument::from_reader(read).context("Reading graph document")?;
 
-        if let Some(graph) = gd.graphs.first() {
-            let terms: Vec<_> = graph
-                .nodes
-                .iter()
-                .flat_map(|node| self.create(node).ok())
-                .collect();
+        let graph = gd.graphs.first().context("Getting the first graph")?;
+        
+        let terms: Vec<_> = graph
+            .nodes
+            .iter()
+            .flat_map(|node| self.create(node).ok())
+            .collect();
 
-            let term_ids: Vec<_> = terms.iter().map(Identified::identifier).collect();
-            let termid2idx: HashMap<_, _> = term_ids
-                .iter()
-                .enumerate()
-                .map(|(i, &t)| (t.to_string(), I::new(i)))
-                .collect();
+        let term_ids: Vec<_> = terms.iter().map(Identified::identifier).collect();
+        let termid2idx: HashMap<_, _> = term_ids
+            .iter()
+            .enumerate()
+            .map(|(i, &t)| (t.to_string(), I::new(i)))
+            .collect();
 
-            let edges: Vec<GraphEdge<_>> = graph
-                .edges
-                .iter()
-                .flat_map(|edge| parse_edge(edge, &self.curie_util, &termid2idx))
-                .collect();
+        let edges: Vec<GraphEdge<_>> = graph
+            .edges
+            .iter()
+            .flat_map(|edge| parse_edge(edge, &self.curie_util, &termid2idx))
+            .collect();
 
-            let metadata = HashMap::new(); // TODO: parse out metadata
+        let metadata = HashMap::new(); // TODO: parse out metadata
 
-            Ok(OntologyData::from((
-                terms,
-                edges,
-                metadata,
-            )))
-        } else {
-            Err(OntoliusError::OntologyDataParseError(format!(
-                "Graph document had {}!=1 graphs",
-                gd.graphs.len()
-            )))
-        }
+        Ok(OntologyData::from((terms, edges, metadata)))
     }
 }
 
@@ -165,14 +143,11 @@ fn parse_edge<HI: HierarchyIdx>(
     }
 }
 
-fn parse_relationship(pred: &str) -> Result<Relationship, OntoliusError> {
+fn parse_relationship(pred: &str) -> Result<Relationship> {
     match pred {
         // This may be too simplistic
         "is_a" => Ok(Relationship::Child),
-        _ => Err(OntoliusError::OntologyDataParseError(format!(
-            "Unknown predicate {}",
-            pred
-        ))),
+        _ => bail!("Unknown predicate {}", pred),
     }
 }
 
@@ -180,12 +155,16 @@ fn parse_relationship(pred: &str) -> Result<Relationship, OntoliusError> {
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Load ontology graphs using [`ObographsParser`].        
     #[must_use]
-    pub fn obographs_parser<HI: HierarchyIdx + TermIdx>(
+    pub fn obographs_parser<HI>(
         self,
-    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil, HI>>> {
-        let parser = ObographsParser::new(TrieCurieUtil::default());
+    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil, HI>>>
+    where
+        HI: OntologyIdx,
+    {
         OntologyLoaderBuilder {
-            state: WithParser { parser },
+            state: WithParser {
+                parser: ObographsParser::default(),
+            },
         }
     }
 }

@@ -1,12 +1,12 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
-use crate::error::OntoliusError;
 use crate::hierarchy::{
     AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, HierarchyIdx, OntologyHierarchy,
     ParentNodes, Relationship,
 };
 
+use anyhow::{bail, Context, Error, Result};
 use graph_builder::index::Idx as CsrIdx;
 use graph_builder::GraphBuilder;
 use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
@@ -15,7 +15,7 @@ use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
 /// An ontology graph backed by a CSR adjacency matrix.
 pub struct CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
     root_idx: I,
     adjacency_matrix: DirectedCsrGraph<I>,
@@ -25,10 +25,10 @@ impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx + Hash,
 {
-    type Error = OntoliusError;
+    type Error = Error;
     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-        let root_idx = find_root_idx(graph_edges)?;
+        let root_idx = find_root_idx(graph_edges).context("Find index of the root term node")?;
 
         let adjacency_matrix = GraphBuilder::new()
             .csr_layout(graph_builder::CsrLayout::Sorted)
@@ -42,9 +42,9 @@ where
     }
 }
 
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I, OntoliusError>
+fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I>
 where
-    I: Hash + HierarchyIdx,
+    I: Hash + HierarchyIdx + Eq,
 {
     let mut root_candidate_set = HashSet::new();
     let mut remove_mark_set = HashSet::new();
@@ -65,19 +65,15 @@ where
     let candidates: Vec<_> = root_candidate_set.difference(&remove_mark_set).collect();
 
     match candidates.len() {
-        0 => Err(OntoliusError::OntologyAssemblyError(
-            "No root candidate found!".into(),
-        )),
+        0 => bail!("No root candidate found!"),
         1 => Ok(*candidates[0]),
-        _ => Err(OntoliusError::OntologyAssemblyError(
-            "More than one root candidate found".into(),
-        )),
+        _ => bail!("More than one root candidates found"),
     }
 }
 
 fn make_edge_iterator<I>(graph_edges: &[GraphEdge<I>]) -> impl Iterator<Item = (I, I)> + '_
 where
-    I: HierarchyIdx,
+    I: Copy,
 {
     graph_edges.iter().flat_map(|edge| {
         match edge.pred {
@@ -90,7 +86,7 @@ where
 
 impl<I> ChildNodes for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + HierarchyIdx,
 {
     type I = I;
 

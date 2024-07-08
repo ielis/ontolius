@@ -5,8 +5,6 @@ pub use crate::base::term::Term;
 pub use crate::base::Identified;
 pub use crate::base::TermId;
 
-pub use crate::error::OntoliusError;
-
 pub use crate::hierarchy::AncestorNodes;
 pub use crate::hierarchy::ChildNodes;
 pub use crate::hierarchy::DescendantNodes;
