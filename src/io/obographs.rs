@@ -29,10 +29,18 @@ fn parse_alt_term_ids(node_meta: &Meta) -> Vec<TermId> {
         .collect()
 }
 
-pub struct ObographsParser<CU, HI>
-{
+pub struct ObographsParser<CU, HI> {
     curie_util: CU,
     _marker: PhantomData<HI>,
+}
+
+impl<HI> Default for ObographsParser<TrieCurieUtil, HI> {
+    fn default() -> Self {
+        Self {
+            curie_util: TrieCurieUtil::default(),
+            _marker: Default::default(),
+        }
+    }
 }
 
 impl<CU, I> ObographsParser<CU, I>
@@ -123,11 +131,7 @@ where
 
             let metadata = HashMap::new(); // TODO: parse out metadata
 
-            Ok(OntologyData::from((
-                terms,
-                edges,
-                metadata,
-            )))
+            Ok(OntologyData::from((terms, edges, metadata)))
         } else {
             Err(OntoliusError::OntologyDataParseError(format!(
                 "Graph document had {}!=1 graphs",
@@ -178,12 +182,16 @@ fn parse_relationship(pred: &str) -> Result<Relationship, OntoliusError> {
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Load ontology graphs using [`ObographsParser`].        
     #[must_use]
-    pub fn obographs_parser<HI: OntologyIdx>(
+    pub fn obographs_parser<HI>(
         self,
-    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil, HI>>> {
-        let parser = ObographsParser::new(TrieCurieUtil::default());
+    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil, HI>>>
+    where
+        HI: OntologyIdx,
+    {
         OntologyLoaderBuilder {
-            state: WithParser { parser },
+            state: WithParser {
+                parser: ObographsParser::default(),
+            },
         }
     }
 }
