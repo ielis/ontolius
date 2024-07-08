@@ -126,8 +126,8 @@ where
             let metadata = HashMap::new(); // TODO: parse out metadata
 
             Ok(OntologyData::from((
-                terms.into_boxed_slice(),
-                edges.into_boxed_slice(),
+                terms,
+                edges,
                 metadata,
             )))
         } else {
