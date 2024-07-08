@@ -186,7 +186,7 @@ We use `criterion` for crate benchmarks.
 Run the following to run the bench suite:
 
 ```shell
-cargo bench --features obographs
+cargo bench
 ```
 
 The benchmark report will be written into the `target/criterion/report` directory.
