@@ -12,7 +12,7 @@ The crate is *NOT* deployed on `crates.io` yet.
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.2.0' }
+ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.3.0' }
 ```
 
 The `obographs` feature is enabled by deafult, to allow reading HPO from Obographs JSON file.
@@ -31,8 +31,6 @@ as long as the file ends with a `*.gz` suffix.
 We can load the JSON file as follows:
 
 ```rust
-use curie_util::TrieCurieUtil;
-use ontolius::io::obographs::ObographsParser;
 use ontolius::io::OntologyLoaderBuilder;
 use ontolius::ontology::csr::CsrOntology;
 
@@ -41,7 +39,7 @@ let path = "resources/hp.small.json.gz";
 
 // Configure the loader to parse the input as an Obographs file
 let loader = OntologyLoaderBuilder::new()
-                .parser(ObographsParser::new(TrieCurieUtil::default()))
+                .obographs_parser()
                 .build();
 
 let hpo: CsrOntology<usize, _> = loader.load_from_path(path)
@@ -77,11 +75,9 @@ over all terms and `TermId`s.
 We can get a term by its `TermId`: 
 
 ```rust
-# use curie_util::TrieCurieUtil;
-# use ontolius::io::obographs::ObographsParser;
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
-# let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
+# let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 # let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
@@ -99,11 +95,9 @@ assert_eq!(term.name(), "Arachnodactyly");
 or iterate over the all ontology terms or their corresponding term IDs:
 
 ```rust
-# use curie_util::TrieCurieUtil;
-# use ontolius::io::obographs::ObographsParser;
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
-# let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
+# let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 # let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #
@@ -134,11 +128,9 @@ all properties of `TermId`s, and can, therefore, be used *in lieu* of the `TermI
 Let's see how to use the ontology hierarchy. For instance, to get the parent terms of a term.
 
 ```rust
-# use curie_util::TrieCurieUtil;
-# use ontolius::io::obographs::ObographsParser;
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::CsrOntology;
-# let loader = OntologyLoaderBuilder::new().parser(ObographsParser::new(TrieCurieUtil::default())).build();
+# let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 # let hpo: CsrOntology<usize, _> = loader.load_from_path("resources/hp.small.json.gz")
 #                                    .expect("HPO should be loaded");
 #

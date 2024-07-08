@@ -2,6 +2,8 @@
 #[cfg(feature = "obographs")]
 pub mod obographs;
 
+use anyhow::{Context, Result};
+
 use flate2::read::GzDecoder;
 use std::{
     collections::HashMap,
@@ -10,24 +12,15 @@ use std::{
     path::Path,
 };
 
-use crate::{
-    base::term::MinimalTerm,
-    hierarchy::{GraphEdge, HierarchyIdx},
-    prelude::{OntoliusError, Ontology, TermIdx},
-};
+use crate::{hierarchy::GraphEdge, prelude::Ontology};
 
-pub struct OntologyData<HI, T>
-{
+pub struct OntologyData<HI, T> {
     pub terms: Vec<T>,
     pub edges: Vec<GraphEdge<HI>>,
     pub metadata: HashMap<String, String>,
 }
 
-impl<HI, T> From<(Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)> for OntologyData<HI, T>
-where
-    HI: HierarchyIdx,
-    T: MinimalTerm,
-{
+impl<HI, T> From<(Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)> for OntologyData<HI, T> {
     fn from(value: (Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)) -> Self {
         Self {
             terms: value.0,
@@ -39,31 +32,22 @@ where
 
 /// Ontology data parser can read [`OntologyData`] from some input
 pub trait OntologyDataParser {
-    type HI: TermIdx + HierarchyIdx;
-    type T: MinimalTerm;
+    type HI;
+    type T;
 
     /// Load ontology data from the buffered reader.
-    fn load_from_buf_read<R>(
-        &self,
-        read: &mut R,
-    ) -> Result<OntologyData<Self::HI, Self::T>, OntoliusError>
+    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<Self::HI, Self::T>>
     where
         R: BufRead;
 }
 
 /// [`OntologyLoader`] parses the input into [`OntologyData`] using supplied [`OntologyDataParser`]
 /// and then assembles the data into an [`crate::ontology::Ontology`].
-pub struct OntologyLoader<P>
-where
-    P: OntologyDataParser,
-{
+pub struct OntologyLoader<P> {
     parser: P,
 }
 
-impl<P> OntologyLoader<P>
-where
-    P: OntologyDataParser,
-{
+impl<P> OntologyLoader<P> {
     pub fn new(parser: P) -> Self {
         Self { parser }
     }
@@ -74,52 +58,47 @@ where
     Parser: OntologyDataParser,
 {
     /// Load ontology from a path.
-    /// 
+    ///
     /// Gzipped content is uncompressed on the fly,
     /// as long as the `path` is suffixed with `*.gz`.
-    pub fn load_from_path<O, P>(&self, path: P) -> Result<O, OntoliusError>
+    pub fn load_from_path<O, P>(&self, path: P) -> Result<O>
     where
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntoliusError>
-            + Ontology<Idx = Parser::HI, T = Parser::T>,
         P: AsRef<Path>,
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
+            + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
         let path = path.as_ref();
-        if let Ok(mut file) = File::open(path) {
-            if let Some(extension) = path.extension() {
-                if extension == "gz" {
-                    // Decompress gzipped file on the fly.
-                    let mut read = GzDecoder::new(file);
-                    self.load_from_read(&mut read)
-                } else {
-                    // All other extensions, e.g. JSON
-                    self.load_from_read(&mut file)
-                }
+        let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
+        if let Some(extension) = path.extension() {
+            if extension == "gz" {
+                // Decompress gzipped file on the fly.
+                self.load_from_read(GzDecoder::new(file))
             } else {
-                // We will also read from a file with no extension,
-                // assuming plain text.
-                self.load_from_read(&mut file)
+                // All other extensions, e.g. JSON
+                self.load_from_read(file)
             }
         } else {
-            Err(OntoliusError::Other(format!("Cannot load ontology from {path:?}")))
+            // We will also read from a file with no extension,
+            // assuming plain text.
+            self.load_from_read(file)
         }
     }
 
     /// Load ontology from a reader.
-    pub fn load_from_read<R, O>(&self, read: &mut R) -> Result<O, OntoliusError>
+    pub fn load_from_read<R, O>(&self, read: R) -> Result<O>
     where
         R: Read,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntoliusError>
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
-        let mut read = BufReader::new(read);
-        self.load_from_buf_read(&mut read)
+        self.load_from_buf_read(BufReader::new(read))
     }
 
     /// Load ontology from a buffered reader.
-    pub fn load_from_buf_read<R, O>(&self, read: &mut R) -> Result<O, OntoliusError>
+    pub fn load_from_buf_read<R, O>(&self, read: R) -> Result<O>
     where
         R: BufRead,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = OntoliusError>
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
         let data = self.parser.load_from_buf_read(read)?;
@@ -142,16 +121,16 @@ pub struct OntologyLoaderBuilder<State> {
 
 impl Default for OntologyLoaderBuilder<Uninitialized> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            state: Uninitialized,
+        }
     }
 }
 
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Create a new builder.
     pub fn new() -> Self {
-        Self {
-            state: Uninitialized,
-        }
+        OntologyLoaderBuilder::default()
     }
 
     /// Set [`OntologyDataParser`] for parsing ontology data
@@ -166,7 +145,10 @@ impl OntologyLoaderBuilder<Uninitialized> {
     }
 }
 
-impl<P: OntologyDataParser> OntologyLoaderBuilder<WithParser<P>> {
+impl<P> OntologyLoaderBuilder<WithParser<P>>
+where
+    P: OntologyDataParser,
+{
     /// Build the ontology loader.
     pub fn build(self) -> OntologyLoader<P> {
         OntologyLoader::new(self.state.parser)

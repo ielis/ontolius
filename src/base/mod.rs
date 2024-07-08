@@ -1,10 +1,11 @@
 //! The base building blocks for working with ontology data.
 
-use crate::error::OntoliusError;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter, Write};
 use std::hash::Hash;
 use std::str::FromStr;
+
+use anyhow::{Error, bail, Result};
 
 #[cfg(feature = "pyo3")]
 pub mod py;
@@ -77,7 +78,7 @@ pub struct TermId(InnerTermId);
 /// assert_eq!(term_id.to_string(), "HP:0001250");
 /// ```
 impl FromStr for TermId {
-    type Err = OntoliusError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         InnerTermId::try_from(s).map(TermId::from)
@@ -251,21 +252,19 @@ enum InnerTermId {
 }
 
 impl InnerTermId {
-    fn find_delimiter(curie: &str) -> Result<usize, OntoliusError> {
+    fn find_delimiter(curie: &str) -> Result<usize> {
         if let Some(idx) = curie.find(':') {
             Ok(idx)
         } else if let Some(idx) = curie.find('_') {
             Ok(idx)
         } else {
-            Err(OntoliusError::Other(format!(
-                "Did not find delimiter in {curie}"
-            )))
+            bail!("Did not find delimiter in {curie}")
         }
     }
 }
 
 impl TryFrom<&str> for InnerTermId {
-    type Error = OntoliusError;
+    type Error = Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let delimiter = InnerTermId::find_delimiter(value)?;

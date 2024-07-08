@@ -12,7 +12,7 @@ pub trait TermIdx: Copy {
     fn index(&self) -> usize;
 }
 
-macro_rules! impl_idx {
+macro_rules! impl_term_idx {
     ($TYPE:ty) => {
         impl TermIdx for $TYPE {
             fn index(&self) -> usize {
@@ -22,17 +22,17 @@ macro_rules! impl_idx {
     };
 }
 
-impl_idx!(u8);
-impl_idx!(u16);
-impl_idx!(u32);
-impl_idx!(u64);
-impl_idx!(usize);
+impl_term_idx!(u8);
+impl_term_idx!(u16);
+impl_term_idx!(u32);
+impl_term_idx!(u64);
+impl_term_idx!(usize);
 
-impl_idx!(i8);
-impl_idx!(i16);
-impl_idx!(i32);
-impl_idx!(i64);
-impl_idx!(isize);
+impl_term_idx!(i8);
+impl_term_idx!(i16);
+impl_term_idx!(i32);
+impl_term_idx!(i64);
+impl_term_idx!(isize);
 
 /// A trait for types that act as a containers of the ontology terms.
 ///
@@ -40,14 +40,11 @@ impl_idx!(isize);
 /// by its index or by the primary or obsolete [`TermId`],
 /// and several associated convenience methods.
 pub trait TermAware {
-    type TI: TermIdx;
+    type TI;
     type Term: MinimalTerm;
-    type TermIter<'a>: Iterator<Item = &'a Self::Term>
-    where
-        Self: 'a;
 
     /// Get the iterator over the *primary* ontology terms.
-    fn iter_terms(&self) -> Self::TermIter<'_>;
+    fn iter_terms(&self) -> impl Iterator<Item = &Self::Term>;
 
     /// Map index to a [`TermAware::Term`] of the ontology.
     ///
@@ -115,15 +112,13 @@ pub trait TermAware {
 
 /// Iterator over the *primary* term ids of [`TermAware`].
 pub struct TermIdIter<'a, T>
-where
-    T: MinimalTerm,
 {
     terms: Box<dyn Iterator<Item = &'a T> + 'a>,
 }
 
 impl<'a, T> Iterator for TermIdIter<'a, T>
 where
-    T: MinimalTerm,
+    T: Identified,
 {
     type Item = &'a TermId;
 
@@ -184,7 +179,7 @@ where
 /// The implementors know about the [`OntologyHierarchy`].
 pub trait HierarchyAware {
     /// The indexer for the graph nodes.
-    type HI: HierarchyIdx;
+    type HI;
     /// The hierarchy type.
     type Hierarchy: OntologyHierarchy<HI = Self::HI>;
 
@@ -200,6 +195,31 @@ pub trait MetadataAware {
     /// Get the version of the ontology.
     fn version(&self) -> &str;
 }
+
+/// Requirements for the index datatype for indexing the ontology nodes.
+/// 
+/// Note, `Hash` is not necessarily used in the ontology functionality.
+/// However, we require the `Hash` implementation to increase user convenience,
+/// e.g. to support creating hash sets/maps of the vanilla ontology indices.
+pub trait OntologyIdx: TermIdx + HierarchyIdx + Hash {}
+
+macro_rules! impl_ontology_idx {
+    ($TYPE:ty) => {
+        impl OntologyIdx for $TYPE {}
+    };
+}
+
+impl_ontology_idx!(u8);
+impl_ontology_idx!(u16);
+impl_ontology_idx!(u32);
+impl_ontology_idx!(u64);
+impl_ontology_idx!(usize);
+
+impl_ontology_idx!(i8);
+impl_ontology_idx!(i16);
+impl_ontology_idx!(i32);
+impl_ontology_idx!(i64);
+impl_ontology_idx!(isize);
 
 /// The specification of an ontology.
 ///
@@ -219,11 +239,7 @@ pub trait Ontology:
     TermAware<TI = Self::Idx, Term = Self::T> + HierarchyAware<HI = Self::Idx> + MetadataAware
 {
     /// The indexer for the terms and ontology graph nodes.
-    ///
-    /// Note, `Hash` is not necessarily used for the ontology functionality.
-    /// However, we include the bound to increase user convenience,
-    /// e.g. to support creating hash sets/maps of the vanilla ontology indices.
-    type Idx: TermIdx + HierarchyIdx + Hash;
+    type Idx: OntologyIdx;
     /// The term type.
     type T: MinimalTerm;
 
