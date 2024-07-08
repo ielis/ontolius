@@ -2,7 +2,7 @@ use std::io::BufRead;
 use std::str::FromStr;
 use std::{collections::HashMap, marker::PhantomData};
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use curie_util::{CurieUtil, TrieCurieUtil};
 use obographs::model::{Edge, GraphDocument, Meta, Node};
 
@@ -87,41 +87,33 @@ where
     type HI = I;
     type T = SimpleMinimalTerm;
 
-    fn load_from_buf_read<R: BufRead>(
-        &self,
-        read: &mut R,
-    ) -> Result<OntologyData<Self::HI, Self::T>> {
-        let gd = match GraphDocument::from_reader(read) {
-            Ok(g) => g,
-            Err(_) => bail!("Unable to read obographs document"),
-        };
+    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<Self::HI, Self::T>> {
+        let gd = GraphDocument::from_reader(read).context("Reading graph document")?;
 
-        if let Some(graph) = gd.graphs.first() {
-            let terms: Vec<_> = graph
-                .nodes
-                .iter()
-                .flat_map(|node| self.create(node).ok())
-                .collect();
+        let graph = gd.graphs.first().context("Getting the first graph")?;
+        
+        let terms: Vec<_> = graph
+            .nodes
+            .iter()
+            .flat_map(|node| self.create(node).ok())
+            .collect();
 
-            let term_ids: Vec<_> = terms.iter().map(Identified::identifier).collect();
-            let termid2idx: HashMap<_, _> = term_ids
-                .iter()
-                .enumerate()
-                .map(|(i, &t)| (t.to_string(), I::new(i)))
-                .collect();
+        let term_ids: Vec<_> = terms.iter().map(Identified::identifier).collect();
+        let termid2idx: HashMap<_, _> = term_ids
+            .iter()
+            .enumerate()
+            .map(|(i, &t)| (t.to_string(), I::new(i)))
+            .collect();
 
-            let edges: Vec<GraphEdge<_>> = graph
-                .edges
-                .iter()
-                .flat_map(|edge| parse_edge(edge, &self.curie_util, &termid2idx))
-                .collect();
+        let edges: Vec<GraphEdge<_>> = graph
+            .edges
+            .iter()
+            .flat_map(|edge| parse_edge(edge, &self.curie_util, &termid2idx))
+            .collect();
 
-            let metadata = HashMap::new(); // TODO: parse out metadata
+        let metadata = HashMap::new(); // TODO: parse out metadata
 
-            Ok(OntologyData::from((terms, edges, metadata)))
-        } else {
-            bail!("Graph document had {}!=1 graphs", gd.graphs.len())
-        }
+        Ok(OntologyData::from((terms, edges, metadata)))
     }
 }
 

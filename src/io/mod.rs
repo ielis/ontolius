@@ -2,7 +2,7 @@
 #[cfg(feature = "obographs")]
 pub mod obographs;
 
-use anyhow::{bail, Error, Result};
+use anyhow::{Context, Error, Result};
 
 use flate2::read::GzDecoder;
 use std::{
@@ -36,7 +36,7 @@ pub trait OntologyDataParser {
     type T;
 
     /// Load ontology data from the buffered reader.
-    fn load_from_buf_read<R>(&self, read: &mut R) -> Result<OntologyData<Self::HI, Self::T>>
+    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<Self::HI, Self::T>>
     where
         R: BufRead;
 }
@@ -74,39 +74,34 @@ where
         P: AsRef<Path>,
     {
         let path = path.as_ref();
-        if let Ok(mut file) = File::open(path) {
-            if let Some(extension) = path.extension() {
-                if extension == "gz" {
-                    // Decompress gzipped file on the fly.
-                    let mut read = GzDecoder::new(file);
-                    self.load_from_read(&mut read)
-                } else {
-                    // All other extensions, e.g. JSON
-                    self.load_from_read(&mut file)
-                }
+        let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
+        if let Some(extension) = path.extension() {
+            if extension == "gz" {
+                // Decompress gzipped file on the fly.
+                self.load_from_read(GzDecoder::new(file))
             } else {
-                // We will also read from a file with no extension,
-                // assuming plain text.
-                self.load_from_read(&mut file)
+                // All other extensions, e.g. JSON
+                self.load_from_read(file)
             }
         } else {
-            bail!(format!("Cannot load ontology from {path:?}"));
+            // We will also read from a file with no extension,
+            // assuming plain text.
+            self.load_from_read(file)
         }
     }
 
     /// Load ontology from a reader.
-    pub fn load_from_read<R, O>(&self, read: &mut R) -> Result<O>
+    pub fn load_from_read<R, O>(&self, read: R) -> Result<O>
     where
         R: Read,
         O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = Error>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
-        let mut read = BufReader::new(read);
-        self.load_from_buf_read(&mut read)
+        self.load_from_buf_read(BufReader::new(read))
     }
 
     /// Load ontology from a buffered reader.
-    pub fn load_from_buf_read<R, O>(&self, read: &mut R) -> Result<O>
+    pub fn load_from_buf_read<R, O>(&self, read: R) -> Result<O>
     where
         R: BufRead,
         O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = Error>
