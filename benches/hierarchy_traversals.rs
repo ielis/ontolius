@@ -3,15 +3,13 @@ use std::vec;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use curie_util::TrieCurieUtil;
-use ontolius::io::obographs::ObographsParser;
 use ontolius::ontology::csr::CsrOntology;
 use ontolius::prelude::*;
 
 fn hierarchy_traversals(c: &mut Criterion) {
     let path = "resources/hp.2023-10-09.json.gz";
     let loader = OntologyLoaderBuilder::new()
-        .parser(ObographsParser::new(TrieCurieUtil::default()))
+        .obographs_parser()
         .build();
     let ontology: CsrOntology<usize, _> = loader.load_from_path(path).unwrap();
 

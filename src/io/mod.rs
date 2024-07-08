@@ -2,7 +2,7 @@
 #[cfg(feature = "obographs")]
 pub mod obographs;
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 
 use flate2::read::GzDecoder;
 use std::{
@@ -43,17 +43,11 @@ pub trait OntologyDataParser {
 
 /// [`OntologyLoader`] parses the input into [`OntologyData`] using supplied [`OntologyDataParser`]
 /// and then assembles the data into an [`crate::ontology::Ontology`].
-pub struct OntologyLoader<P>
-where
-    P: OntologyDataParser,
-{
+pub struct OntologyLoader<P> {
     parser: P,
 }
 
-impl<P> OntologyLoader<P>
-where
-    P: OntologyDataParser,
-{
+impl<P> OntologyLoader<P> {
     pub fn new(parser: P) -> Self {
         Self { parser }
     }
@@ -69,9 +63,9 @@ where
     /// as long as the `path` is suffixed with `*.gz`.
     pub fn load_from_path<O, P>(&self, path: P) -> Result<O>
     where
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = Error>
-            + Ontology<Idx = Parser::HI, T = Parser::T>,
         P: AsRef<Path>,
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
+            + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
         let path = path.as_ref();
         let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
@@ -94,7 +88,7 @@ where
     pub fn load_from_read<R, O>(&self, read: R) -> Result<O>
     where
         R: Read,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = Error>
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
         self.load_from_buf_read(BufReader::new(read))
@@ -104,7 +98,7 @@ where
     pub fn load_from_buf_read<R, O>(&self, read: R) -> Result<O>
     where
         R: BufRead,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = Error>
+        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
             + Ontology<Idx = Parser::HI, T = Parser::T>,
     {
         let data = self.parser.load_from_buf_read(read)?;
@@ -127,16 +121,16 @@ pub struct OntologyLoaderBuilder<State> {
 
 impl Default for OntologyLoaderBuilder<Uninitialized> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            state: Uninitialized,
+        }
     }
 }
 
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Create a new builder.
     pub fn new() -> Self {
-        Self {
-            state: Uninitialized,
-        }
+        OntologyLoaderBuilder::default()
     }
 
     /// Set [`OntologyDataParser`] for parsing ontology data
@@ -151,7 +145,10 @@ impl OntologyLoaderBuilder<Uninitialized> {
     }
 }
 
-impl<P: OntologyDataParser> OntologyLoaderBuilder<WithParser<P>> {
+impl<P> OntologyLoaderBuilder<WithParser<P>>
+where
+    P: OntologyDataParser,
+{
     /// Build the ontology loader.
     pub fn build(self) -> OntologyLoader<P> {
         OntologyLoader::new(self.state.parser)

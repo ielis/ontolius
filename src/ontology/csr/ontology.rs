@@ -28,7 +28,7 @@ where
 /// `CsrOntology` can be built from [`OntologyData`].
 impl<HI, T> TryFrom<OntologyData<HI, T>> for CsrOntology<HI, T>
 where
-    HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
+    HI: HierarchyIdx + CsrIdx + Hash,
     T: MinimalTerm,
 {
     type Error = Error;

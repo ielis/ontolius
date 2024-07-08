@@ -6,7 +6,7 @@ use crate::hierarchy::{
     ParentNodes, Relationship,
 };
 
-use anyhow::{bail, Error, Result};
+use anyhow::{bail, Context, Error, Result};
 use graph_builder::index::Idx as CsrIdx;
 use graph_builder::GraphBuilder;
 use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
@@ -28,7 +28,7 @@ where
     type Error = Error;
     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-        let root_idx = find_root_idx(graph_edges)?;
+        let root_idx = find_root_idx(graph_edges).context("Find index of the root term node")?;
 
         let adjacency_matrix = GraphBuilder::new()
             .csr_layout(graph_builder::CsrLayout::Sorted)
@@ -67,13 +67,13 @@ where
     match candidates.len() {
         0 => bail!("No root candidate found!"),
         1 => Ok(*candidates[0]),
-        _ => bail!("More than one root candidate found"),
+        _ => bail!("More than one root candidates found"),
     }
 }
 
 fn make_edge_iterator<I>(graph_edges: &[GraphEdge<I>]) -> impl Iterator<Item = (I, I)> + '_
 where
-    I: HierarchyIdx,
+    I: Copy,
 {
     graph_edges.iter().flat_map(|edge| {
         match edge.pred {
