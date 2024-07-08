@@ -11,9 +11,8 @@ use std::{
 };
 
 use crate::{
-    base::term::MinimalTerm,
-    hierarchy::{GraphEdge, HierarchyIdx},
-    prelude::{OntoliusError, Ontology, TermIdx},
+    hierarchy::GraphEdge,
+    prelude::{OntoliusError, Ontology},
 };
 
 pub struct OntologyData<HI, T>
@@ -24,9 +23,6 @@ pub struct OntologyData<HI, T>
 }
 
 impl<HI, T> From<(Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)> for OntologyData<HI, T>
-where
-    HI: HierarchyIdx,
-    T: MinimalTerm,
 {
     fn from(value: (Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)) -> Self {
         Self {
@@ -39,8 +35,8 @@ where
 
 /// Ontology data parser can read [`OntologyData`] from some input
 pub trait OntologyDataParser {
-    type HI: TermIdx + HierarchyIdx;
-    type T: MinimalTerm;
+    type HI;
+    type T;
 
     /// Load ontology data from the buffered reader.
     fn load_from_buf_read<R>(

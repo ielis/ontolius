@@ -15,7 +15,7 @@ use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
 /// An ontology graph backed by a CSR adjacency matrix.
 pub struct CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
     root_idx: I,
     adjacency_matrix: DirectedCsrGraph<I>,
@@ -44,7 +44,7 @@ where
 
 fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I, OntoliusError>
 where
-    I: Hash + HierarchyIdx,
+    I: Hash + HierarchyIdx + Eq,
 {
     let mut root_candidate_set = HashSet::new();
     let mut remove_mark_set = HashSet::new();
@@ -90,7 +90,7 @@ where
 
 impl<I> ChildNodes for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + HierarchyIdx,
 {
     type I = I;
 

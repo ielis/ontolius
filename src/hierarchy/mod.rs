@@ -14,7 +14,7 @@ pub use edge::{GraphEdge, Relationship};
 /// Trait for types that can provide the child nodes of an ontology node.
 pub trait ChildNodes {
     // Type used to index the ontology nodes.
-    type I: HierarchyIdx;
+    type I: Eq;
 
     /// Returns an iterator of all nodes which are children of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_children_of` instead")]
@@ -65,7 +65,7 @@ pub trait ChildNodes {
 /// Trait for types that can provide the descendant nodes of an ontology node.
 pub trait DescendantNodes {
     // Type used to index the ontology nodes.
-    type I: HierarchyIdx;
+    type I;
 
     /// Returns an iterator of all nodes which are descendants of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_descendants_of` instead")]
@@ -106,7 +106,7 @@ pub trait DescendantNodes {
 /// Trait for types that can provide the parent nodes of an ontology node.
 pub trait ParentNodes {
     // Type used to index the ontology nodes.
-    type I: HierarchyIdx;
+    type I: Eq;
 
     /// Returns an iterator of all nodes which are parents of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_parents_of` instead")]
@@ -152,7 +152,7 @@ pub trait ParentNodes {
 /// Trait for types that can provide the ancestor nodes of an ontology node.
 pub trait AncestorNodes {
     // Type used to index the ontology nodes.
-    type I: HierarchyIdx;
+    type I: Eq;
 
     /// Returns an iterator of all nodes which are ancestors of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_ancestors_of` instead")]
@@ -210,7 +210,7 @@ pub trait OntologyHierarchy:
     + AncestorNodes<I = Self::HI>
 {
     // Type used to index the ontology nodes.
-    type HI: HierarchyIdx;
+    type HI: Eq;
 
     /// Get index of the root element.
     fn root(&self) -> &Self::HI;
@@ -219,7 +219,7 @@ pub trait OntologyHierarchy:
 }
 
 /// The implementors can be used to index the [`super::OntologyHierarchy`].
-pub trait HierarchyIdx: Copy + Ord {
+pub trait HierarchyIdx: Copy + Eq {
     fn new(idx: usize) -> Self;
 }
 

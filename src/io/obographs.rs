@@ -9,7 +9,7 @@ use crate::{
     base::{term::simple::SimpleMinimalTerm, Identified, TermId},
     error::OntoliusError,
     hierarchy::{GraphEdge, HierarchyIdx, Relationship},
-    ontology::TermIdx,
+    ontology::OntologyIdx,
 };
 
 use super::{OntologyData, OntologyDataParser, OntologyLoaderBuilder, Uninitialized, WithParser};
@@ -30,14 +30,12 @@ fn parse_alt_term_ids(node_meta: &Meta) -> Vec<TermId> {
 }
 
 pub struct ObographsParser<CU, HI>
-where
-    CU: CurieUtil,
 {
     curie_util: CU,
     _marker: PhantomData<HI>,
 }
 
-impl<CU, HI> ObographsParser<CU, HI>
+impl<CU, I> ObographsParser<CU, I>
 where
     CU: CurieUtil,
 {
@@ -85,7 +83,7 @@ where
 impl<CU, I> OntologyDataParser for ObographsParser<CU, I>
 where
     CU: CurieUtil,
-    I: HierarchyIdx + TermIdx,
+    I: OntologyIdx,
 {
     type HI = I;
     type T = SimpleMinimalTerm;
@@ -180,7 +178,7 @@ fn parse_relationship(pred: &str) -> Result<Relationship, OntoliusError> {
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Load ontology graphs using [`ObographsParser`].        
     #[must_use]
-    pub fn obographs_parser<HI: HierarchyIdx + TermIdx>(
+    pub fn obographs_parser<HI: OntologyIdx>(
         self,
     ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil, HI>>> {
         let parser = ObographsParser::new(TrieCurieUtil::default());
