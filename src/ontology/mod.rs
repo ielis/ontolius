@@ -19,7 +19,7 @@ macro_rules! impl_idx {
                 *self as usize
             }
         }
-    }
+    };
 }
 
 impl_idx!(u8);
@@ -219,9 +219,9 @@ pub trait Ontology:
     TermAware<TI = Self::Idx, Term = Self::T> + HierarchyAware<HI = Self::Idx> + MetadataAware
 {
     /// The indexer for the terms and ontology graph nodes.
-    /// 
-    /// Note, `Hash` is not necessarily used for the ontology functionality. 
-    /// However, we include the bound to increase user convenience, 
+    ///
+    /// Note, `Hash` is not necessarily used for the ontology functionality.
+    /// However, we include the bound to increase user convenience,
     /// e.g. to support creating hash sets/maps of the vanilla ontology indices.
     type Idx: TermIdx + HierarchyIdx + Hash;
     /// The term type.
@@ -234,10 +234,7 @@ pub trait Ontology:
     }
 
     /// Get the term ID of the root term of the ontology.
-    fn root_term_id<'a>(&'a self) -> &'a TermId
-    where
-        Self::T: 'a,
-    {
+    fn root_term_id(&self) -> &TermId {
         self.root_term().identifier()
     }
 }
