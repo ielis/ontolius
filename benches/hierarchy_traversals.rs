@@ -39,14 +39,21 @@ fn hierarchy_traversals(c: &mut Criterion) {
 
     let hierarchy = ontology.hierarchy();
 
-    let mut group = c.benchmark_group("CsrOntologyHierarchy::parents_of");
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_parents_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {
         bench_traversal!(group, |term_id| hierarchy.iter_parents_of(term_id), label, curie);
     }
     group.finish();
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_node_and_parents_of");
+    group.throughput(criterion::Throughput::Elements(1));
+    for &(label, curie) in &payload {
+        bench_traversal!(group, |term_id| hierarchy.iter_node_and_parents_of(term_id), label, curie);
+    }
+    group.finish();
 
-    let mut group = c.benchmark_group("CsrOntologyHierarchy::ancestors_of");
+
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_ancestors_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {
         bench_traversal!(
@@ -57,8 +64,20 @@ fn hierarchy_traversals(c: &mut Criterion) {
         );
     }
     group.finish();
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_node_and_ancestors_of");
+    group.throughput(criterion::Throughput::Elements(1));
+    for &(label, curie) in &payload {
+        bench_traversal!(
+            group,
+            |term_id| hierarchy.iter_node_and_ancestors_of(term_id),
+            label,
+            curie
+        );
+    }
+    group.finish();
 
-    let mut group = c.benchmark_group("CsrOntologyHierarchy::children_of");
+
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_children_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {
         bench_traversal!(
@@ -69,13 +88,36 @@ fn hierarchy_traversals(c: &mut Criterion) {
         );
     }
     group.finish();
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_node_and_children_of");
+    group.throughput(criterion::Throughput::Elements(1));
+    for &(label, curie) in &payload {
+        bench_traversal!(
+            group,
+            |term_id| hierarchy.iter_node_and_children_of(term_id),
+            label,
+            curie
+        );
+    }
+    group.finish();
 
-    let mut group = c.benchmark_group("CsrOntologyHierarchy::descendants_of");
+    
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_descendants_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {
         bench_traversal!(
             group,
             |term_id| hierarchy.iter_descendants_of(term_id),
+            label,
+            curie
+        );
+    }
+    group.finish();
+    let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_node_and_descendants_of");
+    group.throughput(criterion::Throughput::Elements(1));
+    for &(label, curie) in &payload {
+        bench_traversal!(
+            group,
+            |term_id| hierarchy.iter_node_and_descendants_of(term_id),
             label,
             curie
         );
