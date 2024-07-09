@@ -3,7 +3,7 @@ use std::vec;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use ontolius::ontology::csr::CsrOntology;
+use ontolius::ontology::csr::MinimalCsrOntology;
 use ontolius::prelude::*;
 
 fn hierarchy_traversals(c: &mut Criterion) {
@@ -11,7 +11,7 @@ fn hierarchy_traversals(c: &mut Criterion) {
     let loader = OntologyLoaderBuilder::new()
         .obographs_parser()
         .build();
-    let ontology: CsrOntology<usize, _> = loader.load_from_path(path).unwrap();
+    let ontology: MinimalCsrOntology = loader.load_from_path(path).unwrap();
 
     macro_rules! bench_traversal {
         ($group: expr, $func: expr, $name: expr, $curie: expr) => {

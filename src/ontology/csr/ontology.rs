@@ -4,6 +4,7 @@ use std::{collections::HashMap, iter::once};
 
 use graph_builder::index::Idx as CsrIdx;
 
+use crate::base::term::simple::SimpleMinimalTerm;
 use crate::base::{term::MinimalTerm, Identified, TermId};
 use anyhow::Error;
 use crate::hierarchy::HierarchyIdx;
@@ -11,6 +12,9 @@ use crate::io::OntologyData;
 use crate::ontology::{HierarchyAware, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
 
 use super::hierarchy::CsrOntologyHierarchy;
+
+/// A [`CsrOntology`] with [`usize`] used as node indexer and [`SimpleMinimalTerm`] as the term.
+pub type MinimalCsrOntology = CsrOntology<usize, SimpleMinimalTerm>;
 
 /// An example implementation of [`Ontology`]
 /// backed by a ontology graph implemented
