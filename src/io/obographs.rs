@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::{collections::HashMap, marker::PhantomData};
 
 use anyhow::{bail, Context, Result};
-use curie_util::{CurieUtil, TrieCurieUtil};
+use curieosa::{CurieUtil, TrieCurieUtil};
 use obographs::model::{Edge, GraphDocument, Meta, Node};
 
 use crate::{

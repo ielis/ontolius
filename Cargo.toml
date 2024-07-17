@@ -15,19 +15,19 @@ pyo3 = { version = "0.21.2", optional = true, features = ["abi3-py310"] }
 obographs = { git = "https://github.com/ielis/obographs.git", tag = "v0.2.0", optional = true, features = [
     'serde',
 ] }
-curie-util = { git = "https://github.com/ielis/curie-util.git", tag = "v0.0.1", optional = true }
+curieosa = { version = "0.1.0", optional = true }
 
 
 [dev-dependencies]
 obographs = { git = "https://github.com/ielis/obographs.git", tag = "v0.2.0", features = [
     'serde',
 ] }
-curie-util = { git = "https://github.com/ielis/curie-util.git", tag = "v0.0.1" }
+curieosa = "0.1.0"
 criterion = "0.5.1"
 
 [features]
 default = ["obographs"]
-obographs = ["dep:obographs", "dep:curie-util"]
+obographs = ["dep:obographs", "dep:curieosa"]
 pyo3 = ["dep:pyo3"]
 
 [[bench]]
