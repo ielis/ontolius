@@ -4,14 +4,13 @@
 //! # Example 
 //! 
 //! ```rust
-//! use curie_util::TrieCurieUtil;
-//! use ontolius::io::obographs::ObographsParser;
+//! use ontolius::io::OntologyLoaderBuilder;
 //! use ontolius::ontology::csr::CsrOntology;
 //! use ontolius::prelude::*;
 //! 
 //! // Configure the ontology loader to parse Obographs JSON file.
 //! let loader = OntologyLoaderBuilder::new()
-//!                .parser(ObographsParser::new(TrieCurieUtil::default()))
+//!                .obographs_parser()
 //!                .build();
 //! 
 //! // Load a small Obographs JSON file into `CsrOntology`.
