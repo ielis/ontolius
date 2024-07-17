@@ -4,9 +4,8 @@
 //! # Example 
 //! 
 //! ```rust
-//! use ontolius::io::OntologyLoaderBuilder;
-//! use ontolius::ontology::csr::CsrOntology;
 //! use ontolius::prelude::*;
+//! use ontolius::ontology::csr::CsrOntology;
 //! 
 //! // Configure the ontology loader to parse Obographs JSON file.
 //! let loader = OntologyLoaderBuilder::new()
@@ -19,6 +18,12 @@
 //! let ontology: CsrOntology<usize, _> = loader.load_from_path(path)
 //!                                         .expect("Obographs JSON should be parsable");
 //! 
+//! // or do the same using the `MinimalCsrOntology` alias to save some typing:
+//! use ontolius::ontology::csr::MinimalCsrOntology;
+//! 
+//! let ontology: MinimalCsrOntology = loader.load_from_path(path)
+//!                                         .expect("Obographs JSON should be parsable");
+//! 
 //! // Check the number of primary terms
 //! assert_eq!(ontology.len(), 614);
 //! ```
@@ -29,4 +34,4 @@ mod hierarchy;
 mod ontology;
 
 pub use hierarchy::CsrOntologyHierarchy;
-pub use ontology::CsrOntology;
+pub use ontology::{CsrOntology, MinimalCsrOntology};

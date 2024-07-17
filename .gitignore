@@ -16,3 +16,7 @@ Cargo.lock
 # IDE files
 .vscode/
 .idea/
+
+# Perf data
+perf.data*
+flamegraph.svg
