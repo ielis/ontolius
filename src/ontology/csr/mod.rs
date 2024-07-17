@@ -4,8 +4,8 @@
 //! # Example 
 //! 
 //! ```rust
-//! use ontolius::ontology::csr::CsrOntology;
 //! use ontolius::prelude::*;
+//! use ontolius::ontology::csr::CsrOntology;
 //! 
 //! // Configure the ontology loader to parse Obographs JSON file.
 //! let loader = OntologyLoaderBuilder::new()
