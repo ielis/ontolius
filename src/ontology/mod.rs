@@ -34,9 +34,9 @@ impl_term_idx!(i32);
 impl_term_idx!(i64);
 impl_term_idx!(isize);
 
-/// A trait for types that act as a containers of the ontology terms.
+/// A trait for types that act as containers of ontology terms.
 ///
-/// The container supports iteration over the terms, to retrieve a term
+/// The container supports iteration over the terms, retrieval of a term
 /// by its index or by the primary or obsolete [`TermId`],
 /// and several associated convenience methods.
 pub trait TermAware {

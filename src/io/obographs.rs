@@ -3,11 +3,14 @@ use std::str::FromStr;
 use std::{collections::HashMap, marker::PhantomData};
 
 use anyhow::{bail, Context, Result};
-use curie_util::{CurieUtil, TrieCurieUtil};
+use curieosa::{CurieUtil, TrieCurieUtil};
 use obographs::model::{Edge, GraphDocument, Meta, Node};
 
 use crate::{
-    base::{term::simple::SimpleMinimalTerm, Identified, TermId},
+    base::{
+        term::{simple::SimpleMinimalTerm, MinimalTerm},
+        Identified, TermId,
+    },
     hierarchy::{GraphEdge, HierarchyIdx, Relationship},
     ontology::OntologyIdx,
 };
@@ -91,11 +94,12 @@ where
         let gd = GraphDocument::from_reader(read).context("Reading graph document")?;
 
         let graph = gd.graphs.first().context("Getting the first graph")?;
-        
+
         let terms: Vec<_> = graph
             .nodes
             .iter()
             .flat_map(|node| self.create(node).ok())
+            .filter(|t| t.is_current())
             .collect();
 
         let term_ids: Vec<_> = terms.iter().map(Identified::identifier).collect();

@@ -24,4 +24,4 @@ jobs:
                 toolchain: ${{ matrix.toolchain }}
             
             - name: Run tests
-              run: cargo test
+              run: cargo test --release
