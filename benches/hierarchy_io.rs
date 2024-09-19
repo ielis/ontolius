@@ -4,7 +4,7 @@ use ontolius::io::OntologyLoaderBuilder;
 use ontolius::ontology::csr::MinimalCsrOntology;
 
 fn load_csr_ontology(c: &mut Criterion) {
-    let path = "resources/hp.2023-10-09.json.gz";
+    let path = "resources/hp.v2024-08-13.json.gz";
 
     let loader = OntologyLoaderBuilder::new()
         .obographs_parser()
