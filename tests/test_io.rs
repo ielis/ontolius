@@ -6,23 +6,18 @@ use ontolius::ontology::csr::MinimalCsrOntology;
 use ontolius::prelude::{
     AncestorNodes, ChildNodes, DescendantNodes, HierarchyAware, MinimalTerm, ParentNodes, TermAware,
 };
+use rstest::{fixture, rstest};
 
-#[test]
-fn load_real_hpo() -> anyhow::Result<()> {
+#[fixture]
+fn hpo() -> MinimalCsrOntology {
     let path = "resources/hp.v2024-08-13.json.gz";
     let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
-    let hpo: MinimalCsrOntology = loader.load_from_path(path)?;
-
-    check_children(&hpo)?;
-    check_descendants(&hpo)?;
-    check_parents(&hpo)?;
-    check_ancestors(&hpo)?;
-
-    Ok(())
+    loader.load_from_path(path).unwrap()
 }
 
-fn check_children(hpo: &MinimalCsrOntology) -> anyhow::Result<()> {
+#[rstest]
+fn check_children(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
     let term_id = TermId::from(("HP", "0032677"));
     assert_eq!(
         hpo.id_to_term(&term_id).unwrap().name(),
@@ -53,7 +48,8 @@ fn check_children(hpo: &MinimalCsrOntology) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn check_descendants(hpo: &MinimalCsrOntology) -> anyhow::Result<()> {
+#[rstest]
+fn check_descendants(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
     let term_id = TermId::from(("HP", "0002863"));
     assert_eq!(hpo.id_to_term(&term_id).unwrap().name(), "Myelodysplasia");
 
@@ -79,7 +75,8 @@ fn check_descendants(hpo: &MinimalCsrOntology) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn check_parents(hpo: &MinimalCsrOntology) -> anyhow::Result<()> {
+#[rstest]
+fn check_parents(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
     let seizure = TermId::from(("HP", "0032677"));
     assert_eq!(
         hpo.id_to_term(&seizure).unwrap().name(),
@@ -102,7 +99,8 @@ fn check_parents(hpo: &MinimalCsrOntology) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn check_ancestors(hpo: &MinimalCsrOntology) -> anyhow::Result<()> {
+#[rstest]
+fn check_ancestors(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
     let term_id = TermId::from(("HP", "0002266"));
     assert_eq!(
         hpo.id_to_term(&term_id).unwrap().name(),
