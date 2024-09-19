@@ -24,6 +24,7 @@ obographs = { git = "https://github.com/ielis/obographs.git", tag = "v0.2.0", fe
 ] }
 curieosa = "0.1.0"
 criterion = "0.5.1"
+rstest = "0.22.0"
 
 [features]
 default = ["obographs"]

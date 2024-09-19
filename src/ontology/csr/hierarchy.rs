@@ -237,15 +237,16 @@ mod test_hierarchy {
 
     use super::*;
 
-    macro_rules! check_members {
-        ($hierarchy: expr, $func: expr, $i: expr, $exp: expr) => {
-            let expected = HashSet::from($exp);
-            let actual = $func(&$hierarchy, $i)
-                .map(|val| *val)
-                .collect::<HashSet<_>>();
+    fn check_members<'a, O, F, I>(hierarchy: &'a O, func: F, src: &'a u16, expected: &[u16])
+    where
+        O: OntologyHierarchy<HI = u16>,
+        F: FnOnce(&'a O, &'a u16) -> I,
+        I: Iterator<Item = &'a u16>,
+    {
+        let exp: HashSet<_> = expected.iter().cloned().collect();
+        let actual: HashSet<_> = func(hierarchy, src).cloned().collect();
 
-            assert_eq!(actual, expected);
-        };
+        assert_eq!(exp, actual);
     }
 
     #[test]
@@ -253,16 +254,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_children_of;
 
-        check_members!(hierarchy, func, &0, [1, 5, 9]);
-        check_members!(hierarchy, func, &1, [2, 3]);
-        check_members!(hierarchy, func, &2, [4]);
-        check_members!(hierarchy, func, &3, [4]);
-        check_members!(hierarchy, func, &4, [0; 0]);
-        check_members!(hierarchy, func, &5, [6, 7, 8]);
-        check_members!(hierarchy, func, &6, [0; 0]);
-        check_members!(hierarchy, func, &7, [0; 0]);
-        check_members!(hierarchy, func, &8, [0; 0]);
-        check_members!(hierarchy, func, &9, [0; 0]);
+        check_members(&hierarchy, func, &0, &[1, 5, 9]);
+        check_members(&hierarchy, func, &1, &[2, 3]);
+        check_members(&hierarchy, func, &2, &[4]);
+        check_members(&hierarchy, func, &3, &[4]);
+        check_members(&hierarchy, func, &4, &[0; 0]);
+        check_members(&hierarchy, func, &5, &[6, 7, 8]);
+        check_members(&hierarchy, func, &6, &[0; 0]);
+        check_members(&hierarchy, func, &7, &[0; 0]);
+        check_members(&hierarchy, func, &8, &[0; 0]);
+        check_members(&hierarchy, func, &9, &[0; 0]);
     }
 
     #[test]
@@ -270,16 +271,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_node_and_children_of;
 
-        check_members!(hierarchy, func, &0, [0, 1, 5, 9]);
-        check_members!(hierarchy, func, &1, [1, 2, 3]);
-        check_members!(hierarchy, func, &2, [2, 4]);
-        check_members!(hierarchy, func, &3, [3, 4]);
-        check_members!(hierarchy, func, &4, [4]);
-        check_members!(hierarchy, func, &5, [5, 6, 7, 8]);
-        check_members!(hierarchy, func, &6, [6]);
-        check_members!(hierarchy, func, &7, [7]);
-        check_members!(hierarchy, func, &8, [8]);
-        check_members!(hierarchy, func, &9, [9]);
+        check_members(&hierarchy, func, &0, &[0, 1, 5, 9]);
+        check_members(&hierarchy, func, &1, &[1, 2, 3]);
+        check_members(&hierarchy, func, &2, &[2, 4]);
+        check_members(&hierarchy, func, &3, &[3, 4]);
+        check_members(&hierarchy, func, &4, &[4]);
+        check_members(&hierarchy, func, &5, &[5, 6, 7, 8]);
+        check_members(&hierarchy, func, &6, &[6]);
+        check_members(&hierarchy, func, &7, &[7]);
+        check_members(&hierarchy, func, &8, &[8]);
+        check_members(&hierarchy, func, &9, &[9]);
     }
 
     #[test]
@@ -287,16 +288,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_descendants_of;
 
-        check_members!(hierarchy, func, &0, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        check_members!(hierarchy, func, &1, [2, 3, 4]);
-        check_members!(hierarchy, func, &2, [4]);
-        check_members!(hierarchy, func, &3, [4]);
-        check_members!(hierarchy, func, &4, [0; 0]);
-        check_members!(hierarchy, func, &5, [6, 7, 8]);
-        check_members!(hierarchy, func, &6, [0; 0]);
-        check_members!(hierarchy, func, &7, [0; 0]);
-        check_members!(hierarchy, func, &8, [0; 0]);
-        check_members!(hierarchy, func, &9, [0; 0]);
+        check_members(&hierarchy, func, &0, &[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        check_members(&hierarchy, func, &1, &[2, 3, 4]);
+        check_members(&hierarchy, func, &2, &[4]);
+        check_members(&hierarchy, func, &3, &[4]);
+        check_members(&hierarchy, func, &4, &[0; 0]);
+        check_members(&hierarchy, func, &5, &[6, 7, 8]);
+        check_members(&hierarchy, func, &6, &[0; 0]);
+        check_members(&hierarchy, func, &7, &[0; 0]);
+        check_members(&hierarchy, func, &8, &[0; 0]);
+        check_members(&hierarchy, func, &9, &[0; 0]);
     }
 
     #[test]
@@ -304,16 +305,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_node_and_descendants_of;
 
-        check_members!(hierarchy, func, &0, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        check_members!(hierarchy, func, &1, [1, 2, 3, 4]);
-        check_members!(hierarchy, func, &2, [2, 4]);
-        check_members!(hierarchy, func, &3, [3, 4]);
-        check_members!(hierarchy, func, &4, [4]);
-        check_members!(hierarchy, func, &5, [5, 6, 7, 8]);
-        check_members!(hierarchy, func, &6, [6]);
-        check_members!(hierarchy, func, &7, [7]);
-        check_members!(hierarchy, func, &8, [8]);
-        check_members!(hierarchy, func, &9, [9]);
+        check_members(&hierarchy, func, &0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        check_members(&hierarchy, func, &1, &[1, 2, 3, 4]);
+        check_members(&hierarchy, func, &2, &[2, 4]);
+        check_members(&hierarchy, func, &3, &[3, 4]);
+        check_members(&hierarchy, func, &4, &[4]);
+        check_members(&hierarchy, func, &5, &[5, 6, 7, 8]);
+        check_members(&hierarchy, func, &6, &[6]);
+        check_members(&hierarchy, func, &7, &[7]);
+        check_members(&hierarchy, func, &8, &[8]);
+        check_members(&hierarchy, func, &9, &[9]);
     }
 
     #[test]
@@ -321,16 +322,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_parents_of;
 
-        check_members!(hierarchy, func, &0, [0; 0]);
-        check_members!(hierarchy, func, &1, [0]);
-        check_members!(hierarchy, func, &2, [1]);
-        check_members!(hierarchy, func, &3, [1]);
-        check_members!(hierarchy, func, &4, [2, 3]);
-        check_members!(hierarchy, func, &5, [0]);
-        check_members!(hierarchy, func, &6, [5]);
-        check_members!(hierarchy, func, &7, [5]);
-        check_members!(hierarchy, func, &8, [5]);
-        check_members!(hierarchy, func, &9, [0]);
+        check_members(&hierarchy, func, &0, &[0; 0]);
+        check_members(&hierarchy, func, &1, &[0]);
+        check_members(&hierarchy, func, &2, &[1]);
+        check_members(&hierarchy, func, &3, &[1]);
+        check_members(&hierarchy, func, &4, &[2, 3]);
+        check_members(&hierarchy, func, &5, &[0]);
+        check_members(&hierarchy, func, &6, &[5]);
+        check_members(&hierarchy, func, &7, &[5]);
+        check_members(&hierarchy, func, &8, &[5]);
+        check_members(&hierarchy, func, &9, &[0]);
     }
 
     #[test]
@@ -338,16 +339,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_node_and_parents_of;
 
-        check_members!(hierarchy, func, &0, [0]);
-        check_members!(hierarchy, func, &1, [1, 0]);
-        check_members!(hierarchy, func, &2, [2, 1]);
-        check_members!(hierarchy, func, &3, [3, 1]);
-        check_members!(hierarchy, func, &4, [4, 2, 3]);
-        check_members!(hierarchy, func, &5, [5, 0]);
-        check_members!(hierarchy, func, &6, [6, 5]);
-        check_members!(hierarchy, func, &7, [7, 5]);
-        check_members!(hierarchy, func, &8, [8, 5]);
-        check_members!(hierarchy, func, &9, [9, 0]);
+        check_members(&hierarchy, func, &0, &[0]);
+        check_members(&hierarchy, func, &1, &[1, 0]);
+        check_members(&hierarchy, func, &2, &[2, 1]);
+        check_members(&hierarchy, func, &3, &[3, 1]);
+        check_members(&hierarchy, func, &4, &[4, 2, 3]);
+        check_members(&hierarchy, func, &5, &[5, 0]);
+        check_members(&hierarchy, func, &6, &[6, 5]);
+        check_members(&hierarchy, func, &7, &[7, 5]);
+        check_members(&hierarchy, func, &8, &[8, 5]);
+        check_members(&hierarchy, func, &9, &[9, 0]);
     }
 
     #[test]
@@ -355,16 +356,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_ancestors_of;
 
-        check_members!(hierarchy, func, &0, [0; 0]);
-        check_members!(hierarchy, func, &1, [0]);
-        check_members!(hierarchy, func, &2, [0, 1]);
-        check_members!(hierarchy, func, &3, [0, 1]);
-        check_members!(hierarchy, func, &4, [0, 1, 2, 3]);
-        check_members!(hierarchy, func, &5, [0]);
-        check_members!(hierarchy, func, &6, [0, 5]);
-        check_members!(hierarchy, func, &7, [0, 5]);
-        check_members!(hierarchy, func, &8, [0, 5]);
-        check_members!(hierarchy, func, &9, [0]);
+        check_members(&hierarchy, func, &0, &[0; 0]);
+        check_members(&hierarchy, func, &1, &[0]);
+        check_members(&hierarchy, func, &2, &[0, 1]);
+        check_members(&hierarchy, func, &3, &[0, 1]);
+        check_members(&hierarchy, func, &4, &[0, 1, 2, 3]);
+        check_members(&hierarchy, func, &5, &[0]);
+        check_members(&hierarchy, func, &6, &[0, 5]);
+        check_members(&hierarchy, func, &7, &[0, 5]);
+        check_members(&hierarchy, func, &8, &[0, 5]);
+        check_members(&hierarchy, func, &9, &[0]);
     }
 
     #[test]
@@ -372,16 +373,16 @@ mod test_hierarchy {
         let hierarchy = build_example_hierarchy();
         let func = CsrOntologyHierarchy::iter_node_and_ancestors_of;
 
-        check_members!(hierarchy, func, &0, [0]);
-        check_members!(hierarchy, func, &1, [1, 0]);
-        check_members!(hierarchy, func, &2, [2, 0, 1]);
-        check_members!(hierarchy, func, &3, [3, 0, 1]);
-        check_members!(hierarchy, func, &4, [4, 0, 1, 2, 3]);
-        check_members!(hierarchy, func, &5, [5, 0]);
-        check_members!(hierarchy, func, &6, [6, 0, 5]);
-        check_members!(hierarchy, func, &7, [7, 0, 5]);
-        check_members!(hierarchy, func, &8, [8, 0, 5]);
-        check_members!(hierarchy, func, &9, [9, 0]);
+        check_members(&hierarchy, func, &0, &[0]);
+        check_members(&hierarchy, func, &1, &[1, 0]);
+        check_members(&hierarchy, func, &2, &[2, 0, 1]);
+        check_members(&hierarchy, func, &3, &[3, 0, 1]);
+        check_members(&hierarchy, func, &4, &[4, 0, 1, 2, 3]);
+        check_members(&hierarchy, func, &5, &[5, 0]);
+        check_members(&hierarchy, func, &6, &[6, 0, 5]);
+        check_members(&hierarchy, func, &7, &[7, 0, 5]);
+        check_members(&hierarchy, func, &8, &[8, 0, 5]);
+        check_members(&hierarchy, func, &9, &[9, 0]);
     }
 
     fn build_example_hierarchy() -> CsrOntologyHierarchy<u16> {
