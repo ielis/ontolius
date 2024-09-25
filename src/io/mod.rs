@@ -14,14 +14,14 @@ use std::{
 
 use crate::{hierarchy::GraphEdge, prelude::Ontology};
 
-pub struct OntologyData<HI, T> {
+pub struct OntologyData<I, T> {
     pub terms: Vec<T>,
-    pub edges: Vec<GraphEdge<HI>>,
+    pub edges: Vec<GraphEdge<I>>,
     pub metadata: HashMap<String, String>,
 }
 
-impl<HI, T> From<(Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)> for OntologyData<HI, T> {
-    fn from(value: (Vec<T>, Vec<GraphEdge<HI>>, HashMap<String, String>)) -> Self {
+impl<I, T> From<(Vec<T>, Vec<GraphEdge<I>>, HashMap<String, String>)> for OntologyData<I, T> {
+    fn from(value: (Vec<T>, Vec<GraphEdge<I>>, HashMap<String, String>)) -> Self {
         Self {
             terms: value.0,
             edges: value.1,
