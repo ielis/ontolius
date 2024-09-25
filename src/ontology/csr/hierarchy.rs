@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
 use crate::hierarchy::{
-    AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, OntologyHierarchy,
-    ParentNodes, Relationship,
+    AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, OntologyHierarchy, ParentNodes,
+    Relationship,
 };
 
 use anyhow::{bail, Context, Error, Result};

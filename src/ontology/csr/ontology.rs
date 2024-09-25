@@ -4,40 +4,37 @@ use std::{collections::HashMap, iter::once};
 
 use graph_builder::index::Idx as CsrIdx;
 
-use crate::base::term::simple::SimpleMinimalTerm;
-use crate::base::{term::MinimalTerm, Identified, TermId};
+use crate::base::{Identified, TermId};
 use crate::hierarchy::HierarchyIdx;
 use crate::io::OntologyData;
 use crate::ontology::{HierarchyAware, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
+use crate::prelude::AltTermIdAware;
 use anyhow::Error;
 
 use super::hierarchy::CsrOntologyHierarchy;
 
-/// A [`CsrOntology`] with [`usize`] used as node indexer and [`SimpleMinimalTerm`] as the term.
-pub type MinimalCsrOntology = CsrOntology<usize, SimpleMinimalTerm>;
-
 /// An example implementation of [`Ontology`]
 /// backed by a ontology graph implemented
 /// with a CSR adjacency matrix.
-pub struct CsrOntology<HI, T>
+pub struct CsrOntology<I, T>
 where
-    HI: CsrIdx,
+    I: CsrIdx,
 {
     terms: Box<[T]>,
-    term_id_to_idx: HashMap<TermId, HI>,
-    hierarchy: CsrOntologyHierarchy<HI>,
+    term_id_to_idx: HashMap<TermId, I>,
+    hierarchy: CsrOntologyHierarchy<I>,
     metadata: HashMap<String, String>,
 }
 
 /// `CsrOntology` can be built from [`OntologyData`].
-impl<HI, T> TryFrom<OntologyData<HI, T>> for CsrOntology<HI, T>
+impl<I, T> TryFrom<OntologyData<I, T>> for CsrOntology<I, T>
 where
-    HI: HierarchyIdx + CsrIdx + Hash,
-    T: MinimalTerm,
+    I: HierarchyIdx + CsrIdx + Hash,
+    T: Identified + AltTermIdAware,
 {
     type Error = Error;
 
-    fn try_from(value: OntologyData<HI, T>) -> Result<Self, Self::Error> {
+    fn try_from(value: OntologyData<I, T>) -> Result<Self, Self::Error> {
         // TODO: I am not sure this is the most efficient way to build the ontology.
         let OntologyData {
             terms,
@@ -70,11 +67,11 @@ where
     }
 }
 
-impl<HI, T> HierarchyAware<HI> for CsrOntology<HI, T>
+impl<I, T> HierarchyAware<I> for CsrOntology<I, T>
 where
-    HI: HierarchyIdx + CsrIdx + Hash,
+    I: HierarchyIdx + CsrIdx + Hash,
 {
-    type Hierarchy = CsrOntologyHierarchy<HI>;
+    type Hierarchy = CsrOntologyHierarchy<I>;
 
     fn hierarchy(&self) -> &Self::Hierarchy {
         &self.hierarchy
@@ -84,7 +81,6 @@ where
 impl<I, T> TermAware<I, T> for CsrOntology<I, T>
 where
     I: CsrIdx + TermIdx,
-    T: MinimalTerm,
 {
     fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
     where
@@ -113,9 +109,9 @@ where
     }
 }
 
-impl<HI, T> MetadataAware for CsrOntology<HI, T>
+impl<I, T> MetadataAware for CsrOntology<I, T>
 where
-    HI: CsrIdx,
+    I: CsrIdx,
 {
     fn version(&self) -> &str {
         self.metadata
@@ -125,12 +121,7 @@ where
     }
 }
 
-impl<I, T> Ontology<I, T> for CsrOntology<I, T>
-where
-    I: OntologyIdx + CsrIdx,
-    T: MinimalTerm,
-{
-}
+impl<I, T> Ontology<I, T> for CsrOntology<I, T> where I: OntologyIdx + CsrIdx {}
 
 #[cfg(test)]
 mod test {

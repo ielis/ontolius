@@ -34,4 +34,9 @@ mod hierarchy;
 mod ontology;
 
 pub use hierarchy::CsrOntologyHierarchy;
-pub use ontology::{CsrOntology, MinimalCsrOntology};
+pub use ontology::CsrOntology;
+
+use crate::base::term::simple::SimpleMinimalTerm;
+
+/// A [`CsrOntology`] with [`usize`] used as node indexer and [`SimpleMinimalTerm`] as the term.
+pub type MinimalCsrOntology = CsrOntology<usize, SimpleMinimalTerm>;
