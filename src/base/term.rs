@@ -1,7 +1,7 @@
 use crate::base::{Identified, TermId};
 use std::fmt::Debug;
 
-/// Some terms have alternate identifiers, 
+/// Some terms have alternate identifiers,
 /// e.g. the identifiers used to refer to the term in the past.
 pub trait AltTermIdAware {
     type TermIdIter<'a>: Iterator<Item = &'a TermId>

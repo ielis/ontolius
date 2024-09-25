@@ -248,22 +248,20 @@ impl_ontology_idx!(isize);
 /// Last, ontology includes the metadata such as its release version.
 /// See [`MetadataAware`] for more details.
 ///
-pub trait Ontology:
-    TermAware<Self::Idx, Self::T> + HierarchyAware<Self::Idx> + MetadataAware
-{
-    /// The indexer for the terms and ontology graph nodes.
-    type Idx: OntologyIdx;
-    /// The term type.
-    type T: MinimalTerm;
-
+/// [`I`] - The indexer for the terms and ontology graph nodes.
+/// [`T`] - The ontology term type.
+pub trait Ontology<I, T>: TermAware<I, T> + HierarchyAware<I> + MetadataAware {
     /// Get the root term.
-    fn root_term(&self) -> &Self::T {
+    fn root_term(&self) -> &T {
         self.idx_to_term(self.hierarchy().root())
             .expect("Ontology should contain a term for term index")
     }
 
     /// Get the term ID of the root term of the ontology.
-    fn root_term_id(&self) -> &TermId {
+    fn root_term_id<'a>(&'a self) -> &'a TermId
+    where
+        T: Identified + 'a,
+    {
         self.root_term().identifier()
     }
 }

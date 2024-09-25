@@ -86,7 +86,6 @@ where
     I: TermIdx + CsrIdx,
     T: MinimalTerm,
 {
-
     fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
     where
         T: 'a,
@@ -126,13 +125,11 @@ where
     }
 }
 
-impl<I, T> Ontology for CsrOntology<I, T>
+impl<I, T> Ontology<I, T> for CsrOntology<I, T>
 where
     I: OntologyIdx + CsrIdx,
     T: MinimalTerm,
 {
-    type Idx = I;
-    type T = T;
 }
 
 #[cfg(test)]

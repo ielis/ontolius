@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Write};
 use std::hash::Hash;
 use std::str::FromStr;
 
-use anyhow::{Error, bail, Result};
+use anyhow::{bail, Error, Result};
 
 #[cfg(feature = "pyo3")]
 pub mod py;
@@ -28,7 +28,6 @@ pub mod term;
 pub trait Identified {
     fn identifier(&self) -> &TermId;
 }
-
 
 /// Identifier of an ontology concept.
 ///
@@ -86,12 +85,12 @@ impl FromStr for TermId {
 }
 
 /// Test if a tuple with *prefix* and *id* tuple is equal to a term ID.
-/// 
+///
 /// ## Examples
-/// 
+///
 /// ```
 /// use ontolius::prelude::*;
-/// 
+///
 /// assert_eq!(TermId::from(("HP", "0001250")), ("HP", "0001250"));
 /// assert_eq!(TermId::from(("NCIT", "C2852")), ("NCIT", "C2852"));
 /// ```
@@ -100,34 +99,36 @@ impl PartialEq<(&str, &str)> for TermId {
         match &self.0 {
             InnerTermId::Known(prefix, id, len) => {
                 if prefix.eq(other.0) {
-                    match (other.1.parse::<u32>(), u8::try_from(other.1.chars().count())) {
-                        (Ok(parsed_id), Ok(parsed_len)) => {
-                            *id == parsed_id && *len == parsed_len
-                        },
-                        _ => false
+                    match (
+                        other.1.parse::<u32>(),
+                        u8::try_from(other.1.chars().count()),
+                    ) {
+                        (Ok(parsed_id), Ok(parsed_len)) => *id == parsed_id && *len == parsed_len,
+                        _ => false,
                     }
                 } else {
                     false
                 }
             }
             InnerTermId::Random(val, idx) => {
-                /* Prefix */ &val[..*idx as usize] == other.0 
-                /* Id */     && other.1 == &val[*idx as usize..] 
+                /* Prefix */
+                &val[..*idx as usize] == other.0
+                /* Id */     && other.1 == &val[*idx as usize..]
             }
         }
     }
 }
 
 /// Test if a tuple with *prefix* and *id* tuple is equal to a reference to a term ID.
-/// 
+///
 /// ## Examples
-/// 
+///
 /// ```
 /// use ontolius::prelude::*;
-/// 
+///
 /// let seizure = TermId::from(("HP", "0001250"));
 /// assert_eq!(&seizure, ("HP", "0001250"));
-/// 
+///
 /// let adenocarcinoma = TermId::from(("NCIT", "C2852"));
 /// assert_eq!(&adenocarcinoma, ("NCIT", "C2852"));
 /// ```
@@ -284,7 +285,11 @@ impl From<(&str, &str)> for InnerTermId {
         match (p, a) {
             (Ok(prefix), Ok(id)) => {
                 // Prefix is known
-                InnerTermId::Known(prefix, id, id_len.expect("ID should not be longer than 255 chars!"))
+                InnerTermId::Known(
+                    prefix,
+                    id,
+                    id_len.expect("ID should not be longer than 255 chars!"),
+                )
             }
             _ => {
                 //
@@ -486,7 +491,6 @@ mod test_equalities {
             } else {
                 assert_ne!(term_id, $other);
             }
-            
         };
     }
 
@@ -496,7 +500,7 @@ mod test_equalities {
         term_ids_partial_eq!("HP:0001250", ("HP", "0001250"), true);
         term_ids_partial_eq!("NCIT:C2852", ("NCIT", "C2852"), true);
         term_ids_partial_eq!("HP:0000000", ("HP", "0000000"), true);
-        
+
         term_ids_partial_eq!("HP:0001250", ("MP", "0001250"), false);
         term_ids_partial_eq!("HP:1234567", ("HP", "0000000"), false);
         term_ids_partial_eq!("NCIT:C2852", ("HP", "0001250"), false);

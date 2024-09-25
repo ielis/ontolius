@@ -101,7 +101,7 @@ pub trait DescendantNodes<I> {
     }
 
     /// Augment the collection with the source `node` and its *descendants*.
-    fn augment_with_source_and_descendants<'a, T>(&self, node: &I, collection: &mut T)
+    fn augment_with_source_and_descendants<T>(&self, node: &I, collection: &mut T)
     where
         I: Clone,
         T: Extend<I>,
@@ -221,7 +221,7 @@ pub trait AncestorNodes<I> {
 /// Trait for types that support all basic ontology hierarchy operations,
 /// such as getting the parents, ancestors, children and descendants
 /// of an ontology node.
-/// 
+///
 /// [`I`] - Ontology node index.
 pub trait OntologyHierarchy<I>:
     ChildNodes<I> + DescendantNodes<I> + ParentNodes<I> + AncestorNodes<I>

@@ -65,7 +65,7 @@ where
     where
         P: AsRef<Path>,
         O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
-            + Ontology<Idx = Parser::HI, T = Parser::T>,
+            + Ontology<Parser::HI, Parser::T>,
     {
         let path = path.as_ref();
         let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
@@ -89,7 +89,7 @@ where
     where
         R: Read,
         O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
-            + Ontology<Idx = Parser::HI, T = Parser::T>,
+            + Ontology<Parser::HI, Parser::T>,
     {
         self.load_from_buf_read(BufReader::new(read))
     }
@@ -99,7 +99,7 @@ where
     where
         R: BufRead,
         O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
-            + Ontology<Idx = Parser::HI, T = Parser::T>,
+            + Ontology<Parser::HI, Parser::T>,
     {
         let data = self.parser.load_from_buf_read(read)?;
         O::try_from(data)

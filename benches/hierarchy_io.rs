@@ -6,9 +6,7 @@ use ontolius::ontology::csr::MinimalCsrOntology;
 fn load_csr_ontology(c: &mut Criterion) {
     let path = "resources/hp.v2024-08-13.json.gz";
 
-    let loader = OntologyLoaderBuilder::new()
-        .obographs_parser()
-        .build();
+    let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
     let mut group = c.benchmark_group("CsrOntologyLoader");
     group.bench_function("CsrOntologyLoader::load", |b| {
