@@ -72,7 +72,7 @@ where
 
 impl<HI, T> HierarchyAware<HI> for CsrOntology<HI, T>
 where
-    HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
+    HI: HierarchyIdx + CsrIdx + Hash,
 {
     type Hierarchy = CsrOntologyHierarchy<HI>;
 
@@ -83,7 +83,7 @@ where
 
 impl<I, T> TermAware<I, T> for CsrOntology<I, T>
 where
-    I: TermIdx + CsrIdx,
+    I: CsrIdx + TermIdx,
     T: MinimalTerm,
 {
     fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>

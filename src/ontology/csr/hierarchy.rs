@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
 use crate::hierarchy::{
-    AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, HierarchyIdx, OntologyHierarchy,
+    AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, OntologyHierarchy,
     ParentNodes, Relationship,
 };
 
@@ -23,7 +23,7 @@ where
 
 impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     type Error = Error;
     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
@@ -44,7 +44,7 @@ where
 
 fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I>
 where
-    I: Hash + HierarchyIdx + Eq,
+    I: Hash + Copy + Eq,
 {
     let mut root_candidate_set = HashSet::new();
     let mut remove_mark_set = HashSet::new();
@@ -86,7 +86,7 @@ where
 
 impl<I> ChildNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx,
+    I: CsrIdx,
 {
     fn iter_children_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
     where
@@ -98,7 +98,7 @@ where
 
 impl<I> ParentNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
     fn iter_parents_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
     where
@@ -110,7 +110,7 @@ where
 
 impl<I> DescendantNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     fn iter_descendants_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
     where
@@ -126,7 +126,7 @@ where
 
 pub struct DescendantsIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
     adjacency_matrix: &'a DirectedCsrGraph<I>,
     seen: HashSet<&'a I>,
@@ -135,7 +135,7 @@ where
 
 impl<'a, I> Iterator for DescendantsIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     type Item = &'a I;
 
@@ -153,7 +153,7 @@ where
 
 impl<I> AncestorNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     fn iter_ancestors_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &I>
     where
@@ -169,7 +169,7 @@ where
 
 pub struct AncestorIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
     adjacency_matrix: &'a DirectedCsrGraph<I>,
     seen: HashSet<&'a I>,
@@ -178,7 +178,7 @@ where
 
 impl<'a, I> Iterator for AncestorIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     type Item = &'a I;
 
@@ -196,7 +196,7 @@ where
 
 impl<I> OntologyHierarchy<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     /// Get index of the ontology root.
     fn root(&self) -> &I {
