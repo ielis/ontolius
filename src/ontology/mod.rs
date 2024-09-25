@@ -177,11 +177,11 @@ where
 }
 
 /// The implementors know about the [`OntologyHierarchy`].
-pub trait HierarchyAware {
-    /// The indexer for the graph nodes.
-    type HI;
+/// 
+/// [`I`] - Ontology node indexer.
+pub trait HierarchyAware<I> {
     /// The hierarchy type.
-    type Hierarchy: OntologyHierarchy<HI = Self::HI>;
+    type Hierarchy: OntologyHierarchy<I>;
 
     /// Get the hierarchy.
     fn hierarchy(&self) -> &Self::Hierarchy;
@@ -236,7 +236,7 @@ impl_ontology_idx!(isize);
 /// See [`MetadataAware`] for more details.
 ///
 pub trait Ontology:
-    TermAware<TI = Self::Idx, Term = Self::T> + HierarchyAware<HI = Self::Idx> + MetadataAware
+    TermAware<TI = Self::Idx, Term = Self::T> + HierarchyAware<Self::Idx> + MetadataAware
 {
     /// The indexer for the terms and ontology graph nodes.
     type Idx: OntologyIdx;

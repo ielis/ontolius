@@ -96,24 +96,26 @@ where
     }
 }
 
-impl<I> ParentNodes for CsrOntologyHierarchy<I>
+impl<I> ParentNodes<I> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx + Hash,
 {
-    type I = I;
-
-    fn iter_parents_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_parents_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         self.adjacency_matrix.out_neighbors(*node)
     }
 }
 
-impl<I> DescendantNodes for CsrOntologyHierarchy<I>
+impl<I> DescendantNodes<I> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx + Hash,
 {
-    type I = I;
-
-    fn iter_descendants_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_descendants_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         DescendantsIter {
             adjacency_matrix: &self.adjacency_matrix,
             seen: HashSet::new(),
@@ -149,13 +151,14 @@ where
     }
 }
 
-impl<I> AncestorNodes for CsrOntologyHierarchy<I>
+impl<I> AncestorNodes<I> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx + Hash,
 {
-    type I = I;
-
-    fn iter_ancestors_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_ancestors_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &I>
+    where
+        I: 'a,
+    {
         AncestorIter {
             adjacency_matrix: &self.adjacency_matrix,
             seen: HashSet::new(),
@@ -191,12 +194,10 @@ where
     }
 }
 
-impl<I> OntologyHierarchy for CsrOntologyHierarchy<I>
+impl<I> OntologyHierarchy<I> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx + Hash,
 {
-    type HI = I;
-
     /// Get index of the ontology root.
     fn root(&self) -> &I {
         &self.root_idx
@@ -240,7 +241,7 @@ mod test_hierarchy {
 
     fn check_members<'a, O, F, I>(hierarchy: &'a O, func: F, src: &'a u16, expected: &[u16])
     where
-        O: OntologyHierarchy<HI = u16>,
+        O: OntologyHierarchy<u16>,
         F: FnOnce(&'a O, &'a u16) -> I,
         I: Iterator<Item = &'a u16>,
     {

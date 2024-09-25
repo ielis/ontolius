@@ -73,11 +73,10 @@ where
     }
 }
 
-impl<HI, T> HierarchyAware for CsrOntology<HI, T>
+impl<HI, T> HierarchyAware<HI> for CsrOntology<HI, T>
 where
     HI: TermIdx + HierarchyIdx + CsrIdx + Hash,
 {
-    type HI = HI;
     type Hierarchy = CsrOntologyHierarchy<HI>;
 
     fn hierarchy(&self) -> &Self::Hierarchy {
