@@ -5,6 +5,7 @@ use std::hash::Hash;
 
 use crate::base::{term::MinimalTerm, Identified, TermId};
 use crate::hierarchy::{HierarchyIdx, OntologyHierarchy};
+use crate::prelude::AltTermIdAware;
 
 /// The implementors can be used to index the [`super::TermAware`].
 pub trait TermIdx: Copy {
@@ -39,27 +40,29 @@ impl_term_idx!(isize);
 /// The container supports iteration over the terms, retrieval of a term
 /// by its index or by the primary or obsolete [`TermId`],
 /// and several associated convenience methods.
-pub trait TermAware {
-    type TI;
-    type Term: MinimalTerm;
-
+///
+/// [`I`] - Ontology node index.
+/// [`T`] - Ontology term.
+pub trait TermAware<I, T> {
     /// Get the iterator over the *primary* ontology terms.
-    fn iter_terms(&self) -> impl Iterator<Item = &Self::Term>;
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
+    where
+        T: 'a;
 
-    /// Map index to a [`TermAware::Term`] of the ontology.
+    /// Map index to a term [`T`] of the ontology.
     ///
     /// Returns `None` if there is no such term for the input `idx` in the ontology.
-    fn idx_to_term(&self, idx: &Self::TI) -> Option<&Self::Term>;
+    fn idx_to_term(&self, idx: &I) -> Option<&T>;
 
     /// Get the index corresponding to a [`TermAware::Term`] for given ID.
-    fn id_to_idx<ID>(&self, id: &ID) -> Option<&Self::TI>
+    fn id_to_idx<ID>(&self, id: &ID) -> Option<&I>
     where
         ID: Identified;
 
-    /// Get [`TermAware::Term`] for given term ID.
+    /// Get term [`T`] for given term ID.
     ///
     /// Returns `None`` if the ID does not correspond to a concept from the ontology.
-    fn id_to_term<ID>(&self, id: &ID) -> Option<&Self::Term>
+    fn id_to_term<ID>(&self, id: &ID) -> Option<&T>
     where
         ID: Identified,
     {
@@ -69,15 +72,19 @@ pub trait TermAware {
     /// Get the primary term ID for a given ID.
     ///
     /// Returns `None` if the term ID does not correspond to a concept from the ontology.
-    fn primary_term_id<ID>(&self, term_id: &ID) -> Option<&TermId>
+    fn primary_term_id<'a, ID>(&'a self, term_id: &ID) -> Option<&'a TermId>
     where
         ID: Identified,
+        T: 'a + Identified,
     {
         self.id_to_term(term_id).map(|term| term.identifier())
     }
 
     /// Get the term ID of a term stored under given `idx`.
-    fn idx_to_term_id(&self, idx: &Self::TI) -> Option<&TermId> {
+    fn idx_to_term_id<'a>(&'a self, idx: &I) -> Option<&'a TermId>
+    where
+        T: 'a + Identified,
+    {
         match self.idx_to_term(idx) {
             Some(term) => Some(term.identifier()),
             None => None,
@@ -95,14 +102,21 @@ pub trait TermAware {
     }
 
     /// Iterate over term IDs of the *primary* terms.
-    fn iter_term_ids(&self) -> TermIdIter<'_, Self::Term> {
+    fn iter_term_ids<'a>(&'a self) -> TermIdIter<'a, T>
+    where
+        I: 'a,
+    {
         TermIdIter {
             terms: Box::new(self.iter_terms()),
         }
     }
 
     /// Iterate over term IDs of *all* terms (primary and obsolete).
-    fn iter_all_term_ids(&self) -> AllTermIdsIter<'_, Self::Term> {
+    fn iter_all_term_ids<'a>(&'a self) -> AllTermIdsIter<'_, T>
+    where
+        T: AltTermIdAware,
+        I: 'a,
+    {
         AllTermIdsIter {
             state: State::Primary,
             terms: Box::new(self.iter_terms()),
@@ -111,8 +125,7 @@ pub trait TermAware {
 }
 
 /// Iterator over the *primary* term ids of [`TermAware`].
-pub struct TermIdIter<'a, T>
-{
+pub struct TermIdIter<'a, T> {
     terms: Box<dyn Iterator<Item = &'a T> + 'a>,
 }
 
@@ -129,7 +142,7 @@ where
 
 enum State<'a, T>
 where
-    T: MinimalTerm + 'a,
+    T: AltTermIdAware + 'a,
 {
     Primary,
     Alt(T::TermIdIter<'a>),
@@ -138,7 +151,7 @@ where
 /// Iterator over *all* (primary and obsolete) term ids of [`TermAware`].
 pub struct AllTermIdsIter<'a, T>
 where
-    T: MinimalTerm,
+    T: AltTermIdAware,
 {
     state: State<'a, T>,
     terms: Box<dyn Iterator<Item = &'a T> + 'a>,
@@ -177,7 +190,7 @@ where
 }
 
 /// The implementors know about the [`OntologyHierarchy`].
-/// 
+///
 /// [`I`] - Ontology node indexer.
 pub trait HierarchyAware<I> {
     /// The hierarchy type.
@@ -197,7 +210,7 @@ pub trait MetadataAware {
 }
 
 /// Requirements for the index datatype for indexing the ontology nodes.
-/// 
+///
 /// Note, `Hash` is not necessarily used in the ontology functionality.
 /// However, we require the `Hash` implementation to increase user convenience,
 /// e.g. to support creating hash sets/maps of the vanilla ontology indices.
@@ -236,7 +249,7 @@ impl_ontology_idx!(isize);
 /// See [`MetadataAware`] for more details.
 ///
 pub trait Ontology:
-    TermAware<TI = Self::Idx, Term = Self::T> + HierarchyAware<Self::Idx> + MetadataAware
+    TermAware<Self::Idx, Self::T> + HierarchyAware<Self::Idx> + MetadataAware
 {
     /// The indexer for the terms and ontology graph nodes.
     type Idx: OntologyIdx;

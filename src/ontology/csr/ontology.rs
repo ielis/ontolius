@@ -6,10 +6,10 @@ use graph_builder::index::Idx as CsrIdx;
 
 use crate::base::term::simple::SimpleMinimalTerm;
 use crate::base::{term::MinimalTerm, Identified, TermId};
-use anyhow::Error;
 use crate::hierarchy::HierarchyIdx;
 use crate::io::OntologyData;
 use crate::ontology::{HierarchyAware, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
+use anyhow::Error;
 
 use super::hierarchy::CsrOntologyHierarchy;
 
@@ -46,10 +46,7 @@ where
         } = value;
 
         // Only keep the primary terms.
-        let terms: Box<[_]> = terms
-            .into_iter()
-            .collect::<Vec<_>>()
-            .into_boxed_slice();
+        let terms: Box<[_]> = terms.into_iter().collect::<Vec<_>>().into_boxed_slice();
 
         let term_id_to_idx = terms
             .iter()
@@ -84,23 +81,24 @@ where
     }
 }
 
-impl<HI, T> TermAware for CsrOntology<HI, T>
+impl<I, T> TermAware<I, T> for CsrOntology<I, T>
 where
-    HI: TermIdx + CsrIdx,
+    I: TermIdx + CsrIdx,
     T: MinimalTerm,
 {
-    type TI = HI;
-    type Term = T;
 
-    fn iter_terms(&self) -> impl Iterator<Item = &Self::Term> {
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
+    where
+        T: 'a,
+    {
         self.terms.iter()
     }
 
-    fn idx_to_term(&self, idx: &Self::TI) -> Option<&T> {
+    fn idx_to_term(&self, idx: &I) -> Option<&T> {
         self.terms.get(TermIdx::index(idx))
     }
 
-    fn id_to_idx<ID>(&self, id: &ID) -> Option<&Self::TI>
+    fn id_to_idx<ID>(&self, id: &ID) -> Option<&I>
     where
         ID: Identified,
     {
