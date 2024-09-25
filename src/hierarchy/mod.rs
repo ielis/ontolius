@@ -12,50 +12,55 @@ mod edge;
 pub use edge::{GraphEdge, Relationship};
 
 /// Trait for types that can provide the child nodes of an ontology node.
-pub trait ChildNodes {
-    // Type used to index the ontology nodes.
-    type I: Eq;
+/// 
+/// [`I`] - Ontology node indexer.
+pub trait ChildNodes<I> {   
 
     /// Returns an iterator of all nodes which are children of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_children_of` instead")]
-    fn children_of(&self, node: &Self::I) -> impl Iterator<Item = &Self::I> {
+    fn children_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         self.iter_children_of(node)
     }
 
     /// Returns an iterator of all nodes which are children of `node`.
-    fn iter_children_of(&self, node: &Self::I) -> impl Iterator<Item = &Self::I>;
+    fn iter_children_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a;
 
     /// Test if `sub` is child of the `obj` node.
-    fn is_child_of(&self, sub: &Self::I, obj: &Self::I) -> bool {
+    fn is_child_of(&self, sub: &I, obj: &I) -> bool
+    where
+        I: PartialEq,
+    {
         self.iter_children_of(obj).any(|child| *child == *sub)
     }
 
     /// Test if `node` is a leaf, i.e. a node with no child nodes.
-    fn is_leaf(&self, node: &Self::I) -> bool {
+    fn is_leaf(&self, node: &I) -> bool {
         self.iter_children_of(node).count() == 0
     }
 
     /// Get an iterator for iterating over a node followed by all its children.
-    fn iter_node_and_children_of<'a>(
-        &'a self,
-        node: &'a Self::I,
-    ) -> impl Iterator<Item = &'a Self::I> {
+    fn iter_node_and_children_of<'a>(&'a self, node: &'a I) -> impl Iterator<Item = &'a I> {
         std::iter::once(node).chain(self.iter_children_of(node))
     }
 
     /// Augment the collection with children of the `source` node.
-    fn augment_with_children<'a, T>(&'a self, source: &Self::I, collection: &mut T)
+    fn augment_with_children<T>(&self, source: &I, collection: &mut T)
     where
-        T: Extend<&'a Self::I>,
-        Self: 'a,
+        I: Clone,
+        T: Extend<I>,
     {
-        collection.extend(self.iter_children_of(source))
+        collection.extend(self.iter_children_of(source).cloned())
     }
 
     /// Augment the collection with the source `node` and its children.
-    fn augment_with_node_and_children<'a, T>(&'a self, node: &'a Self::I, collection: &mut T)
+    fn augment_with_node_and_children<'a, T>(&'a self, node: &'a I, collection: &mut T)
     where
-        T: Extend<&'a Self::I>,
+        T: Extend<&'a I>,
         Self: 'a,
     {
         collection.extend(self.iter_node_and_children_of(node));
@@ -64,6 +69,7 @@ pub trait ChildNodes {
 
 /// Trait for types that can provide the descendant nodes of an ontology node.
 pub trait DescendantNodes {
+    // TODO: DescendantNodes should be generic over `I`, see `ChildNodes`
     // Type used to index the ontology nodes.
     type I;
 
@@ -204,7 +210,7 @@ pub trait AncestorNodes {
 /// such as getting the parents, ancestors, children and descendants
 /// of an ontology node.
 pub trait OntologyHierarchy:
-    ChildNodes<I = Self::HI>
+    ChildNodes<Self::HI>
     + DescendantNodes<I = Self::HI>
     + ParentNodes<I = Self::HI>
     + AncestorNodes<I = Self::HI>

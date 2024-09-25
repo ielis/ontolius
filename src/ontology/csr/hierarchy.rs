@@ -84,13 +84,14 @@ where
     })
 }
 
-impl<I> ChildNodes for CsrOntologyHierarchy<I>
+impl<I> ChildNodes<I> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + HierarchyIdx,
 {
-    type I = I;
-
-    fn iter_children_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_children_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         self.adjacency_matrix.in_neighbors(*node)
     }
 }
