@@ -6,7 +6,7 @@ use crate::hierarchy::{
     Relationship,
 };
 
-use anyhow::{bail, Context, Error, Result};
+use anyhow::{bail, Context, Result};
 use graph_builder::index::Idx as CsrIdx;
 use graph_builder::GraphBuilder;
 use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
@@ -25,10 +25,12 @@ impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + Hash,
 {
-    type Error = Error;
+    type Error = anyhow::Error;
     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-        let root_idx = find_root_idx(graph_edges).context("Find index of the root term node")?;
+        let root_idx = find_root_idx(graph_edges)
+            .cloned()
+            .context("Find index of the root term node")?;
 
         let adjacency_matrix = GraphBuilder::new()
             .csr_layout(graph_builder::CsrLayout::Sorted)
@@ -42,9 +44,9 @@ where
     }
 }
 
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I>
+fn find_root_idx<'a, I>(graph_edges: &'a [GraphEdge<I>]) -> Result<&'a I>
 where
-    I: Hash + Copy + Eq,
+    I: Hash + Eq,
 {
     let mut root_candidate_set = HashSet::new();
     let mut remove_mark_set = HashSet::new();
@@ -52,12 +54,12 @@ where
     for edge in graph_edges.iter() {
         match edge.pred {
             Relationship::Child => {
-                root_candidate_set.insert(edge.obj);
-                remove_mark_set.insert(edge.sub);
+                root_candidate_set.insert(&edge.obj);
+                remove_mark_set.insert(&edge.sub);
             }
             Relationship::Parent => {
-                root_candidate_set.insert(edge.obj);
-                remove_mark_set.insert(edge.sub);
+                root_candidate_set.insert(&edge.obj);
+                remove_mark_set.insert(&edge.sub);
             }
         }
     }
@@ -66,20 +68,20 @@ where
 
     match candidates.len() {
         0 => bail!("No root candidate found!"),
-        1 => Ok(*candidates[0]),
+        1 => Ok(candidates[0]),
         _ => bail!("More than one root candidates found"),
     }
 }
 
 fn make_edge_iterator<I>(graph_edges: &[GraphEdge<I>]) -> impl Iterator<Item = (I, I)> + '_
 where
-    I: Copy,
+    I: Clone,
 {
     graph_edges.iter().flat_map(|edge| {
         match edge.pred {
-            // `sub -> is_a -> obj`` is what we want!
-            Relationship::Child => Some((edge.sub, edge.obj)),
-            Relationship::Parent => Some((edge.obj, edge.sub)),
+            // `sub -> is_a -> obj` is what we want!
+            Relationship::Child => Some((edge.sub.clone(), edge.obj.clone())),
+            Relationship::Parent => Some((edge.obj.clone(), edge.sub.clone())),
         }
     })
 }
