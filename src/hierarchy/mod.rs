@@ -13,7 +13,7 @@ pub use edge::{GraphEdge, Relationship};
 
 /// Trait for types that can provide the child nodes of an ontology node.
 ///
-/// [`I`] - Ontology node index.
+/// * `I` - ontology node index.
 pub trait ChildNodes<I> {
     /// Returns an iterator of all nodes which are children of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_children_of` instead")]
@@ -68,7 +68,7 @@ pub trait ChildNodes<I> {
 
 /// Trait for types that can provide the descendant nodes of an ontology node.
 ///
-/// [`I`] - Ontology node index.
+/// * `I` - ontology node index.
 pub trait DescendantNodes<I> {
     // Type used to index the ontology nodes.
 
@@ -112,7 +112,7 @@ pub trait DescendantNodes<I> {
 
 /// Trait for types that can provide the parent nodes of an ontology node.
 ///
-/// [`I`] - Ontology node index.
+/// * `I` - ontology node index.
 pub trait ParentNodes<I> {
     /// Returns an iterator of all nodes which are parents of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_parents_of` instead")]
@@ -162,7 +162,7 @@ pub trait ParentNodes<I> {
 
 /// Trait for types that can provide the ancestor nodes of an ontology node.
 ///
-/// [`I`] - Ontology node index.
+/// * `I` - ontology node index.
 pub trait AncestorNodes<I> {
     /// Returns an iterator of all nodes which are ancestors of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_ancestors_of` instead")]
@@ -222,7 +222,7 @@ pub trait AncestorNodes<I> {
 /// such as getting the parents, ancestors, children and descendants
 /// of an ontology node.
 ///
-/// [`I`] - Ontology node index.
+/// * `I` - ontology node index.
 pub trait OntologyHierarchy<I>:
     ChildNodes<I> + DescendantNodes<I> + ParentNodes<I> + AncestorNodes<I>
 {
@@ -232,7 +232,7 @@ pub trait OntologyHierarchy<I>:
     fn subhierarchy(&self, subroot_idx: &I) -> Self;
 }
 
-/// The implementors can be used to index the [`super::OntologyHierarchy`].
+/// The implementors can be used to index the [`OntologyHierarchy`].
 pub trait HierarchyIdx: Copy + Eq {
     fn new(idx: usize) -> Self;
 }

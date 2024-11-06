@@ -32,11 +32,11 @@ impl<I, T> From<(Vec<T>, Vec<GraphEdge<I>>, HashMap<String, String>)> for Ontolo
 
 /// Ontology data parser can read [`OntologyData`] from some input
 pub trait OntologyDataParser {
-    type HI;
+    type I;
     type T;
 
     /// Load ontology data from the buffered reader.
-    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<Self::HI, Self::T>>
+    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<Self::I, Self::T>>
     where
         R: BufRead;
 }
@@ -64,8 +64,8 @@ where
     pub fn load_from_path<O, P>(&self, path: P) -> Result<O>
     where
         P: AsRef<Path>,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
-            + Ontology<Parser::HI, Parser::T>,
+        O: TryFrom<OntologyData<Parser::I, Parser::T>, Error = anyhow::Error>
+            + Ontology<Parser::I, Parser::T>,
     {
         let path = path.as_ref();
         let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
@@ -88,8 +88,8 @@ where
     pub fn load_from_read<R, O>(&self, read: R) -> Result<O>
     where
         R: Read,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
-            + Ontology<Parser::HI, Parser::T>,
+        O: TryFrom<OntologyData<Parser::I, Parser::T>, Error = anyhow::Error>
+            + Ontology<Parser::I, Parser::T>,
     {
         self.load_from_buf_read(BufReader::new(read))
     }
@@ -98,8 +98,8 @@ where
     pub fn load_from_buf_read<R, O>(&self, read: R) -> Result<O>
     where
         R: BufRead,
-        O: TryFrom<OntologyData<Parser::HI, Parser::T>, Error = anyhow::Error>
-            + Ontology<Parser::HI, Parser::T>,
+        O: TryFrom<OntologyData<Parser::I, Parser::T>, Error = anyhow::Error>
+            + Ontology<Parser::I, Parser::T>,
     {
         let data = self.parser.load_from_buf_read(read)?;
         O::try_from(data)

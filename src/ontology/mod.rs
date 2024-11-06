@@ -1,5 +1,6 @@
 //! A module with the ontology parts.
 pub mod csr;
+mod simple;
 
 use std::hash::Hash;
 
@@ -7,7 +8,7 @@ use crate::base::{term::MinimalTerm, Identified, TermId};
 use crate::hierarchy::{HierarchyIdx, OntologyHierarchy};
 use crate::prelude::AltTermIdAware;
 
-/// The implementors can be used to index the [`super::TermAware`].
+/// The implementors can be used to index the [`TermAware`].
 pub trait TermIdx: Copy {
     // Convert the index to `usize` for indexing.
     fn index(&self) -> usize;
@@ -41,27 +42,27 @@ impl_term_idx!(isize);
 /// by its index or by the primary or obsolete [`TermId`],
 /// and several associated convenience methods.
 ///
-/// [`I`] - Ontology node index.
-/// [`T`] - Ontology term.
+/// `I` - Ontology node index.
+/// `T` - Ontology term.
 pub trait TermAware<I, T> {
     /// Get the iterator over the *primary* ontology terms.
     fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
     where
         T: 'a;
 
-    /// Map index to a term [`T`] of the ontology.
+    /// Map index to a term `T` of the ontology.
     ///
     /// Returns `None` if there is no such term for the input `idx` in the ontology.
     fn idx_to_term(&self, idx: &I) -> Option<&T>;
 
-    /// Get the index corresponding to a [`TermAware::Term`] for given ID.
+    /// Get the ontology node index corresponding to the provided `id`.
     fn id_to_idx<ID>(&self, id: &ID) -> Option<&I>
     where
         ID: Identified;
 
-    /// Get term [`T`] for given term ID.
+    /// Get term `T` for given term ID.
     ///
-    /// Returns `None`` if the ID does not correspond to a concept from the ontology.
+    /// Returns `None` if the ID does not correspond to a concept from the ontology.
     fn id_to_term<ID>(&self, id: &ID) -> Option<&T>
     where
         ID: Identified,
@@ -191,7 +192,7 @@ where
 
 /// The implementors know about the [`OntologyHierarchy`].
 ///
-/// [`I`] - Ontology node indexer.
+/// * `I` - ontology node indexer.
 pub trait HierarchyAware<I> {
     /// The hierarchy type.
     type Hierarchy: OntologyHierarchy<I>;
@@ -236,20 +237,19 @@ impl_ontology_idx!(isize);
 
 /// The specification of an ontology.
 ///
-/// The ontology has several functionalities. First, it acts as a container
-/// of ontology terms and supports iterating over all terms/term IDs
+/// An ontology acts as a container of ontology terms and supports iterating over all terms/term IDs
 /// and getting a term either by its index or term ID (including obsolete IDs).
 /// See [`TermAware`] for more details.
 ///
-/// Next, the ontology has the hierarchy - a directed acyclyc graph of term
-/// relations. Currently, only `is_a` relationship is supported.
+/// An ontology also has a hierarchy - a directed acyclic graph of relationships between the terms.
+/// Currently, only `is_a` relationship is supported.
 /// See [`OntologyHierarchy`] for more details.
 ///
-/// Last, ontology includes the metadata such as its release version.
+/// Last, an ontology includes the metadata such as its release version.
 /// See [`MetadataAware`] for more details.
 ///
-/// [`I`] - The indexer for the terms and ontology graph nodes.
-/// [`T`] - The ontology term type.
+/// * `I` - The indexer for the terms and ontology graph nodes.
+/// * `T` - The ontology term type.
 pub trait Ontology<I, T>: TermAware<I, T> + HierarchyAware<I> + MetadataAware {
     /// Get the root term.
     fn root_term(&self) -> &T {
