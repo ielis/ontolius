@@ -7,10 +7,8 @@ use ontolius::ontology::csr::MinimalCsrOntology;
 use ontolius::prelude::*;
 
 fn hierarchy_traversals(c: &mut Criterion) {
-    let path = "resources/hp.2023-10-09.json.gz";
-    let loader = OntologyLoaderBuilder::new()
-        .obographs_parser()
-        .build();
+    let path = "resources/hp.v2024-08-13.json.gz";
+    let loader = OntologyLoaderBuilder::new().obographs_parser().build();
     let ontology: MinimalCsrOntology = loader.load_from_path(path).unwrap();
 
     macro_rules! bench_traversal {
@@ -40,16 +38,25 @@ fn hierarchy_traversals(c: &mut Criterion) {
     let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_parents_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {
-        bench_traversal!(group, |term_id| hierarchy.iter_parents_of(term_id), label, curie);
+        bench_traversal!(
+            group,
+            |term_id| hierarchy.iter_parents_of(term_id),
+            label,
+            curie
+        );
     }
     group.finish();
     let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_node_and_parents_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {
-        bench_traversal!(group, |term_id| hierarchy.iter_node_and_parents_of(term_id), label, curie);
+        bench_traversal!(
+            group,
+            |term_id| hierarchy.iter_node_and_parents_of(term_id),
+            label,
+            curie
+        );
     }
     group.finish();
-
 
     let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_ancestors_of");
     group.throughput(criterion::Throughput::Elements(1));
@@ -74,7 +81,6 @@ fn hierarchy_traversals(c: &mut Criterion) {
     }
     group.finish();
 
-
     let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_children_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {
@@ -98,7 +104,6 @@ fn hierarchy_traversals(c: &mut Criterion) {
     }
     group.finish();
 
-    
     let mut group = c.benchmark_group("CsrOntologyHierarchy::iter_descendants_of");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &payload {

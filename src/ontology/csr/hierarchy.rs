@@ -2,11 +2,11 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
 use crate::hierarchy::{
-    AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, HierarchyIdx, OntologyHierarchy,
-    ParentNodes, Relationship,
+    AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, OntologyHierarchy, ParentNodes,
+    Relationship,
 };
 
-use anyhow::{bail, Context, Error, Result};
+use anyhow::{bail, Context, Result};
 use graph_builder::index::Idx as CsrIdx;
 use graph_builder::GraphBuilder;
 use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
@@ -23,12 +23,14 @@ where
 
 impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
-    type Error = Error;
+    type Error = anyhow::Error;
     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-        let root_idx = find_root_idx(graph_edges).context("Find index of the root term node")?;
+        let root_idx = find_root_idx(graph_edges)
+            .cloned()
+            .context("Find index of the root term node")?;
 
         let adjacency_matrix = GraphBuilder::new()
             .csr_layout(graph_builder::CsrLayout::Sorted)
@@ -42,9 +44,9 @@ where
     }
 }
 
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<I>
+fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I>
 where
-    I: Hash + HierarchyIdx + Eq,
+    I: Hash + Eq,
 {
     let mut root_candidate_set = HashSet::new();
     let mut remove_mark_set = HashSet::new();
@@ -52,12 +54,12 @@ where
     for edge in graph_edges.iter() {
         match edge.pred {
             Relationship::Child => {
-                root_candidate_set.insert(edge.obj);
-                remove_mark_set.insert(edge.sub);
+                root_candidate_set.insert(&edge.obj);
+                remove_mark_set.insert(&edge.sub);
             }
             Relationship::Parent => {
-                root_candidate_set.insert(edge.obj);
-                remove_mark_set.insert(edge.sub);
+                root_candidate_set.insert(&edge.obj);
+                remove_mark_set.insert(&edge.sub);
             }
         }
     }
@@ -66,53 +68,56 @@ where
 
     match candidates.len() {
         0 => bail!("No root candidate found!"),
-        1 => Ok(*candidates[0]),
+        1 => Ok(candidates[0]),
         _ => bail!("More than one root candidates found"),
     }
 }
 
 fn make_edge_iterator<I>(graph_edges: &[GraphEdge<I>]) -> impl Iterator<Item = (I, I)> + '_
 where
-    I: Copy,
+    I: Clone,
 {
     graph_edges.iter().flat_map(|edge| {
         match edge.pred {
-            // `sub -> is_a -> obj`` is what we want!
-            Relationship::Child => Some((edge.sub, edge.obj)),
-            Relationship::Parent => Some((edge.obj, edge.sub)),
+            // `sub -> is_a -> obj` is what we want!
+            Relationship::Child => Some((edge.sub.clone(), edge.obj.clone())),
+            Relationship::Parent => Some((edge.obj.clone(), edge.sub.clone())),
         }
     })
 }
 
-impl<I> ChildNodes for CsrOntologyHierarchy<I>
+impl<I> ChildNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx,
+    I: CsrIdx,
 {
-    type I = I;
-
-    fn iter_children_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_children_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         self.adjacency_matrix.in_neighbors(*node)
     }
 }
 
-impl<I> ParentNodes for CsrOntologyHierarchy<I>
+impl<I> ParentNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
-    type I = I;
-
-    fn iter_parents_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_parents_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         self.adjacency_matrix.out_neighbors(*node)
     }
 }
 
-impl<I> DescendantNodes for CsrOntologyHierarchy<I>
+impl<I> DescendantNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
-    type I = I;
-
-    fn iter_descendants_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_descendants_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         DescendantsIter {
             adjacency_matrix: &self.adjacency_matrix,
             seen: HashSet::new(),
@@ -123,7 +128,7 @@ where
 
 pub struct DescendantsIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
     adjacency_matrix: &'a DirectedCsrGraph<I>,
     seen: HashSet<&'a I>,
@@ -132,7 +137,7 @@ where
 
 impl<'a, I> Iterator for DescendantsIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     type Item = &'a I;
 
@@ -148,13 +153,14 @@ where
     }
 }
 
-impl<I> AncestorNodes for CsrOntologyHierarchy<I>
+impl<I> AncestorNodes<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
-    type I = I;
-
-    fn iter_ancestors_of(&self, node: &I) -> impl Iterator<Item = &Self::I> {
+    fn iter_ancestors_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
+    where
+        I: 'a,
+    {
         AncestorIter {
             adjacency_matrix: &self.adjacency_matrix,
             seen: HashSet::new(),
@@ -165,7 +171,7 @@ where
 
 pub struct AncestorIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx,
 {
     adjacency_matrix: &'a DirectedCsrGraph<I>,
     seen: HashSet<&'a I>,
@@ -174,7 +180,7 @@ where
 
 impl<'a, I> Iterator for AncestorIter<'a, I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
     type Item = &'a I;
 
@@ -190,12 +196,10 @@ where
     }
 }
 
-impl<I> OntologyHierarchy for CsrOntologyHierarchy<I>
+impl<I> OntologyHierarchy<I> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + HierarchyIdx + Hash,
+    I: CsrIdx + Hash,
 {
-    type HI = I;
-
     /// Get index of the ontology root.
     fn root(&self) -> &I {
         &self.root_idx
@@ -239,7 +243,7 @@ mod test_hierarchy {
 
     fn check_members<'a, O, F, I>(hierarchy: &'a O, func: F, src: &'a u16, expected: &[u16])
     where
-        O: OntologyHierarchy<HI = u16>,
+        O: OntologyHierarchy<u16>,
         F: FnOnce(&'a O, &'a u16) -> I,
         I: Iterator<Item = &'a u16>,
     {
