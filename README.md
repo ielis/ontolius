@@ -2,17 +2,12 @@
 
 `ontolius` is a crate to empower the algorithms that use Human Phenotype Ontology (HPO).
 
-## WARNING
-
-The project is under development, with features generally incomplete and subject to **CHANGE AT ANY TIME**.
-The crate is *NOT* deployed on `crates.io` yet.
-
 ## Usage
 
 We recommend adding the following into your `Cargo.toml` file:
 
 ```toml
-ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.3.1' }
+ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.4.0' }
 ```
 
 The `obographs` feature is enabled by deafult, to allow reading HPO from Obographs JSON file.
