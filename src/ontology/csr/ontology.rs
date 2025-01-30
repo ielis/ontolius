@@ -82,7 +82,7 @@ impl<I, T> TermAware<I, T> for CsrOntology<I, T>
 where
     I: CsrIdx + TermIdx,
 {
-    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
         T: 'a,
     {

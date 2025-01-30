@@ -46,7 +46,7 @@ impl_term_idx!(isize);
 /// `T` - Ontology term.
 pub trait TermAware<I, T> {
     /// Get the iterator over the *primary* ontology terms.
-    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
         T: 'a;
 
@@ -113,7 +113,7 @@ pub trait TermAware<I, T> {
     }
 
     /// Iterate over term IDs of *all* terms (primary and obsolete).
-    fn iter_all_term_ids<'a>(&'a self) -> AllTermIdsIter<'_, T>
+    fn iter_all_term_ids<'a>(&'a self) -> AllTermIdsIter<'a, T>
     where
         T: AltTermIdAware,
         I: 'a,
