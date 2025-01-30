@@ -44,7 +44,7 @@ where
     }
 }
 
-fn find_root_idx<'a, I>(graph_edges: &'a [GraphEdge<I>]) -> Result<&'a I>
+fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I>
 where
     I: Hash + Eq,
 {
@@ -157,7 +157,7 @@ impl<I> AncestorNodes<I> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx + Hash,
 {
-    fn iter_ancestors_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &I>
+    fn iter_ancestors_of<'a>(&'a self, node: &I) -> impl Iterator<Item = &'a I>
     where
         I: 'a,
     {

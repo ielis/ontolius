@@ -59,7 +59,7 @@ impl<I, H, T> TermAware<I, T> for SimpleOntology<I, H, T>
 where
     I: TermIdx,
 {
-    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &T>
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
         T: 'a,
     {
