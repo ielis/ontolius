@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use super::HierarchyIdx;
-
 /// A relationship between the ontology concepts.
 ///
 /// At this time, we only support `is_a` relationship.
@@ -28,8 +26,6 @@ pub struct GraphEdge<I> {
 }
 
 impl<I> From<(I, Relationship, I)> for GraphEdge<I>
-where
-    I: HierarchyIdx,
 {
     fn from(value: (I, Relationship, I)) -> Self {
         Self {

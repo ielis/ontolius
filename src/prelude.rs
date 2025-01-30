@@ -17,7 +17,7 @@ pub use crate::io::OntologyLoader;
 pub use crate::io::OntologyLoaderBuilder;
 
 pub use crate::ontology::HierarchyAware;
+pub use crate::ontology::MetadataAware;
 pub use crate::ontology::Ontology;
 pub use crate::ontology::TermAware;
 pub use crate::ontology::TermIdx;
-pub use crate::ontology::MetadataAware;

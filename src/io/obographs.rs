@@ -11,7 +11,7 @@ use crate::{
         term::{simple::SimpleMinimalTerm, MinimalTerm},
         Identified, TermId,
     },
-    hierarchy::{GraphEdge, HierarchyIdx, Relationship},
+    hierarchy::{GraphEdge, Relationship},
     ontology::OntologyIdx,
 };
 
@@ -87,26 +87,27 @@ where
     CU: CurieUtil,
     I: OntologyIdx,
 {
-    type HI = I;
+    type I = I;
     type T = SimpleMinimalTerm;
 
-    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<Self::HI, Self::T>> {
+    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<Self::I, Self::T>> {
         let gd = GraphDocument::from_reader(read).context("Reading graph document")?;
 
         let graph = gd.graphs.first().context("Getting the first graph")?;
 
+        // Filter out the obsolete terms
         let terms: Vec<_> = graph
             .nodes
             .iter()
             .flat_map(|node| self.create(node).ok())
-            .filter(|t| t.is_current())
+            .filter(MinimalTerm::is_current)
             .collect();
 
-        let term_ids: Vec<_> = terms.iter().map(Identified::identifier).collect();
-        let termid2idx: HashMap<_, _> = term_ids
+        let termid2idx: HashMap<_, _> = terms
             .iter()
+            .map(Identified::identifier)
             .enumerate()
-            .map(|(i, &t)| (t.to_string(), I::new(i)))
+            .map(|(i, t)| (t, I::new(i)))
             .collect();
 
         let edges: Vec<GraphEdge<_>> = graph
@@ -121,21 +122,25 @@ where
     }
 }
 
-fn parse_edge<HI: HierarchyIdx>(
+fn parse_edge<HI>(
     edge: &Edge,
     curie_util: &dyn CurieUtil,
-    termid2idx: &HashMap<String, HI>,
-) -> Option<GraphEdge<HI>> {
+    termid2idx: &HashMap<&TermId, HI>,
+) -> Option<GraphEdge<HI>>
+where
+    HI: Clone,
+{
     let sub_parts = curie_util.get_curie_data(&edge.sub);
     let rel = parse_relationship(&edge.pred);
     let obj_parts = curie_util.get_curie_data(&edge.obj);
     match (sub_parts, rel, obj_parts) {
         (Some(sub), Ok(pred), Some(obj)) => {
-            // TODO: the matching is hacky and likely inefficient. Improve!
-            let sub = format!("{}:{}", sub.get_prefix(), sub.get_id());
-            let obj = format!("{}:{}", obj.get_prefix(), obj.get_id());
+            let sub = TermId::from((sub.get_prefix(), sub.get_id()));
+            let obj = TermId::from((obj.get_prefix(), obj.get_id()));
             match (termid2idx.get(&sub), termid2idx.get(&obj)) {
-                (Some(sub_idx), Some(obj_idx)) => Some(GraphEdge::from((*sub_idx, pred, *obj_idx))),
+                (Some(sub_idx), Some(obj_idx)) => {
+                    Some(GraphEdge::from((sub_idx.clone(), pred, obj_idx.clone())))
+                }
                 _ => None,
             }
         }

@@ -1,7 +1,6 @@
 use crate::base::{Identified, TermId};
-use std::fmt::Debug;
 
-/// Some terms have alternate identifiers, 
+/// Some terms have alternate identifiers,
 /// e.g. the identifiers used to refer to the term in the past.
 pub trait AltTermIdAware {
     type TermIdIter<'a>: Iterator<Item = &'a TermId>
@@ -19,7 +18,7 @@ pub trait AltTermIdAware {
 ///
 /// On top of inherited traits, such as [`Identified`], [`AltTermIdAware`], and others,
 /// the term must have a name and it is either current or obsolete.
-pub trait MinimalTerm: Identified + AltTermIdAware + Clone + Debug + PartialEq {
+pub trait MinimalTerm: Identified + AltTermIdAware {
     /// Get the name of the term, e.g. `Seizure`` for [Seizure](https://hpo.jax.org/browse/term/HP:0001250).
     fn name(&self) -> &str;
 
