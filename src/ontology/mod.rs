@@ -30,12 +30,6 @@ impl_term_idx!(u32);
 impl_term_idx!(u64);
 impl_term_idx!(usize);
 
-impl_term_idx!(i8);
-impl_term_idx!(i16);
-impl_term_idx!(i32);
-impl_term_idx!(i64);
-impl_term_idx!(isize);
-
 /// A trait for types that act as containers of ontology terms.
 ///
 /// The container supports iteration over the terms, retrieval of a term
@@ -229,11 +223,6 @@ impl_ontology_idx!(u32);
 impl_ontology_idx!(u64);
 impl_ontology_idx!(usize);
 
-impl_ontology_idx!(i8);
-impl_ontology_idx!(i16);
-impl_ontology_idx!(i32);
-impl_ontology_idx!(i64);
-impl_ontology_idx!(isize);
 
 /// The specification of an ontology.
 ///
