@@ -12,14 +12,14 @@ graph_builder = "0.3.1"
 anyhow = "1.0.86"
 flate2 = "1.0.30"
 pyo3 = { version = "0.21.2", optional = true, features = ["abi3-py310"] }
-obographs = { git = "https://github.com/ielis/obographs.git", tag = "v0.2.0", optional = true, features = [
+obographs-dev = { version = "0.2.1", optional = true, features = [
     'serde',
 ] }
 curieosa = { version = "0.1.0", optional = true }
 
 
 [dev-dependencies]
-obographs = { git = "https://github.com/ielis/obographs.git", tag = "v0.2.0", features = [
+obographs-dev = { version = "0.2.1", features = [
     'serde',
 ] }
 curieosa = "0.1.0"
@@ -28,7 +28,7 @@ rstest = "0.22.0"
 
 [features]
 default = ["obographs"]
-obographs = ["dep:obographs", "dep:curieosa"]
+obographs = ["dep:obographs-dev", "dep:curieosa"]
 pyo3 = ["dep:pyo3"]
 
 [[bench]]

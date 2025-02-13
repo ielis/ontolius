@@ -4,7 +4,7 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use anyhow::{bail, Context, Result};
 use curieosa::{CurieUtil, TrieCurieUtil};
-use obographs::model::{Edge, GraphDocument, Meta, Node};
+use obographs_dev::model::{Edge, GraphDocument, Meta, Node};
 
 use crate::{
     base::{
