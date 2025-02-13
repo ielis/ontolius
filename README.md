@@ -19,13 +19,18 @@ in applications.
 
 ### Load HPO
 
-`ontolius` can load HPO from Obographs JSON file 
-and the input file will be decompressed on the fly,
-as long as the file ends with a `*.gz` suffix.
+`ontolius` can load HPO from Obographs JSON file.
+For the sake of this example, we use
+[flate2](https://github.com/rust-lang/flate2-rs)
+to decompress gzipped JSON on the fly:
 
 We can load the JSON file as follows:
 
 ```rust
+use std::fs::File;
+use std::io::BufReader;
+
+use flate2::bufread::GzDecoder;
 use ontolius::io::OntologyLoaderBuilder;
 use ontolius::ontology::csr::MinimalCsrOntology;
 
@@ -37,9 +42,12 @@ let loader = OntologyLoaderBuilder::new()
                 .obographs_parser()
                 .build();
 
-let hpo: MinimalCsrOntology = loader.load_from_path(path)
+let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
+let hpo: MinimalCsrOntology = loader.load_from_read(reader)
                                 .expect("HPO should be loaded");
 ```
+
+> Note: Ontolius does *not* depend on `flate2`. Decompression of the file is responsibility of user.
 
 We loaded an ontology from a toy JSON file. 
 During the load, each term is assigned a numeric index and the indices are used as vertices 
@@ -70,10 +78,14 @@ over all terms and `TermId`s.
 We can get a term by its `TermId`: 
 
 ```rust
+# use std::fs::File;
+# use std::io::BufReader;
+# use flate2::bufread::GzDecoder;
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::MinimalCsrOntology;
 # let loader = OntologyLoaderBuilder::new().obographs_parser().build();
-# let hpo: MinimalCsrOntology = loader.load_from_path("resources/hp.small.json.gz")
+# let reader = GzDecoder::new(BufReader::new(File::open("resources/hp.small.json.gz").unwrap()));
+# let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
@@ -90,10 +102,14 @@ assert_eq!(term.name(), "Arachnodactyly");
 or iterate over the all ontology terms or their corresponding term IDs:
 
 ```rust
+# use std::fs::File;
+# use std::io::BufReader;
+# use flate2::bufread::GzDecoder;
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::MinimalCsrOntology;
 # let loader = OntologyLoaderBuilder::new().obographs_parser().build();
-# let hpo: MinimalCsrOntology = loader.load_from_path("resources/hp.small.json.gz")
+# let reader = GzDecoder::new(BufReader::new(File::open("resources/hp.small.json.gz").unwrap()));
+# let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
@@ -123,10 +139,14 @@ all properties of `TermId`s, and can, therefore, be used *in lieu* of the `TermI
 Let's see how to use the ontology hierarchy. For instance, to get the parent terms of a term.
 
 ```rust
+# use std::fs::File;
+# use std::io::BufReader;
+# use flate2::bufread::GzDecoder;
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::MinimalCsrOntology;
 # let loader = OntologyLoaderBuilder::new().obographs_parser().build();
-# let hpo: MinimalCsrOntology = loader.load_from_path("resources/hp.small.json.gz")
+# let reader = GzDecoder::new(BufReader::new(File::open("resources/hp.small.json.gz").unwrap()));
+# let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
 #
 use ontolius::prelude::*;
