@@ -7,7 +7,7 @@
 //! use std::fs::File;
 //! use std::io::BufReader;
 //! use flate2::bufread::GzDecoder;
-//! 
+//!
 //! use ontolius::prelude::*;
 //! use ontolius::ontology::csr::CsrOntology;
 //!
@@ -19,7 +19,7 @@
 //! // Load a small Obographs JSON file into `CsrOntology`.
 //! // Use `usize` as ontology graph indices.
 //! let path = "resources/hp.small.json.gz";
-//! 
+//!
 //! /// Use `flate2` to decompress JSON on the fly
 //! let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
 //! let ontology: CsrOntology<usize, _> = loader.load_from_read(reader)

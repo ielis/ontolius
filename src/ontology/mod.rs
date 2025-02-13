@@ -223,7 +223,6 @@ impl_ontology_idx!(u32);
 impl_ontology_idx!(u64);
 impl_ontology_idx!(usize);
 
-
 /// The specification of an ontology.
 ///
 /// An ontology acts as a container of ontology terms and supports iterating over all terms/term IDs

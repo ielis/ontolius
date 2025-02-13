@@ -25,8 +25,7 @@ pub struct GraphEdge<I> {
     pub obj: I,
 }
 
-impl<I> From<(I, Relationship, I)> for GraphEdge<I>
-{
+impl<I> From<(I, Relationship, I)> for GraphEdge<I> {
     fn from(value: (I, Relationship, I)) -> Self {
         Self {
             sub: value.0,

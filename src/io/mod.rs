@@ -69,7 +69,7 @@ where
         let path = path.as_ref();
         let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
 
-        self.load_from_read(file)        
+        self.load_from_read(file)
     }
 
     /// Load ontology from a reader.
