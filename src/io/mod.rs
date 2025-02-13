@@ -4,7 +4,6 @@ pub mod obographs;
 
 use anyhow::{Context, Result};
 
-use flate2::read::GzDecoder;
 use std::{
     collections::HashMap,
     fs::File,
@@ -69,19 +68,8 @@ where
     {
         let path = path.as_ref();
         let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
-        if let Some(extension) = path.extension() {
-            if extension == "gz" {
-                // Decompress gzipped file on the fly.
-                self.load_from_read(GzDecoder::new(file))
-            } else {
-                // All other extensions, e.g. JSON
-                self.load_from_read(file)
-            }
-        } else {
-            // We will also read from a file with no extension,
-            // assuming plain text.
-            self.load_from_read(file)
-        }
+
+        self.load_from_read(file)
     }
 
     /// Load ontology from a reader.
