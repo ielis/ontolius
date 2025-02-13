@@ -1,20 +1,10 @@
-# ontolius
+# Ontolius
 
-`ontolius` is a crate to empower the algorithms that use Human Phenotype Ontology (HPO).
-
-## Usage
-
-We recommend adding the following into your `Cargo.toml` file:
-
-```toml
-ontolius = { git = 'https://github.com/ielis/ontolius.git', tag = 'v0.4.0' }
-```
-
-The `obographs` feature is enabled by deafult, to allow reading HPO from Obographs JSON file.
+Empower analysis with terms and hierarchy of biomedical ontologies.
 
 ## Examples
 
-We provide examples of *loading* ontology and its suggested usage
+We provide examples of *loading* ontology and its subsequent *usage*
 in applications.
 
 ### Load HPO
@@ -47,7 +37,8 @@ let hpo: MinimalCsrOntology = loader.load_from_read(reader)
                                 .expect("HPO should be loaded");
 ```
 
-> Note: Ontolius does *not* depend on `flate2`. Decompression of the file is responsibility of user.
+> Note: Ontolius does *not* depend on `flate2`. It's up to you to provide
+> the `loader` with proper data.
 
 We loaded an ontology from a toy JSON file. 
 During the load, each term is assigned a numeric index and the indices are used as vertices 

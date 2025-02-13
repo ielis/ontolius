@@ -1,11 +1,16 @@
 [package]
 name = "ontolius"
 version = "0.4.1-dev0"
+description = "Empower analysis with terms and hierarchy of biomedical ontologies."
+keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO", "MONDO"]
 edition = "2021"
-authors = ["Daniel Danis <daniel.gordon.danis@protonmail.com>"]
+
+homepage = "https://github.com/ielis/ontolius"
 repository = "https://github.com/ielis/ontolius"
-license-file = "LICENSE"
 readme = "README.md"
+license-file = "LICENSE"
+
+authors = ["Daniel Danis <daniel.gordon.danis@protonmail.com>"]
 
 [dependencies]
 graph_builder = "0.3.1"
