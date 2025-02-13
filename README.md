@@ -7,7 +7,7 @@ Empower analysis with terms and hierarchy of biomedical ontologies.
 We provide examples of *loading* ontology and its subsequent *usage*
 in applications.
 
-### Load HPO
+### 🪄🪄🪄 Load HPO
 
 `ontolius` can load HPO from Obographs JSON file.
 For the sake of this example, we use
@@ -38,7 +38,7 @@ let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 ```
 
 > Note: Ontolius does *not* depend on `flate2`. It's up to you to provide
-> the `loader` with proper data.
+> the `loader` with proper data 😱
 
 We loaded an ontology from a toy JSON file. 
 During the load, each term is assigned a numeric index and the indices are used as vertices 
@@ -52,7 +52,7 @@ which is the API the client code should use.
 
 Now let's move on to the example usage.
 
-### Use HPO
+### 🤸🤸🤸 Use HPO
 
 In the previous section, we loaded an ontology from Obographs JSON file.
 Now we have an instance of [`crate::ontology::Ontology`] that can 
