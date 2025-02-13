@@ -1,5 +1,8 @@
 use std::collections::HashSet;
+use std::fs::File;
+use std::io::BufReader;
 
+use flate2::bufread::GzDecoder;
 use ontolius::base::TermId;
 use ontolius::io::OntologyLoaderBuilder;
 use ontolius::ontology::csr::MinimalCsrOntology;
@@ -11,9 +14,10 @@ use rstest::{fixture, rstest};
 #[fixture]
 fn hpo() -> MinimalCsrOntology {
     let path = "resources/hp.v2024-08-13.json.gz";
+    let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
     let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
-    loader.load_from_path(path).unwrap()
+    loader.load_from_read(reader).unwrap()
 }
 
 #[rstest]

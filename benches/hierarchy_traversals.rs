@@ -1,15 +1,17 @@
+use std::fs::File;
 use std::str::FromStr;
-use std::vec;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
+use flate2::read::GzDecoder;
 use ontolius::ontology::csr::MinimalCsrOntology;
 use ontolius::prelude::*;
 
 fn hierarchy_traversals(c: &mut Criterion) {
     let path = "resources/hp.v2024-08-13.json.gz";
     let loader = OntologyLoaderBuilder::new().obographs_parser().build();
-    let ontology: MinimalCsrOntology = loader.load_from_path(path).unwrap();
+    let reader = GzDecoder::new(File::open(path).expect("Missing ontology file"));
+    let ontology: MinimalCsrOntology = loader.load_from_read(reader).unwrap();
 
     macro_rules! bench_traversal {
         ($group: expr, $func: expr, $name: expr, $curie: expr) => {
