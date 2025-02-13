@@ -2,7 +2,7 @@
 name = "ontolius"
 version = "0.4.1-dev0"
 description = "Empower analysis with terms and hierarchy of biomedical ontologies."
-keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO", "MONDO"]
+keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO"]
 edition = "2021"
 
 homepage = "https://github.com/ielis/ontolius"
