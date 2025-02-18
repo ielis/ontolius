@@ -6,7 +6,6 @@ use crate::hierarchy::{
     Relationship,
 };
 
-use anyhow::{bail, Context, Result};
 use graph_builder::index::Idx as CsrIdx;
 use graph_builder::GraphBuilder;
 use graph_builder::{DirectedCsrGraph, DirectedNeighbors};
@@ -21,55 +20,45 @@ where
     adjacency_matrix: DirectedCsrGraph<I>,
 }
 
-impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
+// impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
+// where
+//     I: CsrIdx + Hash,
+// {
+//     type Error = anyhow::Error;
+//     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
+//     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
+//         let root_idx = find_root_idx(graph_edges)
+//             .cloned()
+//             .context("Find index of the root term node")?;
+
+//         let adjacency_matrix = GraphBuilder::new()
+//             .csr_layout(graph_builder::CsrLayout::Sorted)
+//             .edges(make_edge_iterator(graph_edges))
+//             .build();
+
+//         Ok(CsrOntologyHierarchy {
+//             root_idx,
+//             adjacency_matrix,
+//         })
+//     }
+// }
+
+impl<I> From<(I, &[GraphEdge<I>])> for CsrOntologyHierarchy<I>
 where
-    I: CsrIdx + Hash,
+    I: CsrIdx,
 {
-    type Error = anyhow::Error;
-    // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
-    fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-        let root_idx = find_root_idx(graph_edges)
-            .cloned()
-            .context("Find index of the root term node")?;
+    fn from(value: (I, &[GraphEdge<I>])) -> Self {
+        let (root_idx, graph_edges) = value;
 
         let adjacency_matrix = GraphBuilder::new()
             .csr_layout(graph_builder::CsrLayout::Sorted)
             .edges(make_edge_iterator(graph_edges))
             .build();
 
-        Ok(CsrOntologyHierarchy {
+        CsrOntologyHierarchy {
             root_idx,
             adjacency_matrix,
-        })
-    }
-}
-
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I>
-where
-    I: Hash + Eq,
-{
-    let mut root_candidate_set = HashSet::new();
-    let mut remove_mark_set = HashSet::new();
-
-    for edge in graph_edges.iter() {
-        match edge.pred {
-            Relationship::Child => {
-                root_candidate_set.insert(&edge.obj);
-                remove_mark_set.insert(&edge.sub);
-            }
-            Relationship::Parent => {
-                root_candidate_set.insert(&edge.obj);
-                remove_mark_set.insert(&edge.sub);
-            }
         }
-    }
-
-    let candidates: Vec<_> = root_candidate_set.difference(&remove_mark_set).collect();
-
-    match candidates.len() {
-        0 => bail!("No root candidate found!"),
-        1 => Ok(candidates[0]),
-        _ => bail!("More than one root candidates found"),
     }
 }
 
@@ -425,13 +414,15 @@ mod create_csr_hierarchy {
     use super::*;
 
     #[test]
-    fn try_from_graph_edges() {
+    fn test_from_graph_edges() {
         let edges = [
             GraphEdge::from((1, Relationship::Child, 0)),
             GraphEdge::from((2, Relationship::Child, 1)),
             GraphEdge::from((3, Relationship::Child, 1)),
         ];
-        let hierarchy = CsrOntologyHierarchy::try_from(edges.as_slice());
-        assert!(hierarchy.is_ok());
+
+        let hierarchy: CsrOntologyHierarchy<u8> = CsrOntologyHierarchy::from((0, edges.as_slice()));
+
+        assert_eq!(hierarchy.root(), &0);
     }
 }

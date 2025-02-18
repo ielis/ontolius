@@ -18,7 +18,17 @@ pub trait AltTermIdAware {
 ///
 /// On top of inherited traits, such as [`Identified`], [`AltTermIdAware`], and others,
 /// the term must have a name and it is either current or obsolete.
-pub trait MinimalTerm: Identified + AltTermIdAware {
+/// 
+/// ### Default term
+/// 
+/// The [`Default`] minimal term represents the ontology root that is inserted into the ontology
+/// in case 2 or more root candidates are found.
+/// 
+/// For instance, the default term is used when loading Gene Ontology, which has 3 roots:
+/// * biological process
+/// * molecular function
+/// * cellular component
+pub trait MinimalTerm: Identified + AltTermIdAware + Default {
     /// Get the name of the term, e.g. `Seizure` for [Seizure](https://hpo.jax.org/browse/term/HP:0001250).
     fn name(&self) -> &str;
 
@@ -42,7 +52,7 @@ pub trait Term: MinimalTerm {
 pub mod simple {
 
     use super::{AltTermIdAware, MinimalTerm};
-    use crate::base::{Identified, TermId};
+    use crate::base::{Identified, TermId, OWL_THING};
 
     #[derive(Debug, PartialEq, Eq, Clone)]
     pub struct SimpleMinimalTerm {
@@ -67,6 +77,18 @@ pub mod simple {
         }
     }
 
+    /// Get the default term that corresponds to `owl:Thing`.
+    impl Default for SimpleMinimalTerm {
+        fn default() -> Self {
+            Self {
+                term_id: TermId::from(OWL_THING),
+                alt_term_ids: Default::default(),
+                name: "Thing".to_string(),
+                is_obsolete: false,
+            }
+        }
+    }
+
     impl Identified for SimpleMinimalTerm {
         fn identifier(&self) -> &TermId {
             &self.term_id
@@ -74,7 +96,8 @@ pub mod simple {
     }
 
     impl AltTermIdAware for SimpleMinimalTerm {
-        type TermIdIter<'a> = std::slice::Iter<'a, TermId>
+        type TermIdIter<'a>
+            = std::slice::Iter<'a, TermId>
         where
             Self: 'a;
 

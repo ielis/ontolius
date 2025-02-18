@@ -1,11 +1,13 @@
 //! A module with an example implementation of [`Ontology`].
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::{collections::HashMap, iter::once};
 
+use anyhow::{Result, bail};
 use graph_builder::index::Idx as CsrIdx;
 
 use crate::base::{Identified, TermId};
-use crate::hierarchy::HierarchyIdx;
+use crate::hierarchy::{GraphEdge, HierarchyIdx, Relationship};
 use crate::io::OntologyData;
 use crate::ontology::{HierarchyAware, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
 use crate::prelude::AltTermIdAware;
@@ -30,21 +32,34 @@ where
 impl<I, T> TryFrom<OntologyData<I, T>> for CsrOntology<I, T>
 where
     I: HierarchyIdx + CsrIdx + Hash,
-    T: Identified + AltTermIdAware,
+    T: Identified + AltTermIdAware + Default,
 {
     type Error = Error;
 
     fn try_from(value: OntologyData<I, T>) -> Result<Self, Self::Error> {
         // TODO: I am not sure this is the most efficient way to build the ontology.
         let OntologyData {
-            terms,
-            edges,
+            mut terms,
+            mut edges,
             metadata,
         } = value;
 
+        /* 
+        TODO:
+        - Starting from `terms` and `edges`, find indices of the candidate root terms.
+          - having 0 candidates is a bug that should result in an error
+          - having 1 candidate is the simplest case
+          - having 2 or more candidates requires linking `T` into the ontology:
+            - create the root (`T::default()`)
+            - ensure the root does *not* already exist in `terms` (or fail if it is there)
+            - push it into `terms`
+            - add the corresponding edges between subroots and root
+            - keep the index of the new root around for downstream use
+        */
+        
         // Only keep the primary terms.
         let terms: Box<[_]> = terms.into_iter().collect::<Vec<_>>().into_boxed_slice();
-
+        
         let term_id_to_idx = terms
             .iter()
             .enumerate()
@@ -56,7 +71,9 @@ where
             })
             .collect();
 
-        let hierarchy = CsrOntologyHierarchy::try_from(&*edges)?;
+        let root = todo!();
+
+        let hierarchy = CsrOntologyHierarchy::from((root, &*edges));
 
         Ok(Self {
             terms,
@@ -64,6 +81,36 @@ where
             hierarchy,
             metadata,
         })
+    }
+}
+
+
+fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I>
+where
+    I: Hash + Eq,
+{
+    let mut root_candidate_set = HashSet::new();
+    let mut remove_mark_set = HashSet::new();
+
+    for edge in graph_edges.iter() {
+        match edge.pred {
+            Relationship::Child => {
+                root_candidate_set.insert(&edge.obj);
+                remove_mark_set.insert(&edge.sub);
+            }
+            Relationship::Parent => {
+                root_candidate_set.insert(&edge.obj);
+                remove_mark_set.insert(&edge.sub);
+            }
+        }
+    }
+
+    let candidates: Vec<_> = root_candidate_set.difference(&remove_mark_set).collect();
+
+    match candidates.len() {
+        0 => bail!("No root candidate found!"),
+        1 => Ok(candidates[0]),
+        _ => bail!("More than one root candidates found"),
     }
 }
 

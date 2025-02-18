@@ -11,6 +11,8 @@ use anyhow::{bail, Error, Result};
 pub mod py;
 pub mod term;
 
+const OWL_THING: (&str, &str) = ("owl", "Thing");
+
 /// `Identified` is implemented by entities that have a [`TermId`] as an identifier.
 ///
 /// ## Examples
