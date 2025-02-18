@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use std::{collections::HashMap, iter::once};
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use graph_builder::index::Idx as CsrIdx;
 
 use crate::base::{Identified, TermId};
@@ -44,7 +44,7 @@ where
             metadata,
         } = value;
 
-        /* 
+        /*
         TODO:
         - Starting from `terms` and `edges`, find indices of the candidate root terms.
           - having 0 candidates is a bug that should result in an error
@@ -56,10 +56,10 @@ where
             - add the corresponding edges between subroots and root
             - keep the index of the new root around for downstream use
         */
-        
+
         // Only keep the primary terms.
         let terms: Box<[_]> = terms.into_iter().collect::<Vec<_>>().into_boxed_slice();
-        
+
         let term_id_to_idx = terms
             .iter()
             .enumerate()
@@ -84,8 +84,7 @@ where
     }
 }
 
-
-fn find_root_idx<I>(graph_edges: &[GraphEdge<I>]) -> Result<&I>
+fn find_candidate_root_indices<I>(graph_edges: &[GraphEdge<I>]) -> Vec<&I>
 where
     I: Hash + Eq,
 {
@@ -102,16 +101,14 @@ where
                 root_candidate_set.insert(&edge.obj);
                 remove_mark_set.insert(&edge.sub);
             }
+            _ => {}
         }
     }
 
-    let candidates: Vec<_> = root_candidate_set.difference(&remove_mark_set).collect();
-
-    match candidates.len() {
-        0 => bail!("No root candidate found!"),
-        1 => Ok(candidates[0]),
-        _ => bail!("More than one root candidates found"),
-    }
+    root_candidate_set
+        .difference(&remove_mark_set)
+        .copied()
+        .collect()
 }
 
 impl<I, T> HierarchyAware<I> for CsrOntology<I, T>

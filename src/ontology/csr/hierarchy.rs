@@ -71,6 +71,7 @@ where
             // `sub -> is_a -> obj` is what we want!
             Relationship::Child => Some((edge.sub.clone(), edge.obj.clone())),
             Relationship::Parent => Some((edge.obj.clone(), edge.sub.clone())),
+            _ => None,
         }
     })
 }
