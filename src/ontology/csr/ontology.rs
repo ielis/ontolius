@@ -57,6 +57,18 @@ where
             - keep the index of the new root around for downstream use
         */
 
+        // -------------------------------------- EXAMPLE --------------------------------------
+
+        let uber_root = T::default();
+
+        terms.push(uber_root);
+        let root_idx = HierarchyIdx::new(terms.len());
+        let subroot1_idx = HierarchyIdx::new(123);
+        let edge = GraphEdge::from((subroot1_idx, Relationship::Child, root_idx));
+        edges.push(edge);
+
+        // -------------------------------------- EXAMPLE --------------------------------------
+
         // Only keep the primary terms.
         let terms: Box<[_]> = terms.into_iter().collect::<Vec<_>>().into_boxed_slice();
 
