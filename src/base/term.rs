@@ -18,12 +18,12 @@ pub trait AltTermIdAware {
 ///
 /// On top of inherited traits, such as [`Identified`], [`AltTermIdAware`], and others,
 /// the term must have a name and it is either current or obsolete.
-/// 
+///
 /// ### Default term
-/// 
+///
 /// The [`Default`] minimal term represents the ontology root that is inserted into the ontology
 /// in case 2 or more root candidates are found.
-/// 
+///
 /// For instance, the default term is used when loading Gene Ontology, which has 3 roots:
 /// * biological process
 /// * molecular function

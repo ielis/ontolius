@@ -11,7 +11,7 @@ pub enum Relationship {
     /// Subject is the child of the object.
     Child,
     /// Subject is part of the object.
-    /// 
+    ///
     /// Corresponds to [part of](http://purl.obolibrary.org/obo/BFO_0000050).
     PartOf,
 }

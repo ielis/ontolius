@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use std::{collections::HashMap, iter::once};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use graph_builder::index::Idx as CsrIdx;
 
 use crate::base::{Identified, TermId};
@@ -32,7 +32,7 @@ where
 impl<I, T> TryFrom<OntologyData<I, T>> for CsrOntology<I, T>
 where
     I: HierarchyIdx + CsrIdx + Hash,
-    T: Identified + AltTermIdAware + Default,
+    T: Identified + AltTermIdAware + Default + PartialEq,
 {
     type Error = Error;
 
@@ -44,30 +44,31 @@ where
             metadata,
         } = value;
 
-        /*
-        TODO:
-        - Starting from `terms` and `edges`, find indices of the candidate root terms.
-          - having 0 candidates is a bug that should result in an error
-          - having 1 candidate is the simplest case
-          - having 2 or more candidates requires linking `T` into the ontology:
-            - create the root (`T::default()`)
-            - ensure the root does *not* already exist in `terms` (or fail if it is there)
-            - push it into `terms`
-            - add the corresponding edges between subroots and root
-            - keep the index of the new root around for downstream use
-        */
+        let candidate_roots = find_candidate_root_indices(&edges);
 
-        // -------------------------------------- EXAMPLE --------------------------------------
+        let root = match candidate_roots.len() {
+            0 => bail!("Ontology must have at least one candidate root term"),
+            1 => **candidate_roots.first().unwrap(),
+            _ => {
+                let uber_root = T::default();
 
-        let uber_root = T::default();
+                let root_idx = HierarchyIdx::new(terms.len());
 
-        terms.push(uber_root);
-        let root_idx = HierarchyIdx::new(terms.len());
-        let subroot1_idx = HierarchyIdx::new(123);
-        let edge = GraphEdge::from((subroot1_idx, Relationship::Child, root_idx));
-        edges.push(edge);
+                //TO DO :- ensure the root does *not* already exist in `terms` (or fail if it is there)
+                if let Some(_term) = terms.iter().find(|&term| term == &uber_root) {
+                    bail!("The root already exists in terms");
+                }
 
-        // -------------------------------------- EXAMPLE --------------------------------------
+                terms.push(uber_root);
+
+                let new_edges: Vec<_> = candidate_roots
+                    .into_iter()
+                    .map(|&subroot| GraphEdge::from((subroot, Relationship::Child, root_idx)))
+                    .collect();
+                edges.extend(new_edges);
+                root_idx
+            }
+        };
 
         // Only keep the primary terms.
         let terms: Box<[_]> = terms.into_iter().collect::<Vec<_>>().into_boxed_slice();
@@ -82,8 +83,6 @@ where
                 )
             })
             .collect();
-
-        let root = todo!();
 
         let hierarchy = CsrOntologyHierarchy::from((root, &*edges));
 

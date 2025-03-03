@@ -152,7 +152,7 @@ mod gene_ontology {
     use ontolius::{io::OntologyLoaderBuilder, ontology::csr::MinimalCsrOntology};
 
     #[test]
-    #[ignore = "We are not there yet"]
+    // #[ignore = "We are not there yet"]
     fn load_go() {
         let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
@@ -161,9 +161,17 @@ mod gene_ontology {
 
         let go: Result<MinimalCsrOntology, anyhow::Error> = loader.load_from_read(reader);
 
-        match go {
-            Ok(o) => println!("Loaded GO with {:?} as the root term", o.root_term_id()),
-            Err(e) => println!("There was an error {:?}", e),
+        // match go {
+        //     Ok(o) => println!("Loaded GO with {:?} as the root term", o.root_term_id()),
+        //     Err(e) => println!("There was an error {:?}", e),
+        // }
+
+        let id = TermId::from(("GO", "0004738"));
+        let go = go.unwrap();
+        let node = go.id_to_idx(&id);
+        for x in go.hierarchy().iter_ancestors_of(node.unwrap()) {
+            let term = go.idx_to_term(x).unwrap();
+            println!("{:?}", term.name());
         }
     }
 }
