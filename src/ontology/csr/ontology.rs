@@ -54,8 +54,7 @@ where
 
                 let root_idx = HierarchyIdx::new(terms.len());
 
-                //TO DO :- ensure the root does *not* already exist in `terms` (or fail if it is there)
-                if let Some(_term) = terms.iter().find(|&term| term == &uber_root) {
+                if terms.iter().any(|term| term == &uber_root) {
                     bail!("The root already exists in terms");
                 }
 
