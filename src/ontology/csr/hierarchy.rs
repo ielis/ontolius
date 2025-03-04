@@ -20,29 +20,6 @@ where
     adjacency_matrix: DirectedCsrGraph<I>,
 }
 
-// impl<I> TryFrom<&[GraphEdge<I>]> for CsrOntologyHierarchy<I>
-// where
-//     I: CsrIdx + Hash,
-// {
-//     type Error = anyhow::Error;
-//     // TODO: we do not need a slice, all we need is a type that can be iterated over multiple times!
-//     fn try_from(graph_edges: &[GraphEdge<I>]) -> Result<Self, Self::Error> {
-//         let root_idx = find_root_idx(graph_edges)
-//             .cloned()
-//             .context("Find index of the root term node")?;
-
-//         let adjacency_matrix = GraphBuilder::new()
-//             .csr_layout(graph_builder::CsrLayout::Sorted)
-//             .edges(make_edge_iterator(graph_edges))
-//             .build();
-
-//         Ok(CsrOntologyHierarchy {
-//             root_idx,
-//             adjacency_matrix,
-//         })
-//     }
-// }
-
 impl<I> From<(I, &[GraphEdge<I>])> for CsrOntologyHierarchy<I>
 where
     I: CsrIdx,
