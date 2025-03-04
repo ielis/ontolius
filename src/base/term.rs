@@ -24,10 +24,16 @@ pub trait AltTermIdAware {
 /// The [`Default`] minimal term represents the ontology root that is inserted into the ontology
 /// in case 2 or more root candidates are found.
 ///
-/// For instance, the default term is used when loading Gene Ontology, which has 3 roots:
+/// #### Example 
+/// 
+/// Gene Ontology has 3 root terms:
 /// * biological process
 /// * molecular function
 /// * cellular component
+/// 
+/// In this case, a default term would be created to be used as an artificial root term,
+/// and three new "is_a" edges would be created to link the 3 roots to the default term,
+/// which would be used as an artificial root.
 pub trait MinimalTerm: Identified + AltTermIdAware + Default {
     /// Get the name of the term, e.g. `Seizure` for [Seizure](https://hpo.jax.org/browse/term/HP:0001250).
     fn name(&self) -> &str;
