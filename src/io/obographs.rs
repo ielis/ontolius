@@ -131,22 +131,21 @@ where
     HI: Clone,
 {
     let sub_parts = curie_util.get_curie_data(&edge.sub);
-    let rel = parse_relationship(&edge.pred);
     let obj_parts = curie_util.get_curie_data(&edge.obj);
-    match (sub_parts, rel, obj_parts) {
-        (Some(sub), Ok(pred), Some(obj)) => {
+    match (sub_parts, obj_parts) {
+        (Some(sub), Some(obj)) => {
             let sub = TermId::from((sub.get_prefix(), sub.get_id()));
             let obj = TermId::from((obj.get_prefix(), obj.get_id()));
-            match (termid2idx.get(&sub), termid2idx.get(&obj)) {
-                (Some(sub_idx), Some(obj_idx)) => {
-                    Some(GraphEdge::from((sub_idx.clone(), pred, obj_idx.clone())))
+            if let Ok(pred) = parse_relationship(&edge.pred) {
+                match (termid2idx.get(&sub), termid2idx.get(&obj)) {
+                    (Some(sub_idx), Some(obj_idx)) => {
+                        Some(GraphEdge::from((sub_idx.clone(), pred, obj_idx.clone())))
+                    }
+                    _ => None,
                 }
-                _ => None,
+            } else {
+                None
             }
-        }
-        (_, Err(e), _) => {
-            println!("Missing relationship: {e}");
-            None
         }
         _ => None,
     }
@@ -156,7 +155,8 @@ fn parse_relationship(pred: &str) -> Result<Relationship> {
     match pred {
         // This may be too simplistic
         "is_a" => Ok(Relationship::Child),
-        _ => bail!("Unknown predicate {}", pred),
+        "http://purl.obolibrary.org/obo/BFO_0000050" => Ok(Relationship::PartOf),
+        _ => bail!("Unknown predicate {:?}", pred),
     }
 }
 
