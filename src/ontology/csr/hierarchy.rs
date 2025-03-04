@@ -397,6 +397,10 @@ mod create_csr_hierarchy {
             GraphEdge::from((1, Relationship::Child, 0)),
             GraphEdge::from((2, Relationship::Child, 1)),
             GraphEdge::from((3, Relationship::Child, 1)),
+            GraphEdge::from((3, Relationship::Child, 0)),
+            GraphEdge::from((4, Relationship::Child, 0)),
+            GraphEdge::from((5, Relationship::Child, 4)),
+            GraphEdge::from((6, Relationship::Child, 4)),
         ];
 
         let hierarchy: CsrOntologyHierarchy<u8> = CsrOntologyHierarchy::from((0, edges.as_slice()));
