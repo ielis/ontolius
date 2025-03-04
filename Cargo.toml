@@ -1,6 +1,6 @@
 [package]
 name = "ontolius"
-version = "0.4.1"
+version = "0.4.2"
 description = "Empower analysis with terms and hierarchy of biomedical ontologies."
 keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO"]
 edition = "2021"
@@ -13,22 +13,21 @@ license-file = "LICENSE"
 authors = ["Daniel Danis <daniel.gordon.danis@protonmail.com>"]
 
 [dependencies]
-graph_builder = "0.3.1"
 anyhow = "1.0.86"
-pyo3 = { version = "0.21.2", optional = true, features = ["abi3-py310"] }
-obographs-dev = { version = "0.2.2", optional = true}
 curieosa = { version = "0.1.0", optional = true }
+graph_builder = { version = "0.3.1", optional = true }
+obographs-dev = { version = "0.2.2", optional = true }
+pyo3 = { version = "0.21.2", optional = true, features = ["abi3-py310"] }
 
 
 [dev-dependencies]
-obographs-dev = "0.2.2"
-curieosa = "0.1.0"
 flate2 = "1.0.30"
 criterion = "0.5.1"
 rstest = "0.22.0"
 
 [features]
-default = ["obographs"]
+default = ["obographs", "csr"]
+csr = ["dep:graph_builder"]
 obographs = ["dep:obographs-dev", "dep:curieosa"]
 pyo3 = ["dep:pyo3"]
 
