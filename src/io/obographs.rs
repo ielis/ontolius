@@ -82,15 +82,13 @@ where
     }
 }
 
-impl<CU, I> OntologyDataParser for ObographsParser<CU, I>
+impl<CU, I> OntologyDataParser<I, SimpleMinimalTerm> for ObographsParser<CU, I>
 where
     CU: CurieUtil,
     I: OntologyIdx,
 {
-    type I = I;
-    type T = SimpleMinimalTerm;
 
-    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<Self::I, Self::T>> {
+    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<I, SimpleMinimalTerm>> {
         let gd = GraphDocument::from_reader(read).context("Reading graph document")?;
 
         let graph = gd.graphs.first().context("Getting the first graph")?;
