@@ -148,12 +148,13 @@ mod gene_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
+    use ontolius::io::obographs::ObographsParser;
     use ontolius::prelude::*;
     use ontolius::{io::OntologyLoaderBuilder, ontology::csr::MinimalCsrOntology};
 
     #[test]
     fn load_go() {
-        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+        let loader: OntologyLoader<ObographsParser<curieosa::TrieCurieUtil>> = OntologyLoaderBuilder::new().obographs_parser().build();
 
         let path = "resources/go-basic.v2025-02-06.json.gz";
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));

@@ -1,6 +1,6 @@
 use std::io::BufRead;
 use std::str::FromStr;
-use std::{collections::HashMap, marker::PhantomData};
+use std::collections::HashMap;
 
 use anyhow::{bail, Context, Result};
 use curieosa::{CurieUtil, TrieCurieUtil};
@@ -32,31 +32,31 @@ fn parse_alt_term_ids(node_meta: &Meta) -> Vec<TermId> {
         .collect()
 }
 
-pub struct ObographsParser<CU, HI> {
+pub struct ObographsParser<CU> {
     curie_util: CU,
-    _marker: PhantomData<HI>,
 }
 
-impl<HI> Default for ObographsParser<TrieCurieUtil, HI> {
+impl Default for ObographsParser<TrieCurieUtil> {
     fn default() -> Self {
         Self {
             curie_util: TrieCurieUtil::default(),
-            _marker: Default::default(),
         }
     }
 }
 
-impl<CU, I> ObographsParser<CU, I>
+impl<CU> ObographsParser<CU>
 where
     CU: CurieUtil,
 {
     pub fn new(curie_util: CU) -> Self {
-        Self {
-            curie_util,
-            _marker: PhantomData,
-        }
+        Self { curie_util }
     }
+}
 
+impl<CU> ObographsParser<CU>
+where
+    CU: CurieUtil,
+{
     fn create(&self, data: &Node) -> Result<SimpleMinimalTerm> {
         let cp = self.curie_util.get_curie_data(&data.id);
         let name = &data.lbl;
@@ -82,13 +82,15 @@ where
     }
 }
 
-impl<CU, I> OntologyDataParser<I, SimpleMinimalTerm> for ObographsParser<CU, I>
+impl<CU, I> OntologyDataParser<I, SimpleMinimalTerm> for ObographsParser<CU>
 where
     CU: CurieUtil,
     I: OntologyIdx,
 {
-
-    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<I, SimpleMinimalTerm>> {
+    fn load_from_buf_read<R: BufRead>(
+        &self,
+        read: R,
+    ) -> Result<OntologyData<I, SimpleMinimalTerm>> {
         let gd = GraphDocument::from_reader(read).context("Reading graph document")?;
 
         let graph = gd.graphs.first().context("Getting the first graph")?;
@@ -162,11 +164,9 @@ fn parse_relationship(pred: &str) -> Result<Relationship> {
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Load ontology graphs using [`ObographsParser`].        
     #[must_use]
-    pub fn obographs_parser<HI>(
+    pub fn obographs_parser(
         self,
-    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil, HI>>>
-    where
-        HI: OntologyIdx,
+    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil>>>
     {
         OntologyLoaderBuilder {
             state: WithParser {
