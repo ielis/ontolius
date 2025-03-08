@@ -9,6 +9,7 @@
 //! use flate2::bufread::GzDecoder;
 //!
 //! use ontolius::prelude::*;
+//! use ontolius::base::term::simple::SimpleMinimalTerm;
 //! use ontolius::ontology::csr::CsrOntology;
 //!
 //! // Configure the ontology loader to parse Obographs JSON file.
@@ -22,7 +23,7 @@
 //!
 //! /// Use `flate2` to decompress JSON on the fly
 //! let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
-//! let ontology: CsrOntology<usize, _> = loader.load_from_read(reader)
+//! let ontology: CsrOntology<usize, SimpleMinimalTerm> = loader.load_from_read(reader)
 //!                                         .expect("Obographs JSON should be parsable");
 //!
 //! // or do the same using the `MinimalCsrOntology` alias to save some typing:

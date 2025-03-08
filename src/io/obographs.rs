@@ -1,14 +1,19 @@
 use std::io::BufRead;
-use std::str::FromStr;
-use std::{collections::HashMap, marker::PhantomData};
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{bail, Context, Result};
 use curieosa::{CurieUtil, TrieCurieUtil};
-use obographs_dev::model::{Edge, GraphDocument, Meta, Node};
+use obographs_dev::model::{
+    DefinitionPropertyValue, Edge, Graph, GraphDocument, Meta, Node, SynonymPropertyValue,
+};
 
+use crate::base::term::{Definition, Synonym, SynonymCategory, SynonymType};
 use crate::{
     base::{
-        term::{simple::SimpleMinimalTerm, MinimalTerm},
+        term::{
+            simple::{SimpleMinimalTerm, SimpleTerm},
+            MinimalTerm,
+        },
         Identified, TermId,
     },
     hierarchy::{GraphEdge, Relationship},
@@ -17,57 +22,129 @@ use crate::{
 
 use super::{OntologyData, OntologyDataParser, OntologyLoaderBuilder, Uninitialized, WithParser};
 
-fn parse_alt_term_ids(node_meta: &Meta) -> Vec<TermId> {
-    node_meta
-        .basic_property_values
-        .iter()
-        .filter(|&bpv| bpv.pred.ends_with("#hasAlternativeId"))
-        .flat_map(|bpv| match TermId::from_str(&bpv.val) {
-            Ok(term_id) => Some(term_id),
-            Err(e) => {
-                eprintln!("{}", e); // TODO: really?
-                None
-            }
-        })
-        .collect()
-}
-
-pub struct ObographsParser<CU, HI> {
-    curie_util: CU,
-    _marker: PhantomData<HI>,
-}
-
-impl<HI> Default for ObographsParser<TrieCurieUtil, HI> {
-    fn default() -> Self {
-        Self {
-            curie_util: TrieCurieUtil::default(),
-            _marker: Default::default(),
+impl From<DefinitionPropertyValue> for Definition {
+    fn from(value: DefinitionPropertyValue) -> Self {
+        Definition {
+            val: value.val,
+            xrefs: value.xrefs.unwrap_or_default(),
         }
     }
 }
 
-impl<CU, I> ObographsParser<CU, I>
+fn parse_synonym_category(pred: String) -> Option<SynonymCategory> {
+    match pred.as_str() {
+        "hasExactSynonym" => Some(SynonymCategory::Exact),
+        "hasBroadSynonym" => Some(SynonymCategory::Broad),
+        "hasNarrowSynonym" => Some(SynonymCategory::Narrow),
+        "hasRelatedSynonym" => Some(SynonymCategory::Related),
+        _ => {
+            eprintln!("Unknown synonym category {pred:?}",);
+            None
+        }
+    }
+}
+
+fn parse_synonym_type(synonym_type: String) -> Option<SynonymType> {
+    match synonym_type.as_ref() {
+        "http://purl.obolibrary.org/obo/hp#layperson" => Some(SynonymType::LaypersonTerm),
+        "http://purl.obolibrary.org/obo/hp#abbreviation" => Some(SynonymType::Abbreviation),
+        "http://purl.obolibrary.org/obo/hp#uk_spelling" => Some(SynonymType::UkSpelling),
+        "http://purl.obolibrary.org/obo/hp#obsolete_synonym" => Some(SynonymType::ObsoleteSynonym),
+        "http://purl.obolibrary.org/obo/hp#plural_form" => Some(SynonymType::PluralForm),
+        "http://purl.obolibrary.org/obo/go#systematic_synonym" => {
+            Some(SynonymType::SystematicSynonym)
+        }
+        "http://purl.obolibrary.org/obo/go#syngo_official_label" => {
+            Some(SynonymType::SyngoOfficialLabel)
+        }
+        _ => {
+            eprintln!("Unknown synonym category {synonym_type:?}",);
+            None
+        }
+    }
+}
+
+fn parse_synonym_xref(xref: String) -> Option<TermId> {
+    if let Some(remainder) = xref.strip_prefix("https://orcid.org/") {
+        Some(TermId::from(("ORCID", remainder)))
+    } else {
+        xref.parse().ok()
+    }
+}
+
+impl From<SynonymPropertyValue> for Synonym {
+    fn from(value: SynonymPropertyValue) -> Self {
+        Self {
+            name: value.val,
+            category: parse_synonym_category(value.pred),
+            r#type: value.synonym_type.and_then(parse_synonym_type),
+            xrefs: value
+                .xrefs
+                .unwrap_or_default()
+                .into_iter()
+                .flat_map(parse_synonym_xref)
+                .collect(),
+        }
+    }
+}
+
+/// The term factory parses the obographs node into a term.
+pub trait ObographsTermMapper<T> {
+    fn create(&self, node: Node) -> Result<T>;
+}
+
+#[derive(Default)]
+pub struct DefaultObographsTermMapper<CU> {
+    curie_util: Arc<CU>,
+}
+
+impl<CU> DefaultObographsTermMapper<CU> {
+    fn new(curie_util: Arc<CU>) -> Self {
+        Self { curie_util }
+    }
+
+    fn parse_comment(comments: Vec<String>) -> Option<String> {
+        match comments.len() {
+            0 => None,
+            _ => Some(comments.join(" ")),
+        }
+    }
+
+    fn parse_alt_term_ids(node_meta: &Meta) -> Vec<TermId> {
+        node_meta
+            .basic_property_values
+            .iter()
+            .filter(|&bpv| bpv.pred.ends_with("#hasAlternativeId"))
+            .flat_map(|bpv| match bpv.val.parse() {
+                Ok(term_id) => Some(term_id),
+                Err(e) => {
+                    eprintln!("{}", e); // TODO: really?
+                    None
+                }
+            })
+            .collect()
+    }
+}
+
+impl<CU> ObographsTermMapper<SimpleMinimalTerm> for DefaultObographsTermMapper<CU>
 where
     CU: CurieUtil,
 {
-    pub fn new(curie_util: CU) -> Self {
-        Self {
-            curie_util,
-            _marker: PhantomData,
-        }
-    }
+    fn create(&self, node: Node) -> Result<SimpleMinimalTerm> {
+        let cp = self.curie_util.get_curie_data(&node.id);
 
-    fn create(&self, data: &Node) -> Result<SimpleMinimalTerm> {
-        let cp = self.curie_util.get_curie_data(&data.id);
-        let name = &data.lbl;
-
-        match (cp, name) {
+        match (cp, node.lbl) {
             (Some(cp), Some(name)) => {
                 let term_id = TermId::from((cp.get_prefix(), cp.get_id()));
-                let (alt_term_ids, is_obsolete) = match &data.meta {
-                    Some(meta) => (parse_alt_term_ids(meta), meta.deprecated.unwrap_or(false)),
-                    None => (vec![], false),
+
+                let (alt_term_ids, is_obsolete) = match node.meta {
+                    Some(meta) => (
+                        Self::parse_alt_term_ids(&meta),
+                        meta.deprecated.unwrap_or(false),
+                    ),
+                    None => (Default::default(), false),
                 };
+
                 Ok(SimpleMinimalTerm::new(
                     term_id,
                     name,
@@ -76,31 +153,86 @@ where
                 ))
             }
             (Some(cp), None) => bail!("Missing term label for {}:{}", cp.get_prefix(), cp.get_id()),
-            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, &data.id),
+            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, &node.id),
             _ => bail!("Unparsable node"),
         }
     }
 }
 
-impl<CU, I> OntologyDataParser for ObographsParser<CU, I>
+impl<CU> ObographsTermMapper<SimpleTerm> for DefaultObographsTermMapper<CU>
 where
     CU: CurieUtil,
-    I: OntologyIdx,
 {
-    type I = I;
-    type T = SimpleMinimalTerm;
+    fn create(&self, node: Node) -> Result<SimpleTerm> {
+        let cp = self.curie_util.get_curie_data(&node.id);
 
-    fn load_from_buf_read<R: BufRead>(&self, read: R) -> Result<OntologyData<Self::I, Self::T>> {
-        let gd = GraphDocument::from_reader(read).context("Reading graph document")?;
+        match (cp, node.lbl) {
+            (Some(cp), Some(name)) => {
+                let term_id = TermId::from((cp.get_prefix(), cp.get_id()));
 
-        let graph = gd.graphs.first().context("Getting the first graph")?;
+                let (alt_term_ids, is_obsolete, comment, definition, synonyms, xrefs) =
+                    match node.meta {
+                        Some(meta) => (
+                            Self::parse_alt_term_ids(&meta),
+                            meta.deprecated.unwrap_or(false),
+                            Self::parse_comment(meta.comments),
+                            meta.definition.map(Definition::from),
+                            meta.synonyms.into_iter().map(Synonym::from).collect(),
+                            // Ignore unparsable Xrefs.
+                            meta.xrefs
+                                .into_iter()
+                                .flat_map(|xpv| xpv.val.parse())
+                                .collect(),
+                        ),
+                        None => Default::default(),
+                    };
 
-        // Filter out the obsolete terms
+                Ok(SimpleTerm::new(
+                    term_id,
+                    name,
+                    alt_term_ids,
+                    is_obsolete,
+                    definition,
+                    comment,
+                    synonyms,
+                    xrefs,
+                ))
+            }
+            (Some(cp), None) => bail!("Missing term label for {}:{}", cp.get_prefix(), cp.get_id()),
+            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, &node.id),
+            _ => bail!("Unparsable node"),
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct ObographsParser<TM, CU> {
+    term_mapper: TM,
+    curie_util: Arc<CU>,
+}
+
+impl<TM, CU> ObographsParser<TM, CU> {
+    pub fn new(term_mapper: TM, curie_util: Arc<CU>) -> Self {
+        Self {
+            term_mapper,
+            curie_util,
+        }
+    }
+}
+
+impl<TF, CU> ObographsParser<TF, CU> {
+    pub fn load_from_graph<I, T>(&self, graph: Graph) -> Result<OntologyData<I, T>>
+    where
+        TF: ObographsTermMapper<T>,
+        CU: CurieUtil,
+        I: OntologyIdx,
+        T: MinimalTerm,
+    {
         let terms: Vec<_> = graph
             .nodes
-            .iter()
-            .flat_map(|node| self.create(node).ok())
-            .filter(MinimalTerm::is_current)
+            .into_iter()
+            .flat_map(|node| self.term_mapper.create(node).ok())
+            .filter(MinimalTerm::is_current) // ◀️◀️◀️ filters out the obsolete terms
             .collect();
 
         let termid2idx: HashMap<_, _> = terms
@@ -113,7 +245,7 @@ where
         let edges: Vec<GraphEdge<_>> = graph
             .edges
             .iter()
-            .flat_map(|edge| parse_edge(edge, &self.curie_util, &termid2idx))
+            .flat_map(|edge| parse_edge(edge, &*self.curie_util, &termid2idx))
             .collect();
 
         let metadata = HashMap::new(); // TODO: parse out metadata
@@ -122,13 +254,36 @@ where
     }
 }
 
-fn parse_edge<HI>(
+impl<TF, CU, I, T> OntologyDataParser<I, T> for ObographsParser<TF, CU>
+where
+    TF: ObographsTermMapper<T>,
+    CU: CurieUtil,
+    I: OntologyIdx,
+    T: MinimalTerm,
+{
+    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<I, T>>
+    where
+        R: BufRead,
+    {
+        let mut graph_document =
+            GraphDocument::from_reader(read).context("Reading graph document")?;
+        self.load_from_graph(
+            graph_document
+                .graphs
+                .pop()
+                .expect("Obographs document should include at least one graph"),
+        )
+    }
+}
+
+fn parse_edge<HI, CU>(
     edge: &Edge,
-    curie_util: &dyn CurieUtil,
+    curie_util: &CU,
     termid2idx: &HashMap<&TermId, HI>,
 ) -> Option<GraphEdge<HI>>
 where
     HI: Clone,
+    CU: CurieUtil,
 {
     let sub_parts = curie_util.get_curie_data(&edge.sub);
     let obj_parts = curie_util.get_curie_data(&edge.obj);
@@ -138,9 +293,11 @@ where
             let obj = TermId::from((obj.get_prefix(), obj.get_id()));
             if let Ok(pred) = parse_relationship(&edge.pred) {
                 match (termid2idx.get(&sub), termid2idx.get(&obj)) {
-                    (Some(sub_idx), Some(obj_idx)) => {
-                        Some(GraphEdge::from((sub_idx.clone(), pred, obj_idx.clone())))
-                    }
+                    (Some(sub_idx), Some(obj_idx)) => Some(GraphEdge::from((
+                        Clone::clone(sub_idx),
+                        pred,
+                        Clone::clone(obj_idx),
+                    ))),
                     _ => None,
                 }
             } else {
@@ -164,15 +321,29 @@ fn parse_relationship(pred: &str) -> Result<Relationship> {
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Load ontology graphs using [`ObographsParser`].        
     #[must_use]
-    pub fn obographs_parser<HI>(
+    pub fn obographs_parser(
         self,
-    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<TrieCurieUtil, HI>>>
-    where
-        HI: OntologyIdx,
-    {
+    ) -> OntologyLoaderBuilder<
+        WithParser<ObographsParser<DefaultObographsTermMapper<TrieCurieUtil>, TrieCurieUtil>>,
+    > {
         OntologyLoaderBuilder {
             state: WithParser {
                 parser: ObographsParser::default(),
+            },
+        }
+    }
+
+    #[must_use]
+    pub fn obographs_parser_with_curie_util<CU>(
+        self,
+        cu: CU,
+    ) -> OntologyLoaderBuilder<WithParser<ObographsParser<DefaultObographsTermMapper<CU>, CU>>>
+    {
+        let cu = Arc::new(cu);
+        let tm = DefaultObographsTermMapper::new(Arc::clone(&cu));
+        OntologyLoaderBuilder {
+            state: WithParser {
+                parser: ObographsParser::new(tm, Arc::clone(&cu)),
             },
         }
     }

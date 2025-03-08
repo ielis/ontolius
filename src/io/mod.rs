@@ -11,7 +11,7 @@ use std::{
     path::Path,
 };
 
-use crate::{hierarchy::GraphEdge, prelude::Ontology};
+use crate::hierarchy::GraphEdge;
 
 pub struct OntologyData<I, T> {
     pub terms: Vec<T>,
@@ -29,13 +29,10 @@ impl<I, T> From<(Vec<T>, Vec<GraphEdge<I>>, HashMap<String, String>)> for Ontolo
     }
 }
 
-/// Ontology data parser can read [`OntologyData`] from some input
-pub trait OntologyDataParser {
-    type I;
-    type T;
-
+/// Ontology data parser can read [`OntologyData`] from some input.
+pub trait OntologyDataParser<I, T> {
     /// Load ontology data from the buffered reader.
-    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<Self::I, Self::T>>
+    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<I, T>>
     where
         R: BufRead;
 }
@@ -52,19 +49,13 @@ impl<P> OntologyLoader<P> {
     }
 }
 
-impl<Parser> OntologyLoader<Parser>
-where
-    Parser: OntologyDataParser,
-{
+impl<P> OntologyLoader<P> {
     /// Load ontology from a path.
-    ///
-    /// Gzipped content is uncompressed on the fly,
-    /// as long as the `path` is suffixed with `*.gz`.
-    pub fn load_from_path<O, P>(&self, path: P) -> Result<O>
+    pub fn load_from_path<I, T, O, Q>(&self, path: Q) -> Result<O>
     where
-        P: AsRef<Path>,
-        O: TryFrom<OntologyData<Parser::I, Parser::T>, Error = anyhow::Error>
-            + Ontology<Parser::I, Parser::T>,
+        P: OntologyDataParser<I, T>,
+        Q: AsRef<Path>,
+        O: TryFrom<OntologyData<I, T>, Error = anyhow::Error>,
     {
         let path = path.as_ref();
         let file = File::open(path).with_context(|| format!("Opening file at {:?}", path))?;
@@ -73,21 +64,21 @@ where
     }
 
     /// Load ontology from a reader.
-    pub fn load_from_read<R, O>(&self, read: R) -> Result<O>
+    pub fn load_from_read<I, T, O, R>(&self, read: R) -> Result<O>
     where
+        P: OntologyDataParser<I, T>,
         R: Read,
-        O: TryFrom<OntologyData<Parser::I, Parser::T>, Error = anyhow::Error>
-            + Ontology<Parser::I, Parser::T>,
+        O: TryFrom<OntologyData<I, T>, Error = anyhow::Error>,
     {
         self.load_from_buf_read(BufReader::new(read))
     }
 
     /// Load ontology from a buffered reader.
-    pub fn load_from_buf_read<R, O>(&self, read: R) -> Result<O>
+    pub fn load_from_buf_read<I, T, O, R>(&self, read: R) -> Result<O>
     where
+        P: OntologyDataParser<I, T>,
         R: BufRead,
-        O: TryFrom<OntologyData<Parser::I, Parser::T>, Error = anyhow::Error>
-            + Ontology<Parser::I, Parser::T>,
+        O: TryFrom<OntologyData<I, T>, Error = anyhow::Error>,
     {
         let data = self.parser.load_from_buf_read(read)?;
         O::try_from(data)
@@ -96,10 +87,7 @@ where
 
 pub struct Uninitialized;
 
-pub struct WithParser<P>
-where
-    P: OntologyDataParser,
-{
+pub struct WithParser<P> {
     parser: P,
 }
 
@@ -123,20 +111,14 @@ impl OntologyLoaderBuilder<Uninitialized> {
 
     /// Set [`OntologyDataParser`] for parsing ontology data
     #[must_use]
-    pub fn parser<P>(self, parser: P) -> OntologyLoaderBuilder<WithParser<P>>
-    where
-        P: OntologyDataParser,
-    {
+    pub fn parser<P>(self, parser: P) -> OntologyLoaderBuilder<WithParser<P>> {
         OntologyLoaderBuilder {
             state: WithParser { parser },
         }
     }
 }
 
-impl<P> OntologyLoaderBuilder<WithParser<P>>
-where
-    P: OntologyDataParser,
-{
+impl<P> OntologyLoaderBuilder<WithParser<P>> {
     /// Build the ontology loader.
     pub fn build(self) -> OntologyLoader<P> {
         OntologyLoader::new(self.state.parser)
