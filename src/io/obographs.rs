@@ -65,8 +65,8 @@ fn parse_synonym_type(synonym_type: String) -> Option<SynonymType> {
 }
 
 fn parse_synonym_xref(xref: String) -> Option<TermId> {
-    if xref.starts_with("https://orcid.org/") {
-        Some(TermId::from(("ORCID", &xref[18..])))
+    if let Some(remainder) = xref.strip_prefix("https://orcid.org/") {
+        Some(TermId::from(("ORCID", remainder)))
     } else {
         xref.parse().ok()
     }
@@ -77,7 +77,7 @@ impl From<SynonymPropertyValue> for Synonym {
         Self {
             name: value.val,
             category: parse_synonym_category(value.pred),
-            r#type: value.synonym_type.map(parse_synonym_type).flatten(),
+            r#type: value.synonym_type.and_then(parse_synonym_type),
             xrefs: value
                 .xrefs
                 .unwrap_or_default()
@@ -220,6 +220,40 @@ impl<TM, CU> ObographsParser<TM, CU> {
     }
 }
 
+impl<TF, CU> ObographsParser<TF, CU> {
+    pub fn load_from_graph<I, T>(&self, graph: Graph) -> Result<OntologyData<I, T>>
+    where
+        TF: ObographsTermMapper<T>,
+        CU: CurieUtil,
+        I: OntologyIdx,
+        T: MinimalTerm,
+    {
+        let terms: Vec<_> = graph
+            .nodes
+            .into_iter()
+            .flat_map(|node| self.term_mapper.create(node).ok())
+            .filter(MinimalTerm::is_current) // ◀️◀️◀️ filters out the obsolete terms
+            .collect();
+
+        let termid2idx: HashMap<_, _> = terms
+            .iter()
+            .map(Identified::identifier)
+            .enumerate()
+            .map(|(i, t)| (t, I::new(i)))
+            .collect();
+
+        let edges: Vec<GraphEdge<_>> = graph
+            .edges
+            .iter()
+            .flat_map(|edge| parse_edge(edge, &*self.curie_util, &termid2idx))
+            .collect();
+
+        let metadata = HashMap::new(); // TODO: parse out metadata
+
+        Ok(OntologyData::from((terms, edges, metadata)))
+    }
+}
+
 impl<TF, CU, I, T> OntologyDataParser<I, T> for ObographsParser<TF, CU>
 where
     TF: ObographsTermMapper<T>,
@@ -231,43 +265,14 @@ where
     where
         R: BufRead,
     {
-        let GraphDocument {
-            mut graphs,
-            meta: _,
-        } = GraphDocument::from_reader(read).context("Reading graph document")?;
-
-        let Graph {
-            id: _,
-            lbl: _,
-            meta: _,
-            nodes,
-            edges,
-        } = graphs
-            .pop()
-            .expect("Obographs document should include at least one graph");
-
-        // Filter out the obsolete terms
-        let terms: Vec<_> = nodes
-            .into_iter()
-            .flat_map(|node| self.term_mapper.create(node).ok())
-            .filter(MinimalTerm::is_current)
-            .collect();
-
-        let termid2idx: HashMap<_, _> = terms
-            .iter()
-            .map(Identified::identifier)
-            .enumerate()
-            .map(|(i, t)| (t, I::new(i)))
-            .collect();
-
-        let edges: Vec<GraphEdge<_>> = edges
-            .iter()
-            .flat_map(|edge| parse_edge(edge, &*self.curie_util, &termid2idx))
-            .collect();
-
-        let metadata = HashMap::new(); // TODO: parse out metadata
-
-        Ok(OntologyData::from((terms, edges, metadata)))
+        let mut graph_document =
+            GraphDocument::from_reader(read).context("Reading graph document")?;
+        self.load_from_graph(
+            graph_document
+                .graphs
+                .pop()
+                .expect("Obographs document should include at least one graph"),
+        )
     }
 }
 
@@ -288,9 +293,11 @@ where
             let obj = TermId::from((obj.get_prefix(), obj.get_id()));
             if let Ok(pred) = parse_relationship(&edge.pred) {
                 match (termid2idx.get(&sub), termid2idx.get(&obj)) {
-                    (Some(sub_idx), Some(obj_idx)) => {
-                        Some(GraphEdge::from((sub_idx.clone(), pred, obj_idx.clone())))
-                    }
+                    (Some(sub_idx), Some(obj_idx)) => Some(GraphEdge::from((
+                        Clone::clone(sub_idx),
+                        pred,
+                        Clone::clone(obj_idx),
+                    ))),
                     _ => None,
                 }
             } else {
