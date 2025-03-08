@@ -10,6 +10,7 @@ pub use crate::hierarchy::ChildNodes;
 pub use crate::hierarchy::DescendantNodes;
 pub use crate::hierarchy::HierarchyIdx;
 pub use crate::hierarchy::OntologyHierarchy;
+pub use crate::hierarchy::OntologyHierarchyQueries;
 pub use crate::hierarchy::ParentNodes;
 
 pub use crate::io::OntologyData;
