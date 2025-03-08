@@ -38,11 +38,10 @@ pub trait Identified {
 /// Create a `TermId` from a `str` with compact URI (CURIE) or from a tuple consisting of *prefix* and *id* :
 ///
 /// ```
-/// use std::str::FromStr;
 /// use ontolius::prelude::*;
 ///
 /// // Parse a CURIE `str`:
-/// let a = TermId::from_str("HP:0001250").unwrap();
+/// let a: TermId = "HP:0001250".parse().expect("value is a valid CURIE");
 ///
 /// // Convert a tuple with `prefix` and `id`:
 /// let b = TermId::from(("HP", "0001250"));
@@ -56,10 +55,9 @@ pub trait Identified {
 /// Parsing a CURIE will fail if the CURIE does not contain either `:` or `_` as a delimiter:
 ///
 /// ```
-/// use std::str::FromStr;
 /// use ontolius::prelude::*;
 ///
-/// let term_id: Result<TermId, _> = TermId::from_str("HP*0001250"); // `*` is not valid delimiter
+/// let term_id: Result<TermId, _> = "HP*0001250".parse(); // `*` is not valid delimiter
 ///
 /// assert!(term_id.is_err());
 /// ```
@@ -71,10 +69,9 @@ pub struct TermId(InnerTermId);
 /// ## Examples
 ///
 /// ```
-/// use std::str::FromStr;
 /// use ontolius::prelude::*;
 ///
-/// let term_id = TermId::from_str("HP:0001250").unwrap();
+/// let term_id: TermId = "HP:0001250".parse().expect("value is a valid CURIE");
 ///
 /// assert_eq!(term_id.to_string(), "HP:0001250");
 /// ```
@@ -398,7 +395,6 @@ impl Identified for TermId {
 mod test_creation {
 
     use super::TermId;
-    use std::str::FromStr;
 
     #[test]
     fn test_term_id_from_tuple() {
@@ -417,7 +413,7 @@ mod test_creation {
     fn test_term_id_from_curie() {
         macro_rules! round_trip_from_curie {
             ($val: literal, $expected: literal) => {
-                let term_id = TermId::from_str($val);
+                let term_id: Result<TermId, _> = $val.parse();
                 assert!(term_id.is_ok());
 
                 let term_id = term_id.unwrap();
@@ -430,6 +426,9 @@ mod test_creation {
         round_trip_from_curie!("MONDO:123456", "MONDO:123456");
         round_trip_from_curie!("OMIM:256000", "OMIM:256000");
         round_trip_from_curie!("NCIT_C2852", "NCIT:C2852");
+        round_trip_from_curie!("SNOMEDCT_US:139394000", "SNOMEDCT_US:139394000");
+        round_trip_from_curie!("SNOMEDCT_US:449491000124101", "SNOMEDCT_US:449491000124101");
+        round_trip_from_curie!("UMLS:C0028734", "UMLS:C0028734");
         round_trip_from_curie!("WHATEVER:12", "WHATEVER:12");
     }
 }
