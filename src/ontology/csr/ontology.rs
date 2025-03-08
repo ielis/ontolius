@@ -10,7 +10,9 @@ use crate::base::{Identified, TermId};
 use crate::hierarchy::{GraphEdge, HierarchyIdx, Relationship};
 use crate::io::OntologyData;
 use crate::ontology::{HierarchyAware, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
-use crate::prelude::AltTermIdAware;
+use crate::prelude::{
+    AltTermIdAware, AncestorNodes, ChildNodes, OntologyHierarchyQueries, ParentNodes,
+};
 use anyhow::Error;
 
 use super::hierarchy::CsrOntologyHierarchy;
@@ -129,6 +131,79 @@ where
 
     fn hierarchy(&self) -> &Self::Hierarchy {
         &self.hierarchy
+    }
+}
+
+impl<I, T> OntologyHierarchyQueries for CsrOntology<I, T>
+where
+    I: CsrIdx + Hash,
+{
+    fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        match (
+            self.term_id_to_idx.get(sub.identifier()),
+            self.term_id_to_idx.get(obj.identifier()),
+        ) {
+            (Some(sub_idx), Some(obj_idx)) => self
+                .hierarchy
+                .iter_children_of(obj_idx)
+                .any(|child| child == sub_idx),
+            _ => false,
+        }
+    }
+
+    fn is_descendant_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        match (
+            self.term_id_to_idx.get(sub.identifier()),
+            self.term_id_to_idx.get(obj.identifier()),
+        ) {
+            (Some(sub_idx), Some(obj_idx)) => self
+                .hierarchy
+                .iter_ancestors_of(sub_idx)
+                .any(|anc| anc == obj_idx),
+            _ => false,
+        }
+    }
+
+    fn is_parent_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        match (
+            self.term_id_to_idx.get(sub.identifier()),
+            self.term_id_to_idx.get(obj.identifier()),
+        ) {
+            (Some(sub_idx), Some(obj_idx)) => self
+                .hierarchy
+                .iter_parents_of(obj_idx)
+                .any(|child| child == sub_idx),
+            _ => false,
+        }
+    }
+
+    fn is_ancestor_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        match (
+            self.term_id_to_idx.get(sub.identifier()),
+            self.term_id_to_idx.get(obj.identifier()),
+        ) {
+            (Some(sub_idx), Some(obj_idx)) => self
+                .hierarchy
+                .iter_ancestors_of(obj_idx)
+                .any(|anc| anc == sub_idx),
+            _ => false,
+        }
     }
 }
 
