@@ -24,13 +24,13 @@ pub trait AltTermIdAware {
 /// The [`Default`] minimal term represents the ontology root that is inserted into the ontology
 /// in case 2 or more root candidates are found.
 ///
-/// #### Example 
-/// 
+/// #### Example
+///
 /// Gene Ontology has 3 root terms:
 /// * biological process
 /// * molecular function
 /// * cellular component
-/// 
+///
 /// In this case, a default term would be created to be used as an artificial root term,
 /// and three new "is_a" edges would be created to link the 3 roots to the default term,
 /// which would be used as an artificial root.
@@ -47,17 +47,76 @@ pub trait MinimalTerm: Identified + AltTermIdAware + Default {
     }
 }
 
+pub trait CrossReferenced {
+    fn xrefs(&self) -> &[TermId];
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SynonymCategory {
+    Exact,
+    Related,
+    Broad,
+    Narrow,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SynonymType {
+    LaypersonTerm,
+    Abbreviation,
+    UkSpelling,
+    ObsoleteSynonym,
+    PluralForm,
+    AllelicRequirement,
+    SystematicSynonym,
+    SyngoOfficialLabel,
+    // We may not need these, unless we support ECTO (taken from hpo-toolkit)
+    // IUPAC_NAME = enum.auto()
+    // INN = enum.auto()
+    // BRAND_NAME = enum.auto()
+    // IN_PART = enum.auto()
+    // SYNONYM = enum.auto()
+    // BLAST_NAME = enum.auto()
+    // GENBANK_COMMON_NAME = enum.auto()
+    // COMMON_NAME = enum.auto()
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Synonym {
+    pub name: String,
+    pub category: Option<SynonymCategory>,
+    pub r#type: Option<SynonymType>,
+    pub xrefs: Vec<TermId>,
+}
+
+pub trait Synonymous {
+    fn synonyms(&self) -> &[Synonym];
+}
+
+impl CrossReferenced for Synonym {
+    fn xrefs(&self) -> &[TermId] {
+        &self.xrefs
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct Definition {
+    pub val: String,
+    pub xrefs: Vec<String>,
+}
+
 pub trait Term: MinimalTerm {
-    fn definition(&self) -> Option<&str>;
+    fn definition(&self) -> Option<&Definition>;
 
     fn comment(&self) -> Option<&str>;
 
-    // TODO: add Xrefs and dbXrefs
+    // TODO: add dbXrefs?
 }
 
 pub mod simple {
 
-    use super::{AltTermIdAware, MinimalTerm};
+    use super::{
+        AltTermIdAware, CrossReferenced, Definition, MinimalTerm, Synonym, Synonymous, Term,
+    };
     use crate::base::{Identified, TermId, OWL_THING};
 
     #[derive(Debug, PartialEq, Eq, Clone)]
@@ -123,6 +182,114 @@ pub mod simple {
 
         fn is_current(&self) -> bool {
             !self.is_obsolete
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, Clone)]
+    pub struct SimpleTerm {
+        term_id: TermId,
+        alt_term_ids: Box<[TermId]>,
+        name: String,
+        is_obsolete: bool,
+        definition: Option<Definition>,
+        comment: Option<String>,
+        synonyms: Vec<Synonym>,
+        xrefs: Vec<TermId>,
+    }
+
+    impl SimpleTerm {
+        pub fn new<T, A>(
+            term_id: TermId,
+            name: T,
+            alt_term_ids: A,
+            is_obsolete: bool,
+            definition: Option<Definition>,
+            comment: Option<String>,
+            synonyms: Vec<Synonym>,
+            xrefs: Vec<TermId>,
+        ) -> Self
+        where
+            T: ToString,
+            A: Into<Box<[TermId]>>,
+        {
+            SimpleTerm {
+                term_id,
+                name: name.to_string(),
+                alt_term_ids: alt_term_ids.into(),
+                is_obsolete,
+                definition,
+                comment,
+                synonyms,
+                xrefs,
+            }
+        }
+    }
+
+    impl Default for SimpleTerm {
+        fn default() -> Self {
+            Self {
+                term_id: TermId::from(OWL_THING),
+                alt_term_ids: Default::default(),
+                name: "Thing".to_string(),
+                is_obsolete: false,
+                definition: Default::default(),
+                comment: Default::default(),
+                synonyms: Default::default(),
+                xrefs: Default::default(),
+            }
+        }
+    }
+
+    impl Identified for SimpleTerm {
+        fn identifier(&self) -> &TermId {
+            &self.term_id
+        }
+    }
+
+    impl AltTermIdAware for SimpleTerm {
+        type TermIdIter<'a>
+            = std::slice::Iter<'a, TermId>
+        where
+            Self: 'a;
+
+        fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
+            self.alt_term_ids.iter()
+        }
+
+        fn alt_term_id_count(&self) -> usize {
+            self.alt_term_ids.len()
+        }
+    }
+
+    impl MinimalTerm for SimpleTerm {
+        fn name(&self) -> &str {
+            &self.name
+        }
+
+        fn is_current(&self) -> bool {
+            !self.is_obsolete
+        }
+    }
+
+    impl CrossReferenced for SimpleTerm {
+        fn xrefs(&self) -> &[TermId] {
+            &self.xrefs
+        }
+    }
+
+    impl Synonymous for SimpleTerm {
+        fn synonyms(&self) -> &[Synonym] {
+            &self.synonyms
+        }
+    }
+
+    impl Term for SimpleTerm {
+        fn definition(&self) -> Option<&Definition> {
+            self.definition.as_ref()
+        }
+
+        fn comment(&self) -> Option<&str> {
+            self.comment.as_deref()
         }
     }
 }

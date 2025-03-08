@@ -5,11 +5,12 @@ mod human_phenotype_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
+    use ontolius::base::term::simple::SimpleTerm;
     use ontolius::base::TermId;
     use ontolius::io::OntologyLoaderBuilder;
-    use ontolius::ontology::csr::MinimalCsrOntology;
+    use ontolius::ontology::csr::{CsrOntology, MinimalCsrOntology};
     use ontolius::prelude::{
-        AncestorNodes, ChildNodes, DescendantNodes, HierarchyAware, MinimalTerm, ParentNodes,
+        AncestorNodes, ChildNodes, DescendantNodes, HierarchyAware, MinimalTerm, ParentNodes, Term,
         TermAware,
     };
     use rstest::{fixture, rstest};
@@ -139,6 +140,20 @@ mod human_phenotype_ontology {
 
         Ok(())
     }
+
+    #[test]
+    #[ignore = "just for interactive debugging"]
+    fn load_full_data() {
+        let path = "resources/hp.v2024-08-13.json.gz";
+        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
+        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+
+        let hpo: CsrOntology<u32, SimpleTerm> = loader.load_from_read(reader).unwrap();
+
+        for ft in hpo.iter_terms() {
+            println!("{:?}", ft.definition())
+        }
+    }
 }
 
 /// Gene Ontology tests.
@@ -148,32 +163,60 @@ mod gene_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
-    use ontolius::io::obographs::ObographsParser;
+    use ontolius::base::term::simple::SimpleTerm;
+    use ontolius::ontology::csr::CsrOntology;
     use ontolius::prelude::*;
     use ontolius::{io::OntologyLoaderBuilder, ontology::csr::MinimalCsrOntology};
 
     #[test]
     fn load_go() {
-        let loader: OntologyLoader<ObographsParser<curieosa::TrieCurieUtil>> = OntologyLoaderBuilder::new().obographs_parser().build();
+        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
         let path = "resources/go-basic.v2025-02-06.json.gz";
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
 
-        let go: MinimalCsrOntology = loader.load_from_read(reader).expect("Loading of the test file should succeed");
+        let go: MinimalCsrOntology = loader
+            .load_from_read(reader)
+            .expect("Loading of the test file should succeed");
 
         let pda = TermId::from(("GO", "0004738")); // pyruvate dehydrogenase activity
-        let node = go.id_to_idx(&pda).expect("Pyruvate dehydrogenase activity should be in GO");
-        
-        let names: Vec<_> = go.hierarchy().iter_ancestors_of(node)
-            .map(|idx| go.idx_to_term(idx).expect("Term for an index should be in ontology"))
+        let node = go
+            .id_to_idx(&pda)
+            .expect("Pyruvate dehydrogenase activity should be in GO");
+
+        let names: Vec<_> = go
+            .hierarchy()
+            .iter_ancestors_of(node)
+            .map(|idx| {
+                go.idx_to_term(idx)
+                    .expect("Term for an index should be in ontology")
+            })
             .map(|term| term.name())
             .collect();
-        assert_eq!(names, &[
-            "oxidoreductase activity, acting on the aldehyde or oxo group of donors",
-            "oxidoreductase activity",
-            "catalytic activity",
-            "molecular_function",
-            "Thing",
-        ]);
+        assert_eq!(
+            names,
+            &[
+                "oxidoreductase activity, acting on the aldehyde or oxo group of donors",
+                "oxidoreductase activity",
+                "catalytic activity",
+                "molecular_function",
+                "Thing",
+            ]
+        );
+    }
+
+    #[test]
+    #[ignore = "just for interactive debugging"]
+    fn load_full_go() {
+        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+
+        let path = "resources/go-basic.v2025-02-06.json.gz";
+        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
+
+        let go: CsrOntology<u32, SimpleTerm> = loader
+            .load_from_read(reader)
+            .expect("Loading of the test file should succeed");
+
+        println!("{:?}", go.len());
     }
 }
