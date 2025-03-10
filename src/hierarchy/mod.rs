@@ -223,7 +223,7 @@ pub trait AncestorNodes<I> {
 /// of an ontology node.
 ///
 /// * `I` - ontology node index.
-#[deprecated(since = "0.4.3")]
+#[deprecated(since = "0.5.0")]
 pub trait OntologyHierarchy<I>:
     ChildNodes<I> + DescendantNodes<I> + ParentNodes<I> + AncestorNodes<I>
 {
@@ -234,7 +234,7 @@ pub trait OntologyHierarchy<I>:
 }
 
 /// The implementors can be used to index the [`OntologyHierarchy`].
-#[deprecated(since = "0.4.3")]
+#[deprecated(since = "0.5.0")]
 pub trait HierarchyIdx: Copy + Eq {
     fn new(idx: usize) -> Self;
 }

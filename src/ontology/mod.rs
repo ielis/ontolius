@@ -12,7 +12,7 @@ use crate::base::{
 use crate::hierarchy::{HierarchyIdx, OntologyHierarchy};
 
 /// The implementors can be used to index the [`TermAware`].
-#[deprecated(since = "0.4.3")]
+#[deprecated(since = "0.5.0")]
 pub trait TermIdx: Copy {
     // Convert the index to `usize` for indexing.
     fn index(&self) -> usize;
@@ -42,7 +42,7 @@ impl_term_idx!(usize);
 ///
 /// `I` - Ontology node index.
 /// `T` - Ontology term.
-#[deprecated(since = "0.4.3", note = "Use `crate::ontology::OntologyTerms` instead")]
+#[deprecated(since = "0.5.0", note = "Use `crate::ontology::OntologyTerms` instead")]
 pub trait TermAware<I, T> {
     /// Get the iterator over the *primary* ontology terms.
     fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
@@ -369,7 +369,7 @@ pub trait HierarchyQueries {
 ///
 /// * `I` - ontology node indexer.
 #[deprecated(
-    since = "0.4.3",
+    since = "0.5.0",
     note = "Use `crate::ontology::HierarchyQueries` or `crate::ontology::HierarchyWalks` instead"
 )]
 pub trait HierarchyAware<I> {
@@ -394,7 +394,7 @@ pub trait MetadataAware {
 /// Note, `Hash` is not necessarily used in the ontology functionality.
 /// However, we require the `Hash` implementation to increase user convenience,
 /// e.g. to support creating hash sets/maps of the vanilla ontology indices.
-#[deprecated(since = "0.4.3")]
+#[deprecated(since = "0.5.0")]
 pub trait OntologyIdx: TermIdx + HierarchyIdx + Hash {}
 
 macro_rules! impl_ontology_idx {
@@ -425,7 +425,7 @@ impl_ontology_idx!(usize);
 /// * `I` - The indexer for the terms and ontology graph nodes.
 /// * `T` - The ontology term type.
 #[deprecated(
-    since = "0.4.3",
+    since = "0.5.0",
     note = "It is unclear what shared functionality should be covered by the Ontology trait"
 )]
 pub trait Ontology<I, T>: TermAware<I, T> + HierarchyAware<I> + MetadataAware {
