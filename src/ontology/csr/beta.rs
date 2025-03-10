@@ -135,14 +135,14 @@ where
     }
 }
 
-impl<J, T> HierarchyWalks for CsrOntology<J, T>
+impl<I, T> HierarchyWalks for CsrOntology<I, T>
 where
+    I: Idx + Hash,
     T: Identified,
-    J: Idx + Hash,
 {
-    fn iter_parent_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    fn iter_parent_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
     where
-        I: Identified,
+        ID: Identified,
     {
         if let Some(&idx) = self.term_id_to_idx.get(query.identifier()) {
             WalkingIter::Known {
@@ -154,9 +154,9 @@ where
         }
     }
 
-    fn iter_child_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    fn iter_child_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
     where
-        I: Identified,
+        ID: Identified,
     {
         if let Some(&idx) = self.term_id_to_idx.get(query.identifier()) {
             WalkingIter::Known {
@@ -168,9 +168,9 @@ where
         }
     }
 
-    fn iter_ancestor_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    fn iter_ancestor_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
     where
-        I: Identified,
+        ID: Identified,
     {
         if let Some(&idx) = self.term_id_to_idx.get(query.identifier()) {
             WalkingIter::Known {
@@ -182,9 +182,9 @@ where
         }
     }
 
-    fn iter_descendant_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    fn iter_descendant_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
     where
-        I: Identified,
+        ID: Identified,
     {
         if let Some(&idx) = self.term_id_to_idx.get(query.identifier()) {
             WalkingIter::Known {
