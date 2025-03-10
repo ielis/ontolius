@@ -246,24 +246,16 @@ where
 /// Traversals in the ontology index space.
 pub trait HierarchyTraversals<I> {
     /// Get an iterator with all children nodes of the `query`.
-    fn iter_child_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a;
+    fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I>;
 
     /// Get an iterator of all descendant nodes of the `query`.
-    fn iter_descendant_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a;
+    fn iter_descendant_idxs(&self, query: I) -> impl Iterator<Item = I>;
 
     /// Get an iterator with all parent nodes of the `query`.
-    fn iter_parent_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a;
+    fn iter_parent_idxs(&self, query: I) -> impl Iterator<Item = I>;
 
     /// Get an iterator with all ancestor nodes of the `query`.
-    fn iter_ancestor_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a;
+    fn iter_ancestor_idxs(&self, query: I) -> impl Iterator<Item = I>;
 
     // TODO: maybe a bit more convenience?
 }

@@ -98,39 +98,31 @@ impl<I, T> HierarchyTraversals<I> for CsrOntology<I, T>
 where
     I: Idx + Hash,
 {
-    fn iter_child_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a,
+    fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I>
     {
-        self.adjacency_matrix.in_neighbors(query)
+        self.adjacency_matrix.in_neighbors(query).copied()
     }
 
-    fn iter_descendant_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a,
+    fn iter_descendant_idxs(&self, query: I) -> impl Iterator<Item = I>
     {
         DfsIter {
-            source: |&x| self.adjacency_matrix.in_neighbors(x),
+            source: |x| self.adjacency_matrix.in_neighbors(x).copied(),
             seen: HashSet::new(),
-            queue: VecDeque::from_iter(self.adjacency_matrix.in_neighbors(query)),
+            queue: VecDeque::from_iter(self.adjacency_matrix.in_neighbors(query).copied()),
         }
     }
 
-    fn iter_parent_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a,
+    fn iter_parent_idxs(&self, query: I) -> impl Iterator<Item = I>
     {
-        self.adjacency_matrix.out_neighbors(query)
+        self.adjacency_matrix.out_neighbors(query).copied()
     }
 
-    fn iter_ancestor_idxs<'a>(&'a self, query: I) -> impl Iterator<Item = &'a I>
-    where
-        I: 'a,
+    fn iter_ancestor_idxs(&self, query: I) -> impl Iterator<Item = I>
     {
         DfsIter {
-            source: |&x| self.adjacency_matrix.out_neighbors(x),
+            source: |x| self.adjacency_matrix.out_neighbors(x).copied(),
             seen: HashSet::new(),
-            queue: VecDeque::from_iter(self.adjacency_matrix.out_neighbors(query)),
+            queue: VecDeque::from_iter(self.adjacency_matrix.out_neighbors(query).copied()),
         }
     }
 }
@@ -210,7 +202,7 @@ where
             self.term_id_to_idx.get(sub.identifier()),
             self.term_id_to_idx.get(obj.identifier()),
         ) {
-            (Some(sub), Some(obj)) => self.iter_child_idxs(*obj).any(|child| child == sub),
+            (Some(&sub), Some(&obj)) => self.iter_child_idxs(obj).any(|child| child == sub),
             _ => false,
         }
     }
@@ -224,7 +216,7 @@ where
             self.term_id_to_idx.get(sub.identifier()),
             self.term_id_to_idx.get(obj.identifier()),
         ) {
-            (Some(sub), Some(obj)) => self.iter_ancestor_idxs(*sub).any(|anc| anc == obj),
+            (Some(&sub), Some(&obj)) => self.iter_ancestor_idxs(sub).any(|anc| anc == obj),
             _ => false,
         }
     }
@@ -238,7 +230,7 @@ where
             self.term_id_to_idx.get(sub.identifier()),
             self.term_id_to_idx.get(obj.identifier()),
         ) {
-            (Some(sub), Some(obj)) => self.iter_parent_idxs(*obj).any(|parent| parent == sub),
+            (Some(&sub), Some(&obj)) => self.iter_parent_idxs(obj).any(|parent| parent == sub),
             _ => false,
         }
     }
@@ -252,7 +244,7 @@ where
             self.term_id_to_idx.get(sub.identifier()),
             self.term_id_to_idx.get(obj.identifier()),
         ) {
-            (Some(sub), Some(obj)) => self.iter_ancestor_idxs(*obj).any(|anc| anc == sub),
+            (Some(&sub), Some(&obj)) => self.iter_ancestor_idxs(obj).any(|anc| anc == sub),
             _ => false,
         }
     }
@@ -346,7 +338,7 @@ enum WalkingIter<'a, T, I> {
 impl<'a, T, I, J> Iterator for WalkingIter<'a, T, I>
 where
     T: Identified,
-    I: Iterator<Item = &'a J>,
+    I: Iterator<Item = J>,
     J: Idx,
 {
     type Item = &'a TermId;
@@ -355,7 +347,7 @@ where
         match self {
             WalkingIter::UnknownQuery => None,
             WalkingIter::Known { terms, iterator } => match iterator.next() {
-                Some(&j) => terms.get(Idx::index(j)).map(Identified::identifier),
+                Some(j) => terms.get(Idx::index(j)).map(Identified::identifier),
                 None => None,
             },
         }
