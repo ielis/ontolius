@@ -245,6 +245,11 @@ where
 
 /// Traversals in the ontology index space.
 pub trait HierarchyTraversals<I> {
+    /// Get the index of the `query` term or `None` if the term is unknown.
+    fn term_index<Q>(&self, query: &Q) -> Option<I>
+    where
+        Q: Identified;
+
     /// Get an iterator with all children nodes of the `query`.
     fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I>;
 

@@ -98,13 +98,18 @@ impl<I, T> HierarchyTraversals<I> for CsrOntology<I, T>
 where
     I: Idx + Hash,
 {
-    fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I>
+    fn term_index<Q>(&self, query: &Q) -> Option<I>
+    where
+        Q: Identified,
     {
+        self.term_id_to_idx.get(query.identifier()).copied()
+    }
+
+    fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I> {
         self.adjacency_matrix.in_neighbors(query).copied()
     }
 
-    fn iter_descendant_idxs(&self, query: I) -> impl Iterator<Item = I>
-    {
+    fn iter_descendant_idxs(&self, query: I) -> impl Iterator<Item = I> {
         DfsIter {
             source: |x| self.adjacency_matrix.in_neighbors(x).copied(),
             seen: HashSet::new(),
@@ -112,13 +117,11 @@ where
         }
     }
 
-    fn iter_parent_idxs(&self, query: I) -> impl Iterator<Item = I>
-    {
+    fn iter_parent_idxs(&self, query: I) -> impl Iterator<Item = I> {
         self.adjacency_matrix.out_neighbors(query).copied()
     }
 
-    fn iter_ancestor_idxs(&self, query: I) -> impl Iterator<Item = I>
-    {
+    fn iter_ancestor_idxs(&self, query: I) -> impl Iterator<Item = I> {
         DfsIter {
             source: |x| self.adjacency_matrix.out_neighbors(x).copied(),
             seen: HashSet::new(),
