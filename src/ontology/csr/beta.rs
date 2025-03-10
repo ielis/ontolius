@@ -1,14 +1,19 @@
+use anyhow::Error;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     hash::Hash,
+    iter::once,
 };
 
-use graph_builder::{index::Idx, DirectedCsrGraph, DirectedNeighbors};
+use graph_builder::{index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, GraphBuilder};
 
 use crate::{
-    base::TermId,
-    ontology::{HierarchyQueries, HierarchyTraversals, HierarchyWalks, OntologyTerms},
-    prelude::{Identified, MetadataAware},
+    base::{term::AltTermIdAware, Identified, TermId},
+    hierarchy::{GraphEdge, Relationship},
+    io::OntologyData,
+    ontology::{
+        HierarchyQueries, HierarchyTraversals, HierarchyWalks, MetadataAware, OntologyTerms,
+    },
 };
 
 /// An ontology backed by a term array and a CSR adjacency matrix.
@@ -17,9 +22,55 @@ where
     I: Idx,
 {
     adjacency_matrix: DirectedCsrGraph<I>,
-    terms: Vec<T>,
+    terms: Box<[T]>,
     term_id_to_idx: HashMap<TermId, I>,
     metadata: HashMap<String, String>,
+}
+
+impl<I, T> TryFrom<OntologyData<I, T>> for CsrOntology<I, T>
+where
+    I: Idx,
+    T: Identified + AltTermIdAware,
+{
+    type Error = Error;
+
+    fn try_from(value: OntologyData<I, T>) -> Result<Self, Self::Error> {
+        let adjacency_matrix = GraphBuilder::new()
+            .csr_layout(CsrLayout::Sorted)
+            .edges(make_edge_iterator(value.edges))
+            .build();
+
+        let terms = value.terms.into_boxed_slice();
+
+        let term_id_to_idx = terms
+            .iter()
+            .enumerate()
+            .flat_map(|(idx, term)| {
+                once((term.identifier().clone(), I::new(idx))).chain(
+                    term.iter_alt_term_ids()
+                        .map(move |alt| (alt.clone(), I::new(idx))),
+                )
+            })
+            .collect();
+
+        Ok(Self {
+            adjacency_matrix,
+            terms,
+            term_id_to_idx,
+            metadata: value.metadata,
+        })
+    }
+}
+
+fn make_edge_iterator<I>(graph_edges: Vec<GraphEdge<I>>) -> impl Iterator<Item = (I, I)> {
+    graph_edges.into_iter().flat_map(|edge| {
+        match edge.pred {
+            // `sub -> is_a -> obj` is what we want!
+            Relationship::Child => Some((edge.sub, edge.obj)),
+            Relationship::Parent => Some((edge.obj, edge.sub)),
+            _ => None,
+        }
+    })
 }
 
 impl<I, T> OntologyTerms<T> for CsrOntology<I, T>
