@@ -11,8 +11,6 @@ mod edge;
 
 pub use edge::{GraphEdge, Relationship};
 
-use crate::base::Identified;
-
 /// Trait for types that can provide the child nodes of an ontology node.
 ///
 /// * `I` - ontology node index.
@@ -220,82 +218,12 @@ pub trait AncestorNodes<I> {
     }
 }
 
-/// Tests if an ontology term is a parent, a child, an ancestor, or descendant of another term.
-pub trait OntologyHierarchyQueries {
-    /// Test if `sub` is child of `obj`.
-    ///
-    /// Returns `false` if `sub` corresponds to the same ontology node as `obj`.
-    fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified;
-
-    /// Test if `sub` is either equal to `obj` or its child.
-    fn is_equal_or_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified,
-    {
-        sub.identifier() == obj.identifier() || self.is_child_of(sub, obj)
-    }
-
-    /// Test if `sub` is descendant of `obj`.
-    ///
-    /// Returns `false` if `sub` corresponds to the same ontology node as `obj`.
-    fn is_descendant_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified;
-
-    /// Test if `sub` is either equal to `obj` or its descendant.
-    fn is_equal_or_descendant_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified,
-    {
-        sub.identifier() == obj.identifier() || self.is_descendant_of(sub, obj)
-    }
-
-    /// Test if `sub` is parent of `obj`.
-    ///
-    /// Returns `false` if `sub` corresponds to the same ontology node as `obj`.
-    fn is_parent_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified;
-
-    /// Test if `sub` is either equal to `obj` or its parent.
-    fn is_equal_or_parent_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified,
-    {
-        sub.identifier() == obj.identifier() || self.is_parent_of(sub, obj)
-    }
-
-    /// Test if `sub` is ancestor of `obj`.
-    ///
-    /// Returns `false` if `sub` corresponds to the same ontology node as `obj`.
-    fn is_ancestor_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified;
-
-    /// Test if `sub` is either equal to `obj` or its parent.
-    fn is_equal_or_ancestor_of<S, O>(&self, sub: &S, obj: &O) -> bool
-    where
-        S: Identified,
-        O: Identified,
-    {
-        sub.identifier() == obj.identifier() || self.is_ancestor_of(sub, obj)
-    }
-}
-
 /// Trait for types that support all basic ontology hierarchy operations,
 /// such as getting the parents, ancestors, children and descendants
 /// of an ontology node.
 ///
 /// * `I` - ontology node index.
+#[deprecated(since = "0.4.3")]
 pub trait OntologyHierarchy<I>:
     ChildNodes<I> + DescendantNodes<I> + ParentNodes<I> + AncestorNodes<I>
 {
@@ -306,6 +234,7 @@ pub trait OntologyHierarchy<I>:
 }
 
 /// The implementors can be used to index the [`OntologyHierarchy`].
+#[deprecated(since = "0.4.3")]
 pub trait HierarchyIdx: Copy + Eq {
     fn new(idx: usize) -> Self;
 }

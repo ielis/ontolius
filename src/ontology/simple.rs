@@ -9,6 +9,7 @@ use crate::{
 
 use super::{HierarchyAware, MetadataAware, Ontology, TermAware, TermIdx};
 
+#[deprecated(note = "Do not use")]
 pub struct SimpleOntology<I, H, T> {
     terms: Vec<T>,
     term_id_to_idx: HashMap<TermId, I>,

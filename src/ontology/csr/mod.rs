@@ -39,13 +39,18 @@
 //!
 //! Check the [`crate::ontology::Ontology`] documentation for more info
 //! regarding the supported functionality.
+mod beta;
 mod hierarchy;
 mod ontology;
 
 pub use hierarchy::CsrOntologyHierarchy;
+pub use beta::CsrOntology as BetaCsrOntology;
 pub use ontology::CsrOntology;
 
-use crate::base::term::simple::SimpleMinimalTerm;
+use crate::base::term::simple::{SimpleMinimalTerm, SimpleTerm};
 
-/// A [`CsrOntology`] with [`usize`] used as node indexer and [`SimpleMinimalTerm`] as the term.
-pub type MinimalCsrOntology = CsrOntology<usize, SimpleMinimalTerm>;
+/// A [`CsrOntology`] with [`u32`] used as node indexer and [`SimpleMinimalTerm`] as the term.
+pub type MinimalCsrOntology = CsrOntology<u32, SimpleMinimalTerm>;
+
+/// A [`CsrOntology`] with [`u32`] used as node indexer and [`SimpleTerm`] as the term.
+pub type FullCsrOntology = CsrOntology<u32, SimpleTerm>;

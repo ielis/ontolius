@@ -9,10 +9,8 @@ use graph_builder::index::Idx as CsrIdx;
 use crate::base::{Identified, TermId};
 use crate::hierarchy::{GraphEdge, HierarchyIdx, Relationship};
 use crate::io::OntologyData;
-use crate::ontology::{HierarchyAware, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
-use crate::prelude::{
-    AltTermIdAware, AncestorNodes, ChildNodes, OntologyHierarchyQueries, ParentNodes,
-};
+use crate::ontology::{HierarchyAware, HierarchyQueries, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
+use crate::prelude::{AltTermIdAware, AncestorNodes, ChildNodes, ParentNodes};
 use anyhow::Error;
 
 use super::hierarchy::CsrOntologyHierarchy;
@@ -134,7 +132,7 @@ where
     }
 }
 
-impl<I, T> OntologyHierarchyQueries for CsrOntology<I, T>
+impl<I, T> HierarchyQueries for CsrOntology<I, T>
 where
     I: CsrIdx + Hash,
 {
