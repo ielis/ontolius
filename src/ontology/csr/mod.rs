@@ -8,8 +8,10 @@
 //! use std::io::BufReader;
 //! use flate2::bufread::GzDecoder;
 //!
-//! use ontolius::prelude::*;
+//! use ontolius::io::OntologyLoaderBuilder;
 //! use ontolius::ontology::csr::CsrOntology;
+//! use ontolius::term::simple::SimpleMinimalTerm;
+//! use ontolius::ontology::OntologyTerms;
 //!
 //! // Configure the ontology loader to parse Obographs JSON file.
 //! let loader = OntologyLoaderBuilder::new()
@@ -22,7 +24,7 @@
 //!
 //! /// Use `flate2` to decompress JSON on the fly
 //! let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
-//! let ontology: CsrOntology<usize, _> = loader.load_from_read(reader)
+//! let ontology: CsrOntology<usize, SimpleMinimalTerm> = loader.load_from_read(reader)
 //!                                         .expect("Obographs JSON should be parsable");
 //!
 //! // or do the same using the `MinimalCsrOntology` alias to save some typing:
@@ -38,13 +40,22 @@
 //!
 //! Check the [`crate::ontology::Ontology`] documentation for more info
 //! regarding the supported functionality.
+mod beta;
 mod hierarchy;
 mod ontology;
 
+pub use beta::CsrOntology;
 pub use hierarchy::CsrOntologyHierarchy;
-pub use ontology::CsrOntology;
+pub use ontology::CsrOntology as VintageCsrOntology;
 
-use crate::base::term::simple::SimpleMinimalTerm;
+use crate::term::simple::{SimpleMinimalTerm, SimpleTerm};
 
-/// A [`CsrOntology`] with [`usize`] used as node indexer and [`SimpleMinimalTerm`] as the term.
-pub type MinimalCsrOntology = CsrOntology<usize, SimpleMinimalTerm>;
+/*
+Using `u32` as a default because `u16` led to performance regression in ancestor/descendant
+hierarchy traversals (manual benchmark in `bences/hierarchy_traversals.rs`).
+*/
+/// A [`CsrOntology`] with [`u32`] used as node indexer and [`SimpleMinimalTerm`] as the term.
+pub type MinimalCsrOntology = CsrOntology<u32, SimpleMinimalTerm>;
+
+/// A [`CsrOntology`] with [`u32`] used as node indexer and [`SimpleTerm`] as the term.
+pub type FullCsrOntology = CsrOntology<u32, SimpleTerm>;
