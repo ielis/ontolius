@@ -36,7 +36,9 @@ where
 
     fn try_from(value: OntologyData<I, T>) -> Result<Self, Self::Error> {
         let adjacency_matrix = GraphBuilder::new()
-            .csr_layout(CsrLayout::Sorted)
+            // No performance difference was observed for `CsrLayout::Sorted`
+            // in IO and traversal benches.
+            .csr_layout(CsrLayout::Unsorted)
             .edges(make_edge_iterator(value.edges))
             .build();
 
