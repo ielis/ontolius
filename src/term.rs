@@ -120,7 +120,7 @@ pub mod simple {
     use super::{
         AltTermIdAware, CrossReferenced, Definition, MinimalTerm, Synonym, Synonymous, Term,
     };
-    use crate::base::{Identified, TermId};
+    use crate::{Identified, TermId};
 
     #[derive(Debug, PartialEq, Eq, Clone)]
     pub struct SimpleMinimalTerm {

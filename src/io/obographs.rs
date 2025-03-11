@@ -10,10 +10,9 @@ use obographs_dev::model::{
 use crate::term::simple::{SimpleMinimalTerm, SimpleTerm};
 use crate::term::{Definition, MinimalTerm, Synonym, SynonymCategory, SynonymType};
 use crate::{
-    TermId,
-    base::Identified,
     hierarchy::{GraphEdge, Relationship},
     ontology::OntologyIdx,
+    Identified, TermId,
 };
 
 use super::{OntologyData, OntologyDataParser, OntologyLoaderBuilder, Uninitialized, WithParser};
