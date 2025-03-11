@@ -4,9 +4,8 @@ use std::io::{BufReader, Read};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use flate2::bufread::GzDecoder;
-use ontolius::base::term::simple::SimpleMinimalTerm;
 use ontolius::io::OntologyLoaderBuilder;
-use ontolius::ontology::csr::BetaCsrOntology;
+use ontolius::ontology::csr::MinimalCsrOntology;
 
 const HPO_PATH: &str = "resources/hp.v2024-08-13.json.gz";
 
@@ -20,7 +19,7 @@ fn load_csr_ontology(c: &mut Criterion) {
     let mut group = c.benchmark_group("CsrOntologyLoader");
     group.bench_function("CsrOntologyLoader::load", |b| {
         b.iter(|| {
-            let ontology: BetaCsrOntology<u32, SimpleMinimalTerm> = loader.load_from_buf_read(black_box(&*data)).unwrap();
+            let ontology: MinimalCsrOntology = loader.load_from_buf_read(black_box(&*data)).unwrap();
             black_box(ontology);
         })
     });

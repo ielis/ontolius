@@ -4,10 +4,10 @@ use std::io::BufReader;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 use flate2::bufread::GzDecoder;
-use ontolius::base::term::simple::SimpleMinimalTerm;
-use ontolius::ontology::csr::BetaCsrOntology;
+use ontolius::io::OntologyLoaderBuilder;
+use ontolius::ontology::csr::MinimalCsrOntology;
 use ontolius::ontology::{HierarchyTraversals, HierarchyWalks};
-use ontolius::prelude::*;
+use ontolius::TermId;
 
 const HPO_PATH: &str = "resources/hp.v2024-08-13.json.gz";
 
@@ -19,7 +19,7 @@ const PAYLOAD: [(&str, &str); 5] = [
     ("Short middle phalanx of the 3rd finger", "HP:0009439"), // 3 parents
 ];
 
-fn load_hpo(hpo_path: &str) -> BetaCsrOntology<u32, SimpleMinimalTerm> {
+fn load_hpo(hpo_path: &str) -> MinimalCsrOntology {
     let loader = OntologyLoaderBuilder::new().obographs_parser().build();
     let reader = GzDecoder::new(BufReader::new(
         File::open(hpo_path).expect("HPO file should exist"),

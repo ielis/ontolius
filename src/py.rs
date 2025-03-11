@@ -3,7 +3,7 @@ use std::{ops::Deref, str::FromStr};
 
 use pyo3::{exceptions::PyValueError, intern, prelude::*, pyclass::CompareOp, types::PyString};
 
-use super::TermId;
+use crate::TermId;
 
 /// `PyTermId` is a transparent wrapper around [`TermId`], a validated compact identifier (CURIE),
 /// that works in Python.

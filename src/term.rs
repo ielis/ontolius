@@ -1,4 +1,6 @@
-use crate::base::{Identified, TermId};
+use crate::{Identified, TermId};
+
+const OWL_THING: (&str, &str) = ("owl", "Thing");
 
 /// Some terms have alternate identifiers,
 /// e.g. the identifiers used to refer to the term in the past.
@@ -114,10 +116,11 @@ pub trait Term: MinimalTerm {
 
 pub mod simple {
 
+    use super::OWL_THING;
     use super::{
         AltTermIdAware, CrossReferenced, Definition, MinimalTerm, Synonym, Synonymous, Term,
     };
-    use crate::base::{Identified, TermId, OWL_THING};
+    use crate::base::{Identified, TermId};
 
     #[derive(Debug, PartialEq, Eq, Clone)]
     pub struct SimpleMinimalTerm {

@@ -5,11 +5,11 @@ mod simple;
 
 use std::hash::Hash;
 
-use crate::base::{
-    term::{AltTermIdAware, MinimalTerm},
+use crate::{
     Identified, TermId,
 };
 use crate::hierarchy::{HierarchyIdx, OntologyHierarchy};
+use crate::term::{AltTermIdAware, MinimalTerm};
 
 /// The implementors can be used to index the [`TermAware`].
 #[deprecated(since = "0.5.0")]

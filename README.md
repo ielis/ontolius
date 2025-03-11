@@ -79,13 +79,15 @@ We can get a term by its `TermId`:
 # let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
 #
-use ontolius::prelude::*;
+use ontolius::TermId;
+use ontolius::term::MinimalTerm;
+use ontolius::ontology::OntologyTerms;
 
 // `HP:0001250` corresponds to `Arachnodactyly``
 let term_id: TermId = ("HP", "0001166").into();
 
 // Get the term by its term ID and check the name. 
-let term = hpo.id_to_term(&term_id).expect("Arachnodactyly should be present");
+let term = hpo.term_by_id(&term_id).expect("Arachnodactyly should be present");
 
 assert_eq!(term.name(), "Arachnodactyly");
 ```
@@ -103,7 +105,7 @@ or iterate over the all ontology terms or their corresponding term IDs:
 # let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
 #
-use ontolius::prelude::*;
+use ontolius::ontology::OntologyTerms;
 
 // The toy HPO contains 614 terms and primary term ids,
 let terms: Vec<_> = hpo.iter_terms().collect();
@@ -114,20 +116,20 @@ assert_eq!(hpo.iter_term_ids().count(), 614);
 assert_eq!(hpo.iter_all_term_ids().count(), 1121);
 ```
 
-See [`crate::ontology::HierarchyAware`] for more details.
+See [`crate::ontology::OntologyTerms`] trait for more details.
 
 ### Browse the hierarchy
 
-`ontolius` models the ontology hierarchy using the [`crate::hierarchy::OntologyHierarchy`] trait, 
-an instance of which is available from `Ontology`. 
-The hierarchy is represented as a directed acyclic graph that is built from `is_a` relationships. 
-The graph vertices correspond to term indices (not `TermId`s) that are determined 
-when the ontology is built.
+`ontolius` enables to leverage the ontology hierarchy
+via several traits. This typically includes iteration over term's parents, ancestors, children, or descendants.
 
-All methods of the ontology hierarchy operate in the term index space. The indices have 
-all properties of `TermId`s, and can, therefore, be used *in lieu* of the `TermId`s. 
+The [`crate::ontology::HierarchyWalks`] trait supports iterating through [`TermId`]s whereas [`crate::ontology::HierarchyTraversals`] enables iteration over ontology graph indices. Iterating over indices is slightly faster and can be useful if we do not really care about the actual term IDs (e.g. to test if term `a` is an ancestor of term `b`).
 
-Let's see how to use the ontology hierarchy. For instance, to get the parent terms of a term.
+The [`crate::ontology::HierarchyQueries`] simplifies testing if term `a` is a parent, child, ancestor, or descendant of term `b`.
+
+In all cases, the hierarchy is represented as a directed acyclic graph that is built from `is_a` relationships.
+
+Let's see how to use the ontology hierarchy. For instance, we can use [`crate::ontology::HierarchyWalks::iter_parent_ids`] to get parent ids of a term:
 
 ```rust
 # use std::fs::File;
@@ -135,30 +137,31 @@ Let's see how to use the ontology hierarchy. For instance, to get the parent ter
 # use flate2::bufread::GzDecoder;
 # use ontolius::io::OntologyLoaderBuilder;
 # use ontolius::ontology::csr::MinimalCsrOntology;
+# use ontolius::TermId;
+# use ontolius::term::MinimalTerm;
 # let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 # let reader = GzDecoder::new(BufReader::new(File::open("resources/hp.small.json.gz").unwrap()));
 # let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
 #
-use ontolius::prelude::*;
 
-let hierarchy = hpo.hierarchy();
+use ontolius::ontology::{HierarchyWalks, OntologyTerms};
 
-let arachnodactyly: TermId = ("HP", "0001166").into();
 
-let idx = hpo.id_to_idx(&arachnodactyly)
-            .expect("Arachnodacyly should be in HPO");
-let parents: Vec<_> = hierarchy.iter_parents_of(idx)
-                        .flat_map(|idx| hpo.idx_to_term(idx))
-                        .collect();
-let names: Vec<_> = parents.iter().map(|term| term.name()).collect();
-assert_eq!(vec!["Slender finger", "Long fingers"], names);
+let arachnodactyly: TermId = "HP:0001166".parse()
+                                .expect("CURIE should be valid");
+
+let parent_names: Vec<_> = hpo.iter_parent_ids(&arachnodactyly)
+                               .map(|idx| hpo.term_by_id(idx).expect("A term for a term ID obtained from ontology should always be present"))
+                               .map(MinimalTerm::name)
+                               .collect();
+assert_eq!(vec!["Slender finger", "Long fingers"], parent_names);
 ```
 
-Similar methods exist for getting ancestors, children, and descendent terms.
-See [`crate::hierarchy::OntologyHierarchy`] for more details.
+We first create the `TermId` that corresponds to *Arachnodactyly* and then we query `hpo` for its parents by calling `iter_parent_ids`. We retrieve the term that corresponds to term id, extract its name, and collect the names into a vector.
 
-That's it for now.
+Similar methods exist for getting term IDs of ancestors, children, and descendants of a term. See [`crate::ontology::HierarchyWalks`] for more info.
+
 
 ## Features
 

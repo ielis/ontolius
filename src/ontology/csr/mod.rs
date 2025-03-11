@@ -8,9 +8,10 @@
 //! use std::io::BufReader;
 //! use flate2::bufread::GzDecoder;
 //!
-//! use ontolius::prelude::*;
-//! use ontolius::base::term::simple::SimpleMinimalTerm;
+//! use ontolius::io::OntologyLoaderBuilder;
 //! use ontolius::ontology::csr::CsrOntology;
+//! use ontolius::term::simple::SimpleMinimalTerm;
+//! use ontolius::ontology::OntologyTerms;
 //!
 //! // Configure the ontology loader to parse Obographs JSON file.
 //! let loader = OntologyLoaderBuilder::new()
@@ -44,10 +45,10 @@ mod hierarchy;
 mod ontology;
 
 pub use hierarchy::CsrOntologyHierarchy;
-pub use beta::CsrOntology as BetaCsrOntology;
-pub use ontology::CsrOntology;
+pub use beta::CsrOntology;
+pub use ontology::CsrOntology as VintageCsrOntology;
 
-use crate::base::term::simple::{SimpleMinimalTerm, SimpleTerm};
+use crate::term::simple::{SimpleMinimalTerm, SimpleTerm};
 
 /*
 Using `u32` as a default because `u16` led to performance regression in ancestor/descendant

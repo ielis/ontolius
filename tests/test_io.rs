@@ -5,16 +5,16 @@ mod human_phenotype_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
-    use ontolius::base::term::simple::{SimpleMinimalTerm, SimpleTerm};
-    use ontolius::base::TermId;
+    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::TermId;
     use ontolius::io::OntologyLoaderBuilder;
-    use ontolius::ontology::csr::BetaCsrOntology;
+    use ontolius::ontology::csr::CsrOntology;
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
     use ontolius::prelude::{MinimalTerm, Term};
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn hpo() -> BetaCsrOntology<u32, SimpleMinimalTerm> {
+    fn hpo() -> CsrOntology<u32, SimpleMinimalTerm> {
         let path = "resources/hp.v2024-08-13.json.gz";
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
         let loader = OntologyLoaderBuilder::new().obographs_parser().build();
@@ -23,7 +23,7 @@ mod human_phenotype_ontology {
     }
 
     #[rstest]
-    fn check_children(hpo: BetaCsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    fn check_children(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let term_id = TermId::from(("HP", "0032677"));
         assert_eq!(
             hpo.term_by_id(&term_id).unwrap().name(),
@@ -53,7 +53,7 @@ mod human_phenotype_ontology {
     }
 
     #[rstest]
-    fn check_descendants(hpo: BetaCsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    fn check_descendants(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let term_id = TermId::from(("HP", "0002863"));
         assert_eq!(hpo.term_by_id(&term_id).unwrap().name(), "Myelodysplasia");
 
@@ -78,7 +78,7 @@ mod human_phenotype_ontology {
     }
 
     #[rstest]
-    fn check_parents(hpo: BetaCsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    fn check_parents(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let seizure = TermId::from(("HP", "0032677"));
         assert_eq!(
             hpo.term_by_id(&seizure).unwrap().name(),
@@ -100,7 +100,7 @@ mod human_phenotype_ontology {
     }
 
     #[rstest]
-    fn check_ancestors(hpo: BetaCsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    fn check_ancestors(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let term_id = TermId::from(("HP", "0002266"));
         assert_eq!(
             hpo.term_by_id(&term_id).unwrap().name(),
@@ -138,7 +138,7 @@ mod human_phenotype_ontology {
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
         let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
-        let hpo: BetaCsrOntology<u32, SimpleTerm> = loader.load_from_read(reader).unwrap();
+        let hpo: CsrOntology<u32, SimpleTerm> = loader.load_from_read(reader).unwrap();
 
         for ft in hpo.iter_terms() {
             println!("{:?}", ft.definition())
@@ -153,10 +153,10 @@ mod gene_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
-    use ontolius::base::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
     use ontolius::prelude::*;
-    use ontolius::{io::OntologyLoaderBuilder, ontology::csr::BetaCsrOntology};
+    use ontolius::{io::OntologyLoaderBuilder, ontology::csr::CsrOntology};
 
     #[test]
     fn load_go() {
@@ -165,7 +165,7 @@ mod gene_ontology {
         let path = "resources/go-basic.v2025-02-06.json.gz";
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
 
-        let go: BetaCsrOntology<u32, SimpleMinimalTerm> = loader
+        let go: CsrOntology<u32, SimpleMinimalTerm> = loader
             .load_from_read(reader)
             .expect("Loading of the test file should succeed");
 
@@ -197,7 +197,7 @@ mod gene_ontology {
         let path = "resources/go-basic.v2025-02-06.json.gz";
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
 
-        let go: BetaCsrOntology<u32, SimpleTerm> = loader
+        let go: CsrOntology<u32, SimpleTerm> = loader
             .load_from_read(reader)
             .expect("Loading of the test file should succeed");
 

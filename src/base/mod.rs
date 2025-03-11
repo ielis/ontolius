@@ -7,22 +7,16 @@ use std::str::FromStr;
 
 use anyhow::{bail, Error, Result};
 
-#[cfg(feature = "pyo3")]
-pub mod py;
-pub mod term;
-
-const OWL_THING: (&str, &str) = ("owl", "Thing");
-
 /// `Identified` is implemented by entities that have a [`TermId`] as an identifier.
 ///
 /// ## Examples
 ///
-/// [`crate::base::term::simple::SimpleMinimalTerm`] implements `Identified`.
+/// [`crate::term::simple::SimpleMinimalTerm`] implements `Identified`.
 /// ```
-/// use ontolius::prelude::*;
-/// use ontolius::base::term::simple::SimpleMinimalTerm;
+/// use ontolius::{Identified, TermId};
+/// use ontolius::term::simple::SimpleMinimalTerm;
 ///
-/// let term_id = TermId::from(("HP", "1234567"));
+/// let term_id: TermId = "HP:1234567".parse().expect("CURIE should be valid");
 /// let term = SimpleMinimalTerm::new(term_id, "Sample term", vec![], false);
 ///
 /// assert_eq!(term.identifier().to_string(), "HP:1234567")
@@ -38,7 +32,7 @@ pub trait Identified {
 /// Create a `TermId` from a `str` with compact URI (CURIE) or from a tuple consisting of *prefix* and *id* :
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// // Parse a CURIE `str`:
 /// let a: TermId = "HP:0001250".parse().expect("value is a valid CURIE");
@@ -55,7 +49,7 @@ pub trait Identified {
 /// Parsing a CURIE will fail if the CURIE does not contain either `:` or `_` as a delimiter:
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// let term_id: Result<TermId, _> = "HP*0001250".parse(); // `*` is not valid delimiter
 ///
@@ -69,7 +63,7 @@ pub struct TermId(InnerTermId);
 /// ## Examples
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// let term_id: TermId = "HP:0001250".parse().expect("value is a valid CURIE");
 ///
@@ -88,7 +82,7 @@ impl FromStr for TermId {
 /// ## Examples
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// assert_eq!(TermId::from(("HP", "0001250")), ("HP", "0001250"));
 /// assert_eq!(TermId::from(("NCIT", "C2852")), ("NCIT", "C2852"));
@@ -123,7 +117,7 @@ impl PartialEq<(&str, &str)> for TermId {
 /// ## Examples
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// let seizure = TermId::from(("HP", "0001250"));
 /// assert_eq!(&seizure, ("HP", "0001250"));
@@ -142,7 +136,7 @@ impl PartialEq<(&str, &str)> for &TermId {
 /// ## Examples
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// let term_id = TermId::from(("HP", "0001250"));
 ///

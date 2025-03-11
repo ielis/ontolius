@@ -7,15 +7,11 @@ use obographs_dev::model::{
     DefinitionPropertyValue, Edge, Graph, GraphDocument, Meta, Node, SynonymPropertyValue,
 };
 
-use crate::base::term::{Definition, Synonym, SynonymCategory, SynonymType};
+use crate::term::simple::{SimpleMinimalTerm, SimpleTerm};
+use crate::term::{Definition, MinimalTerm, Synonym, SynonymCategory, SynonymType};
 use crate::{
-    base::{
-        term::{
-            simple::{SimpleMinimalTerm, SimpleTerm},
-            MinimalTerm,
-        },
-        Identified, TermId,
-    },
+    TermId,
+    base::Identified,
     hierarchy::{GraphEdge, Relationship},
     ontology::OntologyIdx,
 };

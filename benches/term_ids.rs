@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use ontolius::base::TermId;
+use ontolius::TermId;
 
 fn bench_term_id(c: &mut Criterion) {
     // Bench parsing CURIE parts.
