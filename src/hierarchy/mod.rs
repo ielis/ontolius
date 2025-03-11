@@ -14,6 +14,7 @@ pub use edge::{GraphEdge, Relationship};
 /// Trait for types that can provide the child nodes of an ontology node.
 ///
 /// * `I` - ontology node index.
+#[deprecated(since = "0.5.0")]
 pub trait ChildNodes<I> {
     /// Returns an iterator of all nodes which are children of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_children_of` instead")]
@@ -69,6 +70,7 @@ pub trait ChildNodes<I> {
 /// Trait for types that can provide the descendant nodes of an ontology node.
 ///
 /// * `I` - ontology node index.
+#[deprecated(since = "0.5.0")]
 pub trait DescendantNodes<I> {
     // Type used to index the ontology nodes.
 
@@ -113,6 +115,7 @@ pub trait DescendantNodes<I> {
 /// Trait for types that can provide the parent nodes of an ontology node.
 ///
 /// * `I` - ontology node index.
+#[deprecated(since = "0.5.0")]
 pub trait ParentNodes<I> {
     /// Returns an iterator of all nodes which are parents of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_parents_of` instead")]
@@ -163,6 +166,7 @@ pub trait ParentNodes<I> {
 /// Trait for types that can provide the ancestor nodes of an ontology node.
 ///
 /// * `I` - ontology node index.
+#[deprecated(since = "0.5.0")]
 pub trait AncestorNodes<I> {
     /// Returns an iterator of all nodes which are ancestors of `node`.
     #[deprecated(since = "0.1.3", note = "Use `iter_ancestors_of` instead")]
