@@ -5,12 +5,12 @@ mod human_phenotype_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
-    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
-    use ontolius::TermId;
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::CsrOntology;
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
     use ontolius::prelude::{MinimalTerm, Term};
+    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::TermId;
     use rstest::{fixture, rstest};
 
     #[fixture]
@@ -153,9 +153,9 @@ mod gene_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
-    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
     use ontolius::prelude::*;
+    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
     use ontolius::{io::OntologyLoaderBuilder, ontology::csr::CsrOntology};
 
     #[test]

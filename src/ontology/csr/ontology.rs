@@ -6,11 +6,13 @@ use std::{collections::HashMap, iter::once};
 use anyhow::{bail, Result};
 use graph_builder::index::Idx as CsrIdx;
 
-use crate::{Identified, TermId};
 use crate::hierarchy::{GraphEdge, HierarchyIdx, Relationship};
 use crate::io::OntologyData;
-use crate::ontology::{HierarchyAware, HierarchyQueries, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx};
+use crate::ontology::{
+    HierarchyAware, HierarchyQueries, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx,
+};
 use crate::prelude::{AltTermIdAware, AncestorNodes, ChildNodes, ParentNodes};
+use crate::{Identified, TermId};
 use anyhow::Error;
 
 use super::hierarchy::CsrOntologyHierarchy;
@@ -257,8 +259,8 @@ mod test {
 
     use super::*;
     use crate::{
-        term::simple::SimpleMinimalTerm,
         ontology::{AllTermIdsIter, State, TermIdIter},
+        term::simple::SimpleMinimalTerm,
     };
 
     #[test]

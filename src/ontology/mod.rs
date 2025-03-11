@@ -4,11 +4,9 @@ pub mod csr;
 
 use std::hash::Hash;
 
-use crate::{
-    Identified, TermId,
-};
 use crate::hierarchy::{HierarchyIdx, OntologyHierarchy};
 use crate::term::{AltTermIdAware, MinimalTerm};
+use crate::{Identified, TermId};
 
 /// The implementors can be used to index the [`TermAware`].
 #[deprecated(since = "0.5.0")]

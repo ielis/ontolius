@@ -8,13 +8,13 @@ use std::{
 use graph_builder::{index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, GraphBuilder};
 
 use crate::{
-    Identified, TermId,
     hierarchy::{GraphEdge, Relationship},
     io::OntologyData,
     ontology::{
         HierarchyQueries, HierarchyTraversals, HierarchyWalks, MetadataAware, OntologyTerms,
     },
     term::AltTermIdAware,
+    Identified, TermId,
 };
 
 /// An ontology backed by a term array and a CSR adjacency matrix.
