@@ -49,6 +49,10 @@ pub use ontology::CsrOntology;
 
 use crate::base::term::simple::{SimpleMinimalTerm, SimpleTerm};
 
+/*
+Using `u32` as a default because `u16` led to performance regression in ancestor/descendant
+hierarchy traversals (manual benchmark in `bences/hierarchy_traversals.rs`).
+*/ 
 /// A [`CsrOntology`] with [`u32`] used as node indexer and [`SimpleMinimalTerm`] as the term.
 pub type MinimalCsrOntology = CsrOntology<u32, SimpleMinimalTerm>;
 
