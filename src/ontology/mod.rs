@@ -1,7 +1,6 @@
 //! A module with the ontology parts.
 #[cfg(feature = "csr")]
 pub mod csr;
-mod simple;
 
 use std::hash::Hash;
 
