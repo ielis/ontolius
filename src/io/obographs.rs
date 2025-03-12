@@ -10,13 +10,12 @@ use obographs_dev::model::{
 
 use crate::term::simple::{SimpleMinimalTerm, SimpleTerm};
 use crate::term::{Definition, MinimalTerm, Synonym, SynonymCategory, SynonymType};
-use crate::{
-    hierarchy::{GraphEdge, Relationship},
-    ontology::OntologyIdx,
-    Identified, TermId,
-};
+use crate::{ontology::OntologyIdx, Identified, TermId};
 
-use super::{OntologyData, OntologyDataParser, OntologyLoaderBuilder, Uninitialized, WithParser};
+use super::{
+    GraphEdge, OntologyData, OntologyDataParser, OntologyLoaderBuilder, Relationship,
+    Uninitialized, WithParser,
+};
 
 impl From<DefinitionPropertyValue> for Definition {
     fn from(value: DefinitionPropertyValue) -> Self {
@@ -316,15 +315,15 @@ fn parse_relationship(pred: &str) -> Result<Relationship> {
 /// Add a convenience function for using [`ObographsParser`] to [`OntologyLoaderBuilder`].
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Load ontology graphs using [`ObographsParser`].
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Configure a loader for loading ontology
     /// from an Obographs JSON file.
-    /// 
+    ///
     /// ```
     /// use ontolius::io::OntologyLoaderBuilder;
-    /// 
+    ///
     /// let builder = OntologyLoaderBuilder::new()
     ///                 .obographs_parser()
     ///                 .build();
