@@ -11,6 +11,28 @@ use std::{
     path::Path,
 };
 
+/// Requirements for an ontology graph node index.
+pub trait Index: Clone {
+    fn new(val: usize) -> Self;
+}
+
+macro_rules! impl_index {
+    ($TYPE:ty) => {
+        impl Index for $TYPE {
+            fn new(val: usize) -> Self {
+                assert!(val <= <$TYPE>::MAX as usize);
+                val as $TYPE
+            }
+        }
+    };
+}
+
+impl_index!(u8);
+impl_index!(u16);
+impl_index!(u32);
+impl_index!(u64);
+impl_index!(usize);
+
 /// A relationship between the ontology concepts.
 ///
 /// At this time, we only support `is_a` relationship.
