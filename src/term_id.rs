@@ -161,6 +161,12 @@ impl From<InnerTermId> for TermId {
     }
 }
 
+impl TermId {
+    pub(crate) const fn from_inner(inner: InnerTermId) -> Self {
+        TermId(inner)
+    }
+}
+
 impl Display for TermId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
@@ -170,7 +176,7 @@ impl Display for TermId {
 // We really want to have all these private enum members in upper case!
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Prefix {
+pub(crate) enum Prefix {
     // TODO: others?
     HP,
     OMIM,
@@ -234,7 +240,7 @@ impl TryFrom<&str> for Prefix {
 }
 
 #[derive(Debug, Clone)]
-enum InnerTermId {
+pub(crate) enum InnerTermId {
     // Most of the time we will have a CURIE that has a known Prefix and an integral id.
     // We store the prefix, the id, and the length of the id (e.g. 7 for HP:1234567 or 6 for OMIM:256000)
     Known(Prefix, u32, u8),

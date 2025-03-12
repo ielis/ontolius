@@ -1,3 +1,4 @@
+//! Load ontology data from Obographs formats.
 use std::io::BufRead;
 use std::{collections::HashMap, sync::Arc};
 
@@ -314,7 +315,20 @@ fn parse_relationship(pred: &str) -> Result<Relationship> {
 
 /// Add a convenience function for using [`ObographsParser`] to [`OntologyLoaderBuilder`].
 impl OntologyLoaderBuilder<Uninitialized> {
-    /// Load ontology graphs using [`ObographsParser`].        
+    /// Load ontology graphs using [`ObographsParser`].
+    /// 
+    /// ## Example
+    /// 
+    /// Configure a loader for loading ontology
+    /// from an Obographs JSON file.
+    /// 
+    /// ```
+    /// use ontolius::io::OntologyLoaderBuilder;
+    /// 
+    /// let builder = OntologyLoaderBuilder::new()
+    ///                 .obographs_parser()
+    ///                 .build();
+    /// ```
     #[must_use]
     pub fn obographs_parser(
         self,

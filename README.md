@@ -1,18 +1,18 @@
 # Ontolius
 
-Empower analysis with terms and hierarchy of biomedical ontologies.
+A fast and safe crate for working with biomedical ontologies.
 
 ## Examples
 
-We provide examples of *loading* ontology and its subsequent *usage*
+We provide examples of loading ontology and its subsequent usage
 in applications.
 
-### 🪄🪄🪄 Load HPO
+### Load HPO 🪄
 
 `ontolius` can load HPO from Obographs JSON file.
 For the sake of this example, we use
 [flate2](https://github.com/rust-lang/flate2-rs)
-to decompress gzipped JSON on the fly:
+to decompress gzipped JSON on the fly.
 
 We can load the JSON file as follows:
 
@@ -37,36 +37,27 @@ let hpo: MinimalCsrOntology = loader.load_from_read(reader)
                                 .expect("HPO should be loaded");
 ```
 
-> Note: Ontolius does *not* depend on `flate2`. It's up to you to provide
-> the `loader` with proper data 😱
+We loaded data from a toy JSON file into [`crate::ontology::csr::MinimalCsrOntology`].
+The loading includes parsing terms and edges from the Obographs file
+and construction of the ontology graph.
+In case of `MinimalCsrOntology`,
+the graph is backed by a compressed sparse row (CSR) adjacency matrix.
 
-We loaded an ontology from a toy JSON file. 
-During the load, each term is assigned a numeric index and the indices are used as vertices 
-of the ontology graph. 
+See [`crate::io::OntologyLoader`] for more info on loading.
 
-As the name suggests, the hierarchy graph of `MinimalCsrOntology` 
-is backed by an adjacency matrix in compressed sparse row (CSR) format.
-However, the backing data structure should be treated as an implementation detail.
-Note that `MinimalCsrOntology` implements the [`crate::ontology::Ontology`] trait
-which is the API the client code should use. 
-
-Now let's move on to the example usage.
-
-### 🤸🤸🤸 Use HPO
+### Use HPO 🤸
 
 In the previous section, we loaded an ontology from Obographs JSON file.
-Now we have an instance of [`crate::ontology::Ontology`] that can 
+Now we have an instance of [`crate::ontology::csr::MinimalCsrOntology`] that can 
 be used for various tasks.
-
-Note, we will import the *prelude* [`crate::prelude`] to reduce the import boilerplate.
 
 #### Work with ontology terms
 
-[`crate::ontology::Ontology`] acts as a container of terms to support 
-retrieval of specific terms by its index or `TermId`, and to iterate 
-over all terms and `TermId`s. 
+`MinimalCsrOntology` implements [`crate::ontology::OntologyTerms`] trait,
+to support retrieval of specific terms by its index or `TermId`, and to iterate 
+over all terms and `TermId`s.
 
-We can get a term by its `TermId`: 
+We can get a term by its `TermId`:
 
 ```rust
 # use std::fs::File;
@@ -84,11 +75,14 @@ use ontolius::term::MinimalTerm;
 use ontolius::ontology::OntologyTerms;
 
 // `HP:0001250` corresponds to `Arachnodactyly``
-let term_id: TermId = ("HP", "0001166").into();
+let term_id: TermId = "HP:0001166".parse().unwrap();
 
-// Get the term by its term ID and check the name. 
-let term = hpo.term_by_id(&term_id).expect("Arachnodactyly should be present");
+// Get the term by its term ID ...
+let term = hpo.term_by_id(&term_id);
+assert!(term.is_some());
 
+/// ... and check its name.
+let term = term.unwrap();
 assert_eq!(term.name(), "Arachnodactyly");
 ```
 
@@ -143,7 +137,6 @@ Let's see how to use the ontology hierarchy. For instance, we can use [`crate::o
 # let reader = GzDecoder::new(BufReader::new(File::open("resources/hp.small.json.gz").unwrap()));
 # let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
-#
 
 use ontolius::ontology::{HierarchyWalks, OntologyTerms};
 
@@ -168,8 +161,11 @@ Similar methods exist for getting term IDs of ancestors, children, and descendan
 Ontolius includes several features, with the features marked by `(*)` being enabled
 by default:
 
+* `csr` `(*)` - include [`crate::ontology::csr`] module
+  with implementation of ontology with graph backed by a CSR adjacency matrix
 * `obographs` `(*)` - support loading Ontology from Obographs JSON file
-* `pyo3` - add PyO3 bindings to selected data structs to support using from Python
+* `pyo3` - include [`crate::py`] module with PyO3 bindings
+  to selected data structs to support using from Python
 
 
 ## Run tests
