@@ -11,7 +11,65 @@ use std::{
     path::Path,
 };
 
-use crate::hierarchy::GraphEdge;
+/// Requirements for an ontology graph node index.
+pub trait Index: Clone {
+    fn new(val: usize) -> Self;
+}
+
+macro_rules! impl_index {
+    ($TYPE:ty) => {
+        impl Index for $TYPE {
+            fn new(val: usize) -> Self {
+                assert!(val <= <$TYPE>::MAX as usize);
+                val as $TYPE
+            }
+        }
+    };
+}
+
+impl_index!(u8);
+impl_index!(u16);
+impl_index!(u32);
+impl_index!(u64);
+impl_index!(usize);
+
+/// A relationship between the ontology concepts.
+///
+/// At this time, we only support `is_a` relationship.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Relationship {
+    /// Subject is the parent of the object.
+    Parent,
+    /// Subject is the child of the object.
+    Child,
+    /// Subject is part of the object.
+    ///
+    /// Corresponds to [part of](http://purl.obolibrary.org/obo/BFO_0000050).
+    PartOf,
+}
+
+/// A representation of an ontology graph edge.
+///
+/// The edge consists of three parts:
+/// * `I` with the index of the source term
+/// * [`Relationship`] with one of supported relationships
+/// * `I` with the index of the destination term
+#[derive(Debug, Clone, Hash)]
+pub struct GraphEdge<I> {
+    pub sub: I,
+    pub pred: Relationship,
+    pub obj: I,
+}
+
+impl<I> From<(I, Relationship, I)> for GraphEdge<I> {
+    fn from(value: (I, Relationship, I)) -> Self {
+        Self {
+            sub: value.0,
+            pred: value.1,
+            obj: value.2,
+        }
+    }
+}
 
 pub struct OntologyData<I, T> {
     pub terms: Vec<T>,
@@ -39,7 +97,7 @@ pub trait OntologyDataParser<I, T> {
 
 /// [`OntologyLoader`] parses the input into [`OntologyData`] using supplied [`OntologyDataParser`]
 /// and then assembles the data into an ontology.
-/// 
+///
 /// Use [`OntologyLoaderBuilder`] to create the loader and load ontology from a path,
 /// read, or buf read.
 pub struct OntologyLoader<P> {
@@ -95,7 +153,7 @@ pub struct WithParser<P> {
 }
 
 /// A builder for configuring [`OntologyLoader`].
-/// 
+///
 pub struct OntologyLoaderBuilder<State> {
     state: State,
 }

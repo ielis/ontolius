@@ -8,8 +8,7 @@ use std::{
 use graph_builder::{index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, GraphBuilder};
 
 use crate::{
-    hierarchy::{GraphEdge, Relationship},
-    io::OntologyData,
+    io::{GraphEdge, Relationship, OntologyData},
     ontology::{
         HierarchyQueries, HierarchyTraversals, HierarchyWalks, MetadataAware, OntologyTerms,
     },

@@ -2,9 +2,9 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
 use crate::hierarchy::{
-    AncestorNodes, ChildNodes, DescendantNodes, GraphEdge, OntologyHierarchy, ParentNodes,
-    Relationship,
+    AncestorNodes, ChildNodes, DescendantNodes, OntologyHierarchy, ParentNodes,
 };
+use crate::io::{GraphEdge, Relationship};
 
 use graph_builder::index::Idx as CsrIdx;
 use graph_builder::GraphBuilder;

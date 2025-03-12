@@ -1,4 +1,6 @@
 //! A module with the ontology parts.
+
+/// Implementation of ontology backed by a CSR adjacency matrix.
 #[cfg(feature = "csr")]
 pub mod csr;
 

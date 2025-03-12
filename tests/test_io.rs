@@ -8,8 +8,8 @@ mod human_phenotype_ontology {
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::CsrOntology;
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
-    use ontolius::prelude::{MinimalTerm, Term};
     use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::term::{MinimalTerm, Term};
     use ontolius::TermId;
     use rstest::{fixture, rstest};
 
@@ -154,8 +154,9 @@ mod gene_ontology {
 
     use flate2::bufread::GzDecoder;
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
-    use ontolius::prelude::*;
     use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::term::MinimalTerm;
+    use ontolius::TermId;
     use ontolius::{io::OntologyLoaderBuilder, ontology::csr::CsrOntology};
 
     #[test]
@@ -170,9 +171,6 @@ mod gene_ontology {
             .expect("Loading of the test file should succeed");
 
         let pda = TermId::from(("GO", "0004738")); // pyruvate dehydrogenase activity
-                                                   // let node = go
-                                                   //     .id_to_idx(&pda)
-                                                   //     .expect("Pyruvate dehydrogenase activity should be in GO");
 
         let names: Vec<_> = go
             .iter_ancestor_ids(&pda)

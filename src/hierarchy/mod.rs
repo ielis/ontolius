@@ -7,9 +7,6 @@
 //!
 //! Check out the [`OntologyHierarchy`] documentation
 //! for more info on the provided functionality.
-mod edge;
-
-pub use edge::{GraphEdge, Relationship};
 
 /// Trait for types that can provide the child nodes of an ontology node.
 ///

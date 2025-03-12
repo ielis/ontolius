@@ -10,13 +10,11 @@ use obographs_dev::model::{
 
 use crate::term::simple::{SimpleMinimalTerm, SimpleTerm};
 use crate::term::{Definition, MinimalTerm, Synonym, SynonymCategory, SynonymType};
-use crate::{
-    hierarchy::{GraphEdge, Relationship},
-    ontology::OntologyIdx,
-    Identified, TermId,
-};
+use crate::{Identified, TermId};
 
-use super::{OntologyData, OntologyDataParser, OntologyLoaderBuilder, Uninitialized, WithParser};
+use super::{
+    GraphEdge, Index, OntologyData, OntologyDataParser, OntologyLoaderBuilder, Relationship, Uninitialized, WithParser
+};
 
 impl From<DefinitionPropertyValue> for Definition {
     fn from(value: DefinitionPropertyValue) -> Self {
@@ -221,7 +219,7 @@ impl<TF, CU> ObographsParser<TF, CU> {
     where
         TF: ObographsTermMapper<T>,
         CU: CurieUtil,
-        I: OntologyIdx,
+        I: Index,
         T: MinimalTerm,
     {
         let terms: Vec<_> = graph
@@ -240,7 +238,7 @@ impl<TF, CU> ObographsParser<TF, CU> {
 
         let edges: Vec<GraphEdge<_>> = graph
             .edges
-            .iter()
+            .into_iter()
             .flat_map(|edge| parse_edge(edge, &*self.curie_util, &termid2idx))
             .collect();
 
@@ -254,7 +252,7 @@ impl<TF, CU, I, T> OntologyDataParser<I, T> for ObographsParser<TF, CU>
 where
     TF: ObographsTermMapper<T>,
     CU: CurieUtil,
-    I: OntologyIdx,
+    I: Index,
     T: MinimalTerm,
 {
     fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<I, T>>
@@ -272,13 +270,13 @@ where
     }
 }
 
-fn parse_edge<HI, CU>(
-    edge: &Edge,
+fn parse_edge<I, CU>(
+    edge: Edge,
     curie_util: &CU,
-    termid2idx: &HashMap<&TermId, HI>,
-) -> Option<GraphEdge<HI>>
+    termid2idx: &HashMap<&TermId, I>,
+) -> Option<GraphEdge<I>>
 where
-    HI: Clone,
+    I: Clone,
     CU: CurieUtil,
 {
     let sub_parts = curie_util.get_curie_data(&edge.sub);
@@ -316,15 +314,15 @@ fn parse_relationship(pred: &str) -> Result<Relationship> {
 /// Add a convenience function for using [`ObographsParser`] to [`OntologyLoaderBuilder`].
 impl OntologyLoaderBuilder<Uninitialized> {
     /// Load ontology graphs using [`ObographsParser`].
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Configure a loader for loading ontology
     /// from an Obographs JSON file.
-    /// 
+    ///
     /// ```
     /// use ontolius::io::OntologyLoaderBuilder;
-    /// 
+    ///
     /// let builder = OntologyLoaderBuilder::new()
     ///                 .obographs_parser()
     ///                 .build();

@@ -6,7 +6,8 @@ use std::{collections::HashMap, iter::once};
 use anyhow::{bail, Result};
 use graph_builder::index::Idx as CsrIdx;
 
-use crate::hierarchy::{GraphEdge, HierarchyIdx, Relationship};
+use crate::hierarchy::HierarchyIdx;
+use crate::io::{GraphEdge, Relationship};
 use crate::io::OntologyData;
 use crate::ontology::{
     HierarchyAware, HierarchyQueries, MetadataAware, Ontology, OntologyIdx, TermAware, TermIdx,
