@@ -38,13 +38,16 @@ pub trait OntologyDataParser<I, T> {
 }
 
 /// [`OntologyLoader`] parses the input into [`OntologyData`] using supplied [`OntologyDataParser`]
-/// and then assembles the data into an [`crate::ontology::Ontology`].
+/// and then assembles the data into an ontology.
+/// 
+/// Use [`OntologyLoaderBuilder`] to create the loader and load ontology from a path,
+/// read, or buf read.
 pub struct OntologyLoader<P> {
     parser: P,
 }
 
 impl<P> OntologyLoader<P> {
-    pub fn new(parser: P) -> Self {
+    fn new(parser: P) -> Self {
         Self { parser }
     }
 }
@@ -91,10 +94,13 @@ pub struct WithParser<P> {
     parser: P,
 }
 
+/// A builder for configuring [`OntologyLoader`].
+/// 
 pub struct OntologyLoaderBuilder<State> {
     state: State,
 }
 
+/// Creates a new "blank" builder.
 impl Default for OntologyLoaderBuilder<Uninitialized> {
     fn default() -> Self {
         Self {
@@ -119,7 +125,7 @@ impl OntologyLoaderBuilder<Uninitialized> {
 }
 
 impl<P> OntologyLoaderBuilder<WithParser<P>> {
-    /// Build the ontology loader.
+    /// Finish the build and get the ontology loader.
     pub fn build(self) -> OntologyLoader<P> {
         OntologyLoader::new(self.state.parser)
     }

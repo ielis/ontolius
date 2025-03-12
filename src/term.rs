@@ -1,6 +1,7 @@
+//! Ontology term models.
+//!
+//! The module includes traits and structs for modeling ontology terms.
 use crate::{Identified, TermId};
-
-const OWL_THING: (&str, &str) = ("owl", "Thing");
 
 /// Some terms have alternate identifiers,
 /// e.g. the identifiers used to refer to the term in the past.
@@ -20,23 +21,7 @@ pub trait AltTermIdAware {
 ///
 /// On top of inherited traits, such as [`Identified`], [`AltTermIdAware`], and others,
 /// the term must have a name and it is either current or obsolete.
-///
-/// ### Default term
-///
-/// The [`Default`] minimal term represents the ontology root that is inserted into the ontology
-/// in case 2 or more root candidates are found.
-///
-/// #### Example
-///
-/// Gene Ontology has 3 root terms:
-/// * biological process
-/// * molecular function
-/// * cellular component
-///
-/// In this case, a default term would be created to be used as an artificial root term,
-/// and three new "is_a" edges would be created to link the 3 roots to the default term,
-/// which would be used as an artificial root.
-pub trait MinimalTerm: Identified + AltTermIdAware + Default {
+pub trait MinimalTerm: Identified + AltTermIdAware {
     /// Get the name of the term, e.g. `Seizure` for [Seizure](https://hpo.jax.org/browse/term/HP:0001250).
     fn name(&self) -> &str;
 
@@ -116,7 +101,6 @@ pub trait Term: MinimalTerm {
 
 pub mod simple {
 
-    use super::OWL_THING;
     use super::{
         AltTermIdAware, CrossReferenced, Definition, MinimalTerm, Synonym, Synonymous, Term,
     };
@@ -141,18 +125,6 @@ pub mod simple {
                 name: name.to_string(),
                 alt_term_ids: alt_term_ids.into(),
                 is_obsolete,
-            }
-        }
-    }
-
-    /// Get the default term that corresponds to `owl:Thing`.
-    impl Default for SimpleMinimalTerm {
-        fn default() -> Self {
-            Self {
-                term_id: TermId::from(OWL_THING),
-                alt_term_ids: Default::default(),
-                name: "Thing".to_string(),
-                is_obsolete: false,
             }
         }
     }
@@ -224,21 +196,6 @@ pub mod simple {
                 comment,
                 synonyms,
                 xrefs,
-            }
-        }
-    }
-
-    impl Default for SimpleTerm {
-        fn default() -> Self {
-            Self {
-                term_id: TermId::from(OWL_THING),
-                alt_term_ids: Default::default(),
-                name: "Thing".to_string(),
-                is_obsolete: false,
-                definition: Default::default(),
-                comment: Default::default(),
-                synonyms: Default::default(),
-                xrefs: Default::default(),
             }
         }
     }
