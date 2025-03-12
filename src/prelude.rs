@@ -1,9 +1,9 @@
 //! The list of recommended imports for using the library.
-pub use crate::base::term::AltTermIdAware;
-pub use crate::base::term::MinimalTerm;
-pub use crate::base::term::Term;
-pub use crate::base::Identified;
-pub use crate::base::TermId;
+pub use crate::term::AltTermIdAware;
+pub use crate::term::MinimalTerm;
+pub use crate::term::Term;
+pub use crate::Identified;
+pub use crate::TermId;
 
 pub use crate::hierarchy::AncestorNodes;
 pub use crate::hierarchy::ChildNodes;

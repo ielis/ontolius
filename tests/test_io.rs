@@ -5,17 +5,16 @@ mod human_phenotype_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
-    use ontolius::base::TermId;
     use ontolius::io::OntologyLoaderBuilder;
-    use ontolius::ontology::csr::MinimalCsrOntology;
-    use ontolius::prelude::{
-        AncestorNodes, ChildNodes, DescendantNodes, HierarchyAware, MinimalTerm, ParentNodes,
-        TermAware,
-    };
+    use ontolius::ontology::csr::CsrOntology;
+    use ontolius::ontology::{HierarchyWalks, OntologyTerms};
+    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::term::{MinimalTerm, Term};
+    use ontolius::TermId;
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn hpo() -> MinimalCsrOntology {
+    fn hpo() -> CsrOntology<u32, SimpleMinimalTerm> {
         let path = "resources/hp.v2024-08-13.json.gz";
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
         let loader = OntologyLoaderBuilder::new().obographs_parser().build();
@@ -24,18 +23,16 @@ mod human_phenotype_ontology {
     }
 
     #[rstest]
-    fn check_children(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
+    fn check_children(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let term_id = TermId::from(("HP", "0032677"));
         assert_eq!(
-            hpo.id_to_term(&term_id).unwrap().name(),
+            hpo.term_by_id(&term_id).unwrap().name(),
             "Generalized-onset motor seizure"
         );
 
-        let term_idx = hpo.id_to_idx(&term_id).unwrap();
         let children_names: HashSet<_> = hpo
-            .hierarchy()
-            .iter_children_of(&term_idx)
-            .flat_map(|i| hpo.idx_to_term(i).map(|t| t.name()))
+            .iter_child_ids(&term_id)
+            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
             .collect();
 
         let expected = [
@@ -56,15 +53,13 @@ mod human_phenotype_ontology {
     }
 
     #[rstest]
-    fn check_descendants(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
+    fn check_descendants(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let term_id = TermId::from(("HP", "0002863"));
-        assert_eq!(hpo.id_to_term(&term_id).unwrap().name(), "Myelodysplasia");
+        assert_eq!(hpo.term_by_id(&term_id).unwrap().name(), "Myelodysplasia");
 
-        let term_idx = hpo.id_to_idx(&term_id).unwrap();
         let descendant_names: HashSet<_> = hpo
-            .hierarchy()
-            .iter_descendants_of(&term_idx)
-            .flat_map(|i| hpo.idx_to_term(i).map(|t| t.name()))
+            .iter_descendant_ids(&term_id)
+            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
             .collect();
 
         let expected = [
@@ -83,42 +78,38 @@ mod human_phenotype_ontology {
     }
 
     #[rstest]
-    fn check_parents(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
+    fn check_parents(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let seizure = TermId::from(("HP", "0032677"));
         assert_eq!(
-            hpo.id_to_term(&seizure).unwrap().name(),
+            hpo.term_by_id(&seizure).unwrap().name(),
             "Generalized-onset motor seizure"
         );
 
-        let seizure_idx = hpo.id_to_idx(&seizure).unwrap();
-        let parents: HashSet<_> = hpo
-            .hierarchy()
-            .iter_parents_of(&seizure_idx)
-            .flat_map(|i| hpo.idx_to_term(i).map(|t| t.name()))
+        let parent_names: HashSet<_> = hpo
+            .iter_parent_ids(&seizure)
+            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
             .collect();
 
         let expected = ["Generalized-onset seizure", "Motor seizure"]
             .into_iter()
             .collect();
 
-        assert_eq!(parents, expected);
+        assert_eq!(parent_names, expected);
 
         Ok(())
     }
 
     #[rstest]
-    fn check_ancestors(hpo: MinimalCsrOntology) -> anyhow::Result<()> {
+    fn check_ancestors(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
         let term_id = TermId::from(("HP", "0002266"));
         assert_eq!(
-            hpo.id_to_term(&term_id).unwrap().name(),
+            hpo.term_by_id(&term_id).unwrap().name(),
             "Focal clonic seizure"
         );
 
-        let term_idx = hpo.id_to_idx(&term_id).unwrap();
         let ancestor_names: HashSet<_> = hpo
-            .hierarchy()
-            .iter_ancestors_of(&term_idx)
-            .flat_map(|i| hpo.idx_to_term(i).map(|t| t.name()))
+            .iter_ancestor_ids(&term_id)
+            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
             .collect();
 
         let expected = [
@@ -139,6 +130,20 @@ mod human_phenotype_ontology {
 
         Ok(())
     }
+
+    #[test]
+    #[ignore = "just for interactive debugging"]
+    fn load_full_data() {
+        let path = "resources/hp.v2024-08-13.json.gz";
+        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
+        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+
+        let hpo: CsrOntology<u32, SimpleTerm> = loader.load_from_read(reader).unwrap();
+
+        for ft in hpo.iter_terms() {
+            println!("{:?}", ft.definition())
+        }
+    }
 }
 
 /// Gene Ontology tests.
@@ -148,8 +153,11 @@ mod gene_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
-    use ontolius::prelude::*;
-    use ontolius::{io::OntologyLoaderBuilder, ontology::csr::MinimalCsrOntology};
+    use ontolius::ontology::{HierarchyWalks, OntologyTerms};
+    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::term::MinimalTerm;
+    use ontolius::TermId;
+    use ontolius::{io::OntologyLoaderBuilder, ontology::csr::CsrOntology};
 
     #[test]
     fn load_go() {
@@ -158,21 +166,39 @@ mod gene_ontology {
         let path = "resources/go-basic.v2025-02-06.json.gz";
         let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
 
-        let go: MinimalCsrOntology = loader.load_from_read(reader).expect("Loading of the test file should succeed");
+        let go: CsrOntology<u32, SimpleMinimalTerm> = loader
+            .load_from_read(reader)
+            .expect("Loading of the test file should succeed");
 
         let pda = TermId::from(("GO", "0004738")); // pyruvate dehydrogenase activity
-        let node = go.id_to_idx(&pda).expect("Pyruvate dehydrogenase activity should be in GO");
-        
-        let names: Vec<_> = go.hierarchy().iter_ancestors_of(node)
-            .map(|idx| go.idx_to_term(idx).expect("Term for an index should be in ontology"))
-            .map(|term| term.name())
+
+        let names: Vec<_> = go
+            .iter_ancestor_ids(&pda)
+            .flat_map(|tid| go.term_by_id(tid).map(MinimalTerm::name))
             .collect();
-        assert_eq!(names, &[
-            "oxidoreductase activity, acting on the aldehyde or oxo group of donors",
-            "oxidoreductase activity",
-            "catalytic activity",
-            "molecular_function",
-            "Thing",
-        ]);
+        assert_eq!(
+            names,
+            &[
+                "oxidoreductase activity, acting on the aldehyde or oxo group of donors",
+                "oxidoreductase activity",
+                "catalytic activity",
+                "molecular_function",
+            ]
+        );
+    }
+
+    #[test]
+    #[ignore = "just for interactive debugging"]
+    fn load_full_go() {
+        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+
+        let path = "resources/go-basic.v2025-02-06.json.gz";
+        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
+
+        let go: CsrOntology<u32, SimpleTerm> = loader
+            .load_from_read(reader)
+            .expect("Loading of the test file should succeed");
+
+        println!("{:?}", go.len());
     }
 }

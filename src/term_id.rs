@@ -7,22 +7,16 @@ use std::str::FromStr;
 
 use anyhow::{bail, Error, Result};
 
-#[cfg(feature = "pyo3")]
-pub mod py;
-pub mod term;
-
-const OWL_THING: (&str, &str) = ("owl", "Thing");
-
 /// `Identified` is implemented by entities that have a [`TermId`] as an identifier.
 ///
 /// ## Examples
 ///
-/// [`crate::base::term::simple::SimpleMinimalTerm`] implements `Identified`.
+/// [`crate::term::simple::SimpleMinimalTerm`] implements `Identified`.
 /// ```
-/// use ontolius::prelude::*;
-/// use ontolius::base::term::simple::SimpleMinimalTerm;
+/// use ontolius::{Identified, TermId};
+/// use ontolius::term::simple::SimpleMinimalTerm;
 ///
-/// let term_id = TermId::from(("HP", "1234567"));
+/// let term_id: TermId = "HP:1234567".parse().expect("CURIE should be valid");
 /// let term = SimpleMinimalTerm::new(term_id, "Sample term", vec![], false);
 ///
 /// assert_eq!(term.identifier().to_string(), "HP:1234567")
@@ -38,11 +32,10 @@ pub trait Identified {
 /// Create a `TermId` from a `str` with compact URI (CURIE) or from a tuple consisting of *prefix* and *id* :
 ///
 /// ```
-/// use std::str::FromStr;
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// // Parse a CURIE `str`:
-/// let a = TermId::from_str("HP:0001250").unwrap();
+/// let a: TermId = "HP:0001250".parse().expect("value is a valid CURIE");
 ///
 /// // Convert a tuple with `prefix` and `id`:
 /// let b = TermId::from(("HP", "0001250"));
@@ -56,10 +49,9 @@ pub trait Identified {
 /// Parsing a CURIE will fail if the CURIE does not contain either `:` or `_` as a delimiter:
 ///
 /// ```
-/// use std::str::FromStr;
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
-/// let term_id: Result<TermId, _> = TermId::from_str("HP*0001250"); // `*` is not valid delimiter
+/// let term_id: Result<TermId, _> = "HP*0001250".parse(); // `*` is not valid delimiter
 ///
 /// assert!(term_id.is_err());
 /// ```
@@ -71,10 +63,9 @@ pub struct TermId(InnerTermId);
 /// ## Examples
 ///
 /// ```
-/// use std::str::FromStr;
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
-/// let term_id = TermId::from_str("HP:0001250").unwrap();
+/// let term_id: TermId = "HP:0001250".parse().expect("value is a valid CURIE");
 ///
 /// assert_eq!(term_id.to_string(), "HP:0001250");
 /// ```
@@ -91,7 +82,7 @@ impl FromStr for TermId {
 /// ## Examples
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// assert_eq!(TermId::from(("HP", "0001250")), ("HP", "0001250"));
 /// assert_eq!(TermId::from(("NCIT", "C2852")), ("NCIT", "C2852"));
@@ -126,7 +117,7 @@ impl PartialEq<(&str, &str)> for TermId {
 /// ## Examples
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// let seizure = TermId::from(("HP", "0001250"));
 /// assert_eq!(&seizure, ("HP", "0001250"));
@@ -145,7 +136,7 @@ impl PartialEq<(&str, &str)> for &TermId {
 /// ## Examples
 ///
 /// ```
-/// use ontolius::prelude::*;
+/// use ontolius::TermId;
 ///
 /// let term_id = TermId::from(("HP", "0001250"));
 ///
@@ -170,6 +161,12 @@ impl From<InnerTermId> for TermId {
     }
 }
 
+impl TermId {
+    pub(crate) const fn from_inner(inner: InnerTermId) -> Self {
+        TermId(inner)
+    }
+}
+
 impl Display for TermId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
@@ -179,7 +176,7 @@ impl Display for TermId {
 // We really want to have all these private enum members in upper case!
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Prefix {
+pub(crate) enum Prefix {
     // TODO: others?
     HP,
     OMIM,
@@ -243,7 +240,7 @@ impl TryFrom<&str> for Prefix {
 }
 
 #[derive(Debug, Clone)]
-enum InnerTermId {
+pub(crate) enum InnerTermId {
     // Most of the time we will have a CURIE that has a known Prefix and an integral id.
     // We store the prefix, the id, and the length of the id (e.g. 7 for HP:1234567 or 6 for OMIM:256000)
     Known(Prefix, u32, u8),
@@ -398,7 +395,6 @@ impl Identified for TermId {
 mod test_creation {
 
     use super::TermId;
-    use std::str::FromStr;
 
     #[test]
     fn test_term_id_from_tuple() {
@@ -417,7 +413,7 @@ mod test_creation {
     fn test_term_id_from_curie() {
         macro_rules! round_trip_from_curie {
             ($val: literal, $expected: literal) => {
-                let term_id = TermId::from_str($val);
+                let term_id: Result<TermId, _> = $val.parse();
                 assert!(term_id.is_ok());
 
                 let term_id = term_id.unwrap();
@@ -430,6 +426,9 @@ mod test_creation {
         round_trip_from_curie!("MONDO:123456", "MONDO:123456");
         round_trip_from_curie!("OMIM:256000", "OMIM:256000");
         round_trip_from_curie!("NCIT_C2852", "NCIT:C2852");
+        round_trip_from_curie!("SNOMEDCT_US:139394000", "SNOMEDCT_US:139394000");
+        round_trip_from_curie!("SNOMEDCT_US:449491000124101", "SNOMEDCT_US:449491000124101");
+        round_trip_from_curie!("UMLS:C0028734", "UMLS:C0028734");
         round_trip_from_curie!("WHATEVER:12", "WHATEVER:12");
     }
 }
