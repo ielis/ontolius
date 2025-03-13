@@ -7,14 +7,14 @@ A fast and safe crate for working with biomedical ontologies.
 We provide examples of loading ontology and its subsequent usage
 in applications.
 
-### Load HPO 🪄
+### Load ontology 🪄
 
-`ontolius` can load HPO from Obographs JSON file.
+`ontolius` can load ontology from Obographs JSON file.
 For the sake of this example, we use
 [flate2](https://github.com/rust-lang/flate2-rs)
-to decompress gzipped JSON on the fly.
+to decompress a gzipped JSON on the fly.
 
-We can load the JSON file as follows:
+We can load a toy version of HPO from a JSON file as follows:
 
 ```rust
 use std::fs::File;
@@ -37,7 +37,7 @@ let hpo: MinimalCsrOntology = loader.load_from_read(reader)
                                 .expect("HPO should be loaded");
 ```
 
-We loaded data from a toy JSON file into [`crate::ontology::csr::MinimalCsrOntology`].
+We loaded HPO from a toy JSON file into [`crate::ontology::csr::MinimalCsrOntology`].
 The loading includes parsing terms and edges from the Obographs file
 and construction of the ontology graph.
 In case of `MinimalCsrOntology`,
@@ -45,7 +45,7 @@ the graph is backed by a compressed sparse row (CSR) adjacency matrix.
 
 See [`crate::io::OntologyLoader`] for more info on loading.
 
-### Use HPO 🤸
+### Use ontology 🤸
 
 In the previous section, we loaded an ontology from Obographs JSON file.
 Now we have an instance of [`crate::ontology::csr::MinimalCsrOntology`] that can 
@@ -154,6 +154,18 @@ assert_eq!(vec!["Slender finger", "Long fingers"], parent_names);
 We first create the `TermId` that corresponds to *Arachnodactyly* and then we query `hpo` for its parents by calling `iter_parent_ids`. We retrieve the term that corresponds to term id, extract its name, and collect the names into a vector.
 
 Similar methods exist for getting term IDs of ancestors, children, and descendants of a term. See [`crate::ontology::HierarchyWalks`] for more info.
+
+
+## Supported ontologies
+
+At this time, support for the following ontologies is tested:
+
+* Human Phenotype Ontology (HPO)
+* Gene Ontology (GO)
+* Medical Action Ontology (MAxO)
+
+Other ontologies are very likely to work too.
+In case of any problems, please let us know on our [Issue tracker](https://github.com/ielis/ontolius/issues).
 
 
 ## Features
