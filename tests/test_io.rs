@@ -173,13 +173,13 @@ mod gene_ontology {
     }
 
     macro_rules! test_ancestors {
-        ($($go: expr, $curie: expr, $expected: expr)*) => {
+        ($($ontology: expr, $curie: expr, $expected: expr)*) => {
             $(
                 let query: TermId = $curie.parse().unwrap();
 
-                let mut names: Vec<_> = $go
+                let mut names: Vec<_> = $ontology
                     .iter_ancestor_ids(&query)
-                    .map(|tid| $go.term_by_id(tid).map(MinimalTerm::name).unwrap())
+                    .map(|tid| $ontology.term_by_id(tid).map(MinimalTerm::name).unwrap())
                     .collect();
                 names.sort();
                 assert_eq!(
@@ -239,5 +239,99 @@ mod gene_ontology {
         assert_eq!(bp_count, 8);
         let cc_count = go.iter_descendant_ids(&CELLULAR_COMPONENT).count();
         assert_eq!(cc_count, 7);
+    }
+}
+
+/// Medical Action Ontology (MAxO) tests.
+mod medical_action_ontology {
+
+    use std::fs::File;
+    use std::io::BufReader;
+
+    use flate2::bufread::GzDecoder;
+    use ontolius::common::maxo::MEDICAL_ACTION;
+    use ontolius::io::OntologyLoaderBuilder;
+    use ontolius::ontology::csr::MinimalCsrOntology;
+    use ontolius::ontology::{HierarchyWalks, OntologyTerms};
+    use ontolius::term::MinimalTerm;
+    use ontolius::TermId;
+
+    const TOY_MAXO_PATH: &str = "resources/maxo/maxo.toy.json.gz";
+
+    fn load_toy_maxo() -> MinimalCsrOntology {
+        OntologyLoaderBuilder::new()
+            .obographs_parser()
+            .build()
+            .load_from_read(GzDecoder::new(BufReader::new(
+                File::open(TOY_MAXO_PATH).unwrap(),
+            )))
+            .expect("Loading of the test file should succeed")
+    }
+
+    macro_rules! test_ancestors {
+        ($($ontology: expr, $curie: expr, $expected: expr)*) => {
+            $(
+                let query: TermId = $curie.parse().unwrap();
+
+                let mut names: Vec<_> = $ontology
+                    .iter_ancestor_ids(&query)
+                    .map(|tid| $ontology.term_by_id(tid).map(MinimalTerm::name).unwrap())
+                    .collect();
+                names.sort();
+                assert_eq!(
+                    names,
+                    $expected,
+                );
+            )*
+        };
+    }
+
+    #[test]
+    fn iter_ancestor_ids() {
+        let maxo = load_toy_maxo();
+
+        test_ancestors!(
+            maxo,
+            "MAXO:0000682", // cardiologist evaluation
+            &[
+                "diagnostic procedure",
+                "internal medicine specialist evaluation",
+                "medical action",
+                "medical professional evaluation",
+                "medical specialist evaluation",
+            ]
+        );
+        test_ancestors!(
+            maxo,
+            "MAXO:0000185", // antiarrythmic agent therapy
+            &[
+                "cardiovascular agent therapy",
+                "medical action",
+                "pharmacotherapy",
+                "therapeutic procedure"
+            ]
+        );
+        test_ancestors!(
+            maxo,
+            "MAXO:0035118", // cardiac catheterization
+            &[
+                "cardiac device implantation",
+                "catheterization",
+                "implantation",
+                "introduction procedure",
+                "medical action",
+                "medical device implantation",
+                "surgical procedure",
+                "therapeutic procedure"
+            ]
+        );
+    }
+
+    #[test]
+    fn we_get_expected_descendant_counts_for_maxo_root() {
+        let maxo = load_toy_maxo();
+
+        let ma_count = maxo.iter_descendant_ids(&MEDICAL_ACTION).count();
+        assert_eq!(ma_count, 16);
     }
 }
