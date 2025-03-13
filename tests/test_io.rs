@@ -32,7 +32,7 @@ mod human_phenotype_ontology {
 
         let children_names: HashSet<_> = hpo
             .iter_child_ids(&term_id)
-            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
+            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
             .collect();
 
         let expected = [
@@ -59,7 +59,7 @@ mod human_phenotype_ontology {
 
         let descendant_names: HashSet<_> = hpo
             .iter_descendant_ids(&term_id)
-            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
+            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
             .collect();
 
         let expected = [
@@ -87,7 +87,7 @@ mod human_phenotype_ontology {
 
         let parent_names: HashSet<_> = hpo
             .iter_parent_ids(&seizure)
-            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
+            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
             .collect();
 
         let expected = ["Generalized-onset seizure", "Motor seizure"]
@@ -109,7 +109,7 @@ mod human_phenotype_ontology {
 
         let ancestor_names: HashSet<_> = hpo
             .iter_ancestor_ids(&term_id)
-            .flat_map(|i| hpo.term_by_id(i).map(MinimalTerm::name))
+            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
             .collect();
 
         let expected = [
@@ -153,52 +153,91 @@ mod gene_ontology {
     use std::io::BufReader;
 
     use flate2::bufread::GzDecoder;
+    use ontolius::common::go::{BIOLOGICAL_PROCESS, CELLULAR_COMPONENT, MOLECULAR_FUNCTION};
+    use ontolius::io::OntologyLoaderBuilder;
+    use ontolius::ontology::csr::MinimalCsrOntology;
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
-    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
     use ontolius::term::MinimalTerm;
     use ontolius::TermId;
-    use ontolius::{io::OntologyLoaderBuilder, ontology::csr::CsrOntology};
+
+    const TOY_GO_PATH: &str = "resources/go/go.toy.json.gz";
+
+    fn load_toy_go() -> MinimalCsrOntology {
+        OntologyLoaderBuilder::new()
+            .obographs_parser()
+            .build()
+            .load_from_read(GzDecoder::new(BufReader::new(
+                File::open(TOY_GO_PATH).unwrap(),
+            )))
+            .expect("Loading of the test file should succeed")
+    }
+
+    macro_rules! test_ancestors {
+        ($($go: expr, $curie: expr, $expected: expr)*) => {
+            $(
+                let query: TermId = $curie.parse().unwrap();
+
+                let mut names: Vec<_> = $go
+                    .iter_ancestor_ids(&query)
+                    .map(|tid| $go.term_by_id(tid).map(MinimalTerm::name).unwrap())
+                    .collect();
+                names.sort();
+                assert_eq!(
+                    names,
+                    $expected,
+                );
+            )*
+        };
+    }
 
     #[test]
-    fn load_go() {
-        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+    fn iter_ancestor_ids() {
+        let go = load_toy_go();
 
-        let path = "resources/go-basic.v2025-02-06.json.gz";
-        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
-
-        let go: CsrOntology<u32, SimpleMinimalTerm> = loader
-            .load_from_read(reader)
-            .expect("Loading of the test file should succeed");
-
-        let pda = TermId::from(("GO", "0004738")); // pyruvate dehydrogenase activity
-
-        let names: Vec<_> = go
-            .iter_ancestor_ids(&pda)
-            .flat_map(|tid| go.term_by_id(tid).map(MinimalTerm::name))
-            .collect();
-        assert_eq!(
-            names,
+        test_ancestors!(
+            go,
+            "GO:0051146", // striated muscle cell differentiation
             &[
-                "oxidoreductase activity, acting on the aldehyde or oxo group of donors",
-                "oxidoreductase activity",
+                "biological_process",
+                "cell differentiation",
+                "cellular developmental process",
+                "cellular process",
+                "developmental process",
+                "muscle cell differentiation",
+            ]
+        );
+        test_ancestors!(
+            go,
+            "GO:0052693", // epoxyqueuosine reductase activity
+            &[
                 "catalytic activity",
                 "molecular_function",
+                "oxidoreductase activity",
+            ]
+        );
+        test_ancestors!(
+            go,
+            "GO:0005634", // nucleus
+            &[
+                "cellular anatomical structure",
+                "cellular_component",
+                "intracellular membrane-bounded organelle",
+                "intracellular organelle",
+                "membrane-bounded organelle",
+                "organelle",
             ]
         );
     }
 
     #[test]
-    #[ignore = "just for interactive debugging"]
-    fn load_full_go() {
-        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+    fn we_get_expected_descendant_counts_for_go_subroots() {
+        let go = load_toy_go();
 
-        let path = "resources/go-basic.v2025-02-06.json.gz";
-        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
-
-        let go: CsrOntology<u32, SimpleTerm> = loader
-            .load_from_read(reader)
-            .expect("Loading of the test file should succeed");
-
-        println!("{:?}", go.len());
+        let mf_count = go.iter_descendant_ids(&MOLECULAR_FUNCTION).count();
+        assert_eq!(mf_count, 3);
+        let bp_count = go.iter_descendant_ids(&BIOLOGICAL_PROCESS).count();
+        assert_eq!(bp_count, 8);
+        let cc_count = go.iter_descendant_ids(&CELLULAR_COMPONENT).count();
+        assert_eq!(cc_count, 7);
     }
 }
