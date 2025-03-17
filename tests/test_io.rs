@@ -3,27 +3,35 @@ mod human_phenotype_ontology {
     use std::collections::HashSet;
     use std::fs::File;
     use std::io::BufReader;
+    use std::sync::{Mutex, OnceLock};
 
     use flate2::bufread::GzDecoder;
     use ontolius::io::OntologyLoaderBuilder;
-    use ontolius::ontology::csr::CsrOntology;
+    use ontolius::ontology::csr::{CsrOntology, MinimalCsrOntology};
     use ontolius::ontology::{HierarchyWalks, OntologyTerms};
-    use ontolius::term::simple::{SimpleMinimalTerm, SimpleTerm};
+    use ontolius::term::simple::SimpleTerm;
     use ontolius::term::{MinimalTerm, Term};
     use ontolius::TermId;
-    use rstest::{fixture, rstest};
 
-    #[fixture]
-    fn hpo() -> CsrOntology<u32, SimpleMinimalTerm> {
-        let path = "resources/hp.v2024-08-13.json.gz";
-        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
-        let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+    const HPO_PATH: &str = "resources/hp.v2024-08-13.json.gz";
 
-        loader.load_from_read(reader).unwrap()
+    fn hpo() -> &'static Mutex<MinimalCsrOntology> {
+        static HPO: OnceLock<Mutex<MinimalCsrOntology>> = OnceLock::new();
+        HPO.get_or_init(|| {
+            Mutex::new({
+                let reader = GzDecoder::new(BufReader::new(
+                    File::open(HPO_PATH).expect("Test HPO should exist"),
+                ));
+                let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+
+                loader.load_from_read(reader).expect("HPO should be OK")
+            })
+        })
     }
 
-    #[rstest]
-    fn check_children(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    #[test]
+    fn check_children() -> anyhow::Result<()> {
+        let hpo = hpo().lock().unwrap();
         let term_id = TermId::from(("HP", "0032677"));
         assert_eq!(
             hpo.term_by_id(&term_id).unwrap().name(),
@@ -52,8 +60,10 @@ mod human_phenotype_ontology {
         Ok(())
     }
 
-    #[rstest]
-    fn check_descendants(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    #[test]
+    fn check_descendants() -> anyhow::Result<()> {
+        let hpo = hpo().lock().unwrap();
+
         let term_id = TermId::from(("HP", "0002863"));
         assert_eq!(hpo.term_by_id(&term_id).unwrap().name(), "Myelodysplasia");
 
@@ -77,8 +87,10 @@ mod human_phenotype_ontology {
         Ok(())
     }
 
-    #[rstest]
-    fn check_parents(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    #[test]
+    fn check_parents() -> anyhow::Result<()> {
+        let hpo = hpo().lock().unwrap();
+
         let seizure = TermId::from(("HP", "0032677"));
         assert_eq!(
             hpo.term_by_id(&seizure).unwrap().name(),
@@ -99,8 +111,10 @@ mod human_phenotype_ontology {
         Ok(())
     }
 
-    #[rstest]
-    fn check_ancestors(hpo: CsrOntology<u32, SimpleMinimalTerm>) -> anyhow::Result<()> {
+    #[test]
+    fn check_ancestors() -> anyhow::Result<()> {
+        let hpo = hpo().lock().unwrap();
+
         let term_id = TermId::from(("HP", "0002266"));
         assert_eq!(
             hpo.term_by_id(&term_id).unwrap().name(),
@@ -134,8 +148,7 @@ mod human_phenotype_ontology {
     #[test]
     #[ignore = "just for interactive debugging"]
     fn load_full_data() {
-        let path = "resources/hp.v2024-08-13.json.gz";
-        let reader = GzDecoder::new(BufReader::new(File::open(path).unwrap()));
+        let reader = GzDecoder::new(BufReader::new(File::open(HPO_PATH).unwrap()));
         let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
         let hpo: CsrOntology<u32, SimpleTerm> = loader.load_from_read(reader).unwrap();

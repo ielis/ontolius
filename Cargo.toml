@@ -23,7 +23,6 @@ pyo3 = { version = "0.21.2", optional = true, features = ["abi3-py310"] }
 [dev-dependencies]
 flate2 = "1.0.30"
 criterion = "0.5.1"
-rstest = "0.22.0"
 
 [features]
 default = ["obographs", "csr"]
