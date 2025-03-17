@@ -29,21 +29,31 @@ mod human_phenotype_ontology {
         })
     }
 
-    #[test]
-    fn check_children() -> anyhow::Result<()> {
-        let hpo = hpo().lock().unwrap();
-        let term_id = TermId::from(("HP", "0032677"));
-        assert_eq!(
-            hpo.term_by_id(&term_id).unwrap().name(),
-            "Generalized-onset motor seizure"
-        );
+    macro_rules! test_hierarchy_walks {
+        ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (walk, query, expected) = $value;
 
-        let children_names: HashSet<_> = hpo
-            .iter_child_ids(&term_id)
-            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
-            .collect();
+                    let hpo = hpo().lock().unwrap();
+                    let term_id: TermId = query.parse().expect("Query should be valid CURIE");
 
-        let expected = [
+                    let names: HashSet<_> = (walk)(&*hpo, &term_id)
+                        .map(|tid| hpo.term_by_id(tid).map(MinimalTerm::name).unwrap().clone())
+                        .collect();
+
+                    let expected: HashSet<_> = expected.iter().cloned().collect();
+
+                    assert_eq!(names, expected);
+                }
+            )*
+        };
+    }
+
+    test_hierarchy_walks! {
+        // Generalized-onset motor seizure
+        test_iter_child_ids: (HierarchyWalks::iter_child_ids, "HP:0032677", [
             "Bilateral tonic-clonic seizure with generalized onset",
             "Generalized atonic seizure",
             "Generalized clonic seizure",
@@ -52,81 +62,49 @@ mod human_phenotype_ontology {
             "Generalized myoclonic-tonic-clonic seizure",
             "Generalized tonic seizure",
             "Generalized-onset epileptic spasm",
-        ]
-        .into_iter()
-        .collect();
-        assert_eq!(children_names, expected);
+        ]),
+        // Generalized-onset motor seizure
+        test_iter_term_and_child_ids: (HierarchyWalks::iter_term_and_child_ids, "HP:0032677", [
+            "Generalized-onset motor seizure", // <- the query term's name
+            "Bilateral tonic-clonic seizure with generalized onset",
+            "Generalized atonic seizure",
+            "Generalized clonic seizure",
+            "Generalized myoclonic seizure",
+            "Generalized myoclonic-atonic seizure",
+            "Generalized myoclonic-tonic-clonic seizure",
+            "Generalized tonic seizure",
+            "Generalized-onset epileptic spasm",
+        ]),
 
-        Ok(())
-    }
-
-    #[test]
-    fn check_descendants() -> anyhow::Result<()> {
-        let hpo = hpo().lock().unwrap();
-
-        let term_id = TermId::from(("HP", "0002863"));
-        assert_eq!(hpo.term_by_id(&term_id).unwrap().name(), "Myelodysplasia");
-
-        let descendant_names: HashSet<_> = hpo
-            .iter_descendant_ids(&term_id)
-            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
-            .collect();
-
-        let expected = [
+        // Myelodysplasia
+        test_iter_descendant_ids: (HierarchyWalks::iter_descendant_ids, "HP:0002863", [
             "Single lineage myelodysplasia",
             // Child of Single lineage myelodysplasia
             "Refractory anemia with ringed sideroblasts",
             "Multiple lineage myelodysplasia",
             "Bilineage myelodysplasia",
-        ]
-        .into_iter()
-        .collect();
+        ]),
+         // Myelodysplasia
+         test_iter_term_and_descendant_ids: (HierarchyWalks::iter_term_and_descendant_ids, "HP:0002863", [
+            "Myelodysplasia", // <- the query term's name
+            "Single lineage myelodysplasia",
+            // Child of Single lineage myelodysplasia
+            "Refractory anemia with ringed sideroblasts",
+            "Multiple lineage myelodysplasia",
+            "Bilineage myelodysplasia",
+        ]),
 
-        assert_eq!(descendant_names, expected);
-
-        Ok(())
-    }
-
-    #[test]
-    fn check_parents() -> anyhow::Result<()> {
-        let hpo = hpo().lock().unwrap();
-
-        let seizure = TermId::from(("HP", "0032677"));
-        assert_eq!(
-            hpo.term_by_id(&seizure).unwrap().name(),
-            "Generalized-onset motor seizure"
-        );
-
-        let parent_names: HashSet<_> = hpo
-            .iter_parent_ids(&seizure)
-            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
-            .collect();
-
-        let expected = ["Generalized-onset seizure", "Motor seizure"]
-            .into_iter()
-            .collect();
-
-        assert_eq!(parent_names, expected);
-
-        Ok(())
-    }
-
-    #[test]
-    fn check_ancestors() -> anyhow::Result<()> {
-        let hpo = hpo().lock().unwrap();
-
-        let term_id = TermId::from(("HP", "0002266"));
-        assert_eq!(
-            hpo.term_by_id(&term_id).unwrap().name(),
-            "Focal clonic seizure"
-        );
-
-        let ancestor_names: HashSet<_> = hpo
-            .iter_ancestor_ids(&term_id)
-            .map(|i| hpo.term_by_id(i).map(MinimalTerm::name).unwrap())
-            .collect();
-
-        let expected = [
+        // Generalized-onset motor seizure
+        test_iter_parent_ids: (HierarchyWalks::iter_parent_ids, "HP:0032677", [
+            "Generalized-onset seizure", "Motor seizure"
+        ]),
+        // Generalized-onset motor seizure
+        test_iter_term_and_parent_ids: (HierarchyWalks::iter_term_and_parent_ids, "HP:0032677", [
+            "Generalized-onset motor seizure",
+            "Generalized-onset seizure", "Motor seizure"
+        ]),
+        // Focal clonic seizure
+        test_iter_ancestor_ids: (HierarchyWalks::iter_ancestor_ids, "HP:0002266", [
             "Focal motor seizure",
             "Focal-onset seizure",
             "Motor seizure",
@@ -136,13 +114,20 @@ mod human_phenotype_ontology {
             "Abnormality of the nervous system",
             "Phenotypic abnormality",
             "All",
-        ]
-        .into_iter()
-        .collect();
-
-        assert_eq!(ancestor_names, expected);
-
-        Ok(())
+        ]),
+        // Focal clonic seizure
+        test_iter_term_and_ancestor_ids: (HierarchyWalks::iter_term_and_ancestor_ids, "HP:0002266", [
+            "Focal clonic seizure",
+            "Focal motor seizure",
+            "Focal-onset seizure",
+            "Motor seizure",
+            "Clonic seizure",
+            "Seizure",
+            "Abnormal nervous system physiology",
+            "Abnormality of the nervous system",
+            "Phenotypic abnormality",
+            "All",
+        ]),
     }
 
     #[test]

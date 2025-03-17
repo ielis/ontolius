@@ -1,8 +1,10 @@
+use std::iter::once;
+
 use crate::term::{AltTermIdAware, MinimalTerm};
 use crate::{Identified, TermId};
 
 /// A container of ontology terms.
-/// 
+///
 /// `T` is the ontology term type.
 pub trait OntologyTerms<T> {
     /// Get the iterator over the *primary* ontology terms.
@@ -154,20 +156,52 @@ pub trait HierarchyWalks {
     where
         I: Identified;
 
+    /// Returns an iterator that includes term ID belonging to the `query` as well as its parents.
+    fn iter_term_and_parent_ids<'a, I>(&'a self, query: &'a I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        once(query.identifier()).chain(self.iter_parent_ids(query.identifier()))
+    }
+
     /// Returns an iterator of all nodes which are children of `query`.
     fn iter_child_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
     where
         I: Identified;
+
+    /// Returns an iterator that includes term ID belonging to the `query` as well as its children.
+    fn iter_term_and_child_ids<'a, I>(&'a self, query: &'a I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        once(query.identifier()).chain(self.iter_child_ids(query.identifier()))
+    }
 
     /// Returns an iterator of all nodes which are ancestors of `query`.
     fn iter_ancestor_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
     where
         I: Identified;
 
+    /// Returns an iterator that includes term ID belonging to the `query` as well as its ancestors.
+    fn iter_term_and_ancestor_ids<'a, I>(&'a self, query: &'a I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        once(query.identifier()).chain(self.iter_ancestor_ids(query.identifier()))
+    }
+
     /// Returns an iterator of all nodes which are descendants of `query`.
     fn iter_descendant_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
     where
         I: Identified;
+
+    /// Returns an iterator that includes term ID belonging to the `query` as well as its ancestors.
+    fn iter_term_and_descendant_ids<'a, I>(&'a self, query: &'a I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        once(query.identifier()).chain(self.iter_descendant_ids(query.identifier()))
+    }
 }
 
 /// Tests if an ontology term is a parent, a child, an ancestor, or descendant of another term.
