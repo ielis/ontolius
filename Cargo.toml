@@ -1,6 +1,6 @@
 [package]
 name = "ontolius"
-version = "0.5.1"
+version = "0.5.2"
 description = "A fast and safe crate for working with biomedical ontologies."
 keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO"]
 edition = "2021"
@@ -23,7 +23,6 @@ pyo3 = { version = "0.21.2", optional = true, features = ["abi3-py310"] }
 [dev-dependencies]
 flate2 = "1.0.30"
 criterion = "0.5.1"
-rstest = "0.22.0"
 
 [features]
 default = ["obographs", "csr"]
