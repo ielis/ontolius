@@ -13,7 +13,8 @@ use crate::term::{Definition, MinimalTerm, Synonym, SynonymCategory, SynonymType
 use crate::{Identified, TermId};
 
 use super::{
-    GraphEdge, Index, OntologyData, OntologyDataParser, OntologyLoaderBuilder, Relationship, Uninitialized, WithParser
+    GraphEdge, Index, OntologyData, OntologyDataParser, OntologyLoaderBuilder, Relationship,
+    Uninitialized, WithParser,
 };
 
 impl From<DefinitionPropertyValue> for Definition {
@@ -242,10 +243,49 @@ impl<TF, CU> ObographsParser<TF, CU> {
             .flat_map(|edge| parse_edge(edge, &*self.curie_util, &termid2idx))
             .collect();
 
-        let metadata = HashMap::new(); // TODO: parse out metadata
+        let metadata = graph.meta.map(parse_metadata).unwrap_or_default();
 
         Ok(OntologyData::from((terms, edges, metadata)))
     }
+}
+
+fn parse_metadata(meta: Box<Meta>) -> HashMap<String, String> {
+    let mut metadata = HashMap::new();
+
+    if let Some(version) = parse_version(&meta) {
+        metadata.insert("version".into(), version);
+    }
+
+    metadata
+}
+fn parse_version(meta: &Meta) -> Option<String> {
+    // First, try to find the version in Basic Property Value item:
+    // {
+    //    "pred" : "http://www.w3.org/2002/07/owl#versionInfo",
+    //    "val" : "2025-01-16"
+    //  }
+    for bpv in &meta.basic_property_values {
+        if bpv.pred.ends_with("#versionInfo") {
+            return Some(bpv.val.clone());
+        }
+    }
+    // Next, parse the `version` item, if present:
+    // "version" : "http://purl.obolibrary.org/obo/hp/releases/2025-01-16/hp.json"
+    if let Some(version) = &meta.version {
+        let tokens: Vec<_> = version.split("/").collect();
+        if let Some(&penultimate) = tokens.get(tokens.len() - 2) {
+            if penultimate
+                .split("-")
+                .all(|val| val.chars().all(|c| c.is_ascii_digit()))
+            {
+                return Some(penultimate.to_string());
+            }
+        }
+    }
+
+    // Last, give up and report.
+    eprintln!("Could not parse ontology version");
+    None
 }
 
 impl<TF, CU, I, T> OntologyDataParser<I, T> for ObographsParser<TF, CU>
