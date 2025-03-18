@@ -17,17 +17,17 @@ pub mod hpo {
     use super::make_term_id;
     /// [All (HP:0000001)](http://purl.obolibrary.org/obo/HP_0000001)
     /// is the root of all terms in the HPO.
-    pub const ALL: TermId = make_term_id(Prefix::HP, 0000001, 7);
+    pub const ALL: TermId = make_term_id(Prefix::HP, 1, 7);
 
     /// [Phenotypic abnormality (HP:0000118)](http://purl.obolibrary.org/obo/HP_0000118)
     /// is the root of the phenotypic abnormality sub-module of the HPO.
-    pub const PHENOTYPIC_ABNORMALITY: TermId = make_term_id(Prefix::HP, 0000118, 7);
+    pub const PHENOTYPIC_ABNORMALITY: TermId = make_term_id(Prefix::HP, 118, 7);
 
     /// [Clinical modifier (HP:0012823)](http://purl.obolibrary.org/obo/HP_0012823)
     /// is the root of HPO's submodule with terms to characterize
     /// and specify the phenotypic abnormalities defined in the Phenotypic abnormality subontology,
     /// with respect to severity, laterality, age of onset, and other aspects.
-    pub const CLINICAL_MODIFIER: TermId = make_term_id(Prefix::HP, 0012823, 7);
+    pub const CLINICAL_MODIFIER: TermId = make_term_id(Prefix::HP, 12823, 7);
 }
 
 /// Constants for working with Medical Action Ontology (MAxO).
@@ -37,7 +37,7 @@ pub mod maxo {
     use super::make_term_id;
     /// [medical action (MAXO:0000001)](http://purl.obolibrary.org/obo/MAXO_0000001)
     /// is the root of all terms in the MAxO.
-    pub const MEDICAL_ACTION: TermId = make_term_id(Prefix::MAXO, 0000001, 7);
+    pub const MEDICAL_ACTION: TermId = make_term_id(Prefix::MAXO, 1, 7);
 }
 
 /// Constants for working with Gene Ontology (GO).
@@ -47,11 +47,11 @@ pub mod go {
     use super::make_term_id;
     /// [biological process (GO:0008150)](http://purl.obolibrary.org/obo/GO_0008150)
     /// is one of three roots of the GO.
-    pub const BIOLOGICAL_PROCESS: TermId = make_term_id(Prefix::GO, 0008150, 7);
+    pub const BIOLOGICAL_PROCESS: TermId = make_term_id(Prefix::GO, 8150, 7);
     /// [cellular component (GO:0005575)](http://purl.obolibrary.org/obo/GO_0005575)
     /// is one of three roots of the GO.
-    pub const CELLULAR_COMPONENT: TermId = make_term_id(Prefix::GO, 0005575, 7);
+    pub const CELLULAR_COMPONENT: TermId = make_term_id(Prefix::GO, 5575, 7);
     /// [molecular function (GO:0003674)](http://purl.obolibrary.org/obo/GO_0003674)
     /// is one of three roots of the GO.
-    pub const MOLECULAR_FUNCTION: TermId = make_term_id(Prefix::GO, 0003674, 7);
+    pub const MOLECULAR_FUNCTION: TermId = make_term_id(Prefix::GO, 3674, 7);
 }
