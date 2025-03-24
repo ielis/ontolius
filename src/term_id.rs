@@ -188,6 +188,7 @@ pub(crate) enum Prefix {
     SO,
     CHEBI,
     NCIT,
+    PMID,
 }
 
 impl PartialEq<str> for Prefix {
@@ -203,6 +204,7 @@ impl PartialEq<str> for Prefix {
             Prefix::SO => other == "SO",
             Prefix::CHEBI => other == "CHEBI",
             Prefix::NCIT => other == "NCIT",
+            Prefix::PMID => other == "PMID",
         }
     }
 }
@@ -233,6 +235,8 @@ impl TryFrom<&str> for Prefix {
             Ok(Prefix::CHEBI)
         } else if value.starts_with("NCIT") {
             Ok(Prefix::NCIT)
+        } else if value.starts_with("PMID") {
+            Ok(Prefix::PMID)
         } else {
             Err(())
         }
