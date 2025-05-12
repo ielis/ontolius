@@ -3,29 +3,28 @@ mod human_phenotype_ontology {
     use std::collections::HashSet;
     use std::fs::File;
     use std::io::BufReader;
-    use std::sync::{Mutex, OnceLock};
+    use std::sync::OnceLock;
 
     use flate2::bufread::GzDecoder;
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::{CsrOntology, MinimalCsrOntology};
-    use ontolius::ontology::{HierarchyWalks, OntologyTerms};
+    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
     use ontolius::term::simple::SimpleTerm;
     use ontolius::term::{MinimalTerm, Term};
     use ontolius::TermId;
 
     const HPO_PATH: &str = "resources/hp.v2024-08-13.json.gz";
 
-    fn hpo() -> &'static Mutex<MinimalCsrOntology> {
-        static HPO: OnceLock<Mutex<MinimalCsrOntology>> = OnceLock::new();
-        HPO.get_or_init(|| {
-            Mutex::new({
-                let reader = GzDecoder::new(BufReader::new(
-                    File::open(HPO_PATH).expect("Test HPO should exist"),
-                ));
-                let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+    fn hpo() -> &'static MinimalCsrOntology {
+        static ONTOLOGY: OnceLock<MinimalCsrOntology> = OnceLock::new();
+        ONTOLOGY.get_or_init(|| {
+            let reader = GzDecoder::new(BufReader::new(
+                File::open(HPO_PATH).expect("Obographs JSON file should exist"),
+            ));
+            
+            let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
-                loader.load_from_read(reader).expect("HPO should be OK")
-            })
+            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
         })
     }
 
@@ -36,7 +35,7 @@ mod human_phenotype_ontology {
                 fn $name() {
                     let (walk, query, expected) = $value;
 
-                    let hpo = hpo().lock().unwrap();
+                    let hpo = hpo();
                     let term_id: TermId = query.parse().expect("Query should be valid CURIE");
 
                     let names: HashSet<_> = (walk)(&*hpo, &term_id)
@@ -131,6 +130,13 @@ mod human_phenotype_ontology {
     }
 
     #[test]
+    fn version_is_parsed() {
+        let hpo = hpo();
+
+        assert_eq!(hpo.version(), "2024-08-13")
+    }
+
+    #[test]
     #[ignore = "just for interactive debugging"]
     fn load_full_data() {
         let reader = GzDecoder::new(BufReader::new(File::open(HPO_PATH).unwrap()));
@@ -149,25 +155,27 @@ mod gene_ontology {
 
     use std::fs::File;
     use std::io::BufReader;
+    use std::sync::OnceLock;
 
     use flate2::bufread::GzDecoder;
     use ontolius::common::go::{BIOLOGICAL_PROCESS, CELLULAR_COMPONENT, MOLECULAR_FUNCTION};
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::MinimalCsrOntology;
-    use ontolius::ontology::{HierarchyWalks, OntologyTerms};
+    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
     use ontolius::term::MinimalTerm;
     use ontolius::TermId;
 
     const TOY_GO_PATH: &str = "resources/go/go.toy.json.gz";
 
-    fn load_toy_go() -> MinimalCsrOntology {
-        OntologyLoaderBuilder::new()
-            .obographs_parser()
-            .build()
-            .load_from_read(GzDecoder::new(BufReader::new(
-                File::open(TOY_GO_PATH).unwrap(),
-            )))
-            .expect("Loading of the test file should succeed")
+    fn go() -> &'static MinimalCsrOntology {
+        static ONTOLOGY: OnceLock<MinimalCsrOntology> = OnceLock::new();
+        ONTOLOGY.get_or_init(|| {
+            let reader = GzDecoder::new(BufReader::new(
+                File::open(TOY_GO_PATH).expect("Obographs JSON file should exist"),
+            ));
+            let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
+        })
     }
 
     macro_rules! test_ancestors {
@@ -190,7 +198,7 @@ mod gene_ontology {
 
     #[test]
     fn iter_ancestor_ids() {
-        let go = load_toy_go();
+        let go = go();
 
         test_ancestors!(
             go,
@@ -229,7 +237,7 @@ mod gene_ontology {
 
     #[test]
     fn we_get_expected_descendant_counts_for_go_subroots() {
-        let go = load_toy_go();
+        let go = go();
 
         let mf_count = go.iter_descendant_ids(&MOLECULAR_FUNCTION).count();
         assert_eq!(mf_count, 3);
@@ -238,6 +246,13 @@ mod gene_ontology {
         let cc_count = go.iter_descendant_ids(&CELLULAR_COMPONENT).count();
         assert_eq!(cc_count, 7);
     }
+
+    #[test]
+    fn version_is_parsed() {
+        let go = go();
+
+        assert_eq!(go.version(), "2025-02-06")
+    }
 }
 
 /// Medical Action Ontology (MAxO) tests.
@@ -245,25 +260,27 @@ mod medical_action_ontology {
 
     use std::fs::File;
     use std::io::BufReader;
+    use std::sync::OnceLock;
 
     use flate2::bufread::GzDecoder;
     use ontolius::common::maxo::MEDICAL_ACTION;
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::MinimalCsrOntology;
-    use ontolius::ontology::{HierarchyWalks, OntologyTerms};
+    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
     use ontolius::term::MinimalTerm;
     use ontolius::TermId;
 
     const TOY_MAXO_PATH: &str = "resources/maxo/maxo.toy.json.gz";
 
-    fn load_toy_maxo() -> MinimalCsrOntology {
-        OntologyLoaderBuilder::new()
-            .obographs_parser()
-            .build()
-            .load_from_read(GzDecoder::new(BufReader::new(
-                File::open(TOY_MAXO_PATH).unwrap(),
-            )))
-            .expect("Loading of the test file should succeed")
+    fn maxo() -> &'static MinimalCsrOntology {
+        static ONTOLOGY: OnceLock<MinimalCsrOntology> = OnceLock::new();
+        ONTOLOGY.get_or_init(|| {
+            let reader = GzDecoder::new(BufReader::new(
+                File::open(TOY_MAXO_PATH).expect("Obographs JSON file should exist"),
+            ));
+            let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
+        })
     }
 
     macro_rules! test_ancestors {
@@ -286,7 +303,7 @@ mod medical_action_ontology {
 
     #[test]
     fn iter_ancestor_ids() {
-        let maxo = load_toy_maxo();
+        let maxo = maxo();
 
         test_ancestors!(
             maxo,
@@ -327,9 +344,17 @@ mod medical_action_ontology {
 
     #[test]
     fn we_get_expected_descendant_counts_for_maxo_root() {
-        let maxo = load_toy_maxo();
+        let maxo = maxo();
 
         let ma_count = maxo.iter_descendant_ids(&MEDICAL_ACTION).count();
         assert_eq!(ma_count, 16);
+    }
+
+    #[test]
+    #[should_panic(expected = "Ontology should have a version")]
+    fn version_is_not_parsed_from_the_toy_file() {
+        let maxo = maxo();
+
+        _ = maxo.version();
     }
 }

@@ -145,10 +145,25 @@ impl PartialEq<(&str, &str)> for &TermId {
 ///
 /// ## Panics
 ///
-/// TODO:
-///  - prefix is too long
-///  - id is too long
+/// Conversion panics if *prefix* includes more than 255 characters ...
 ///
+/// ```should_panic
+/// # use ontolius::TermId;
+///
+/// // A string concatenated from 256 `'A'` characters
+/// let many_as: String = std::iter::repeat('A').take(256).collect();
+/// let term_id = TermId::from((many_as.as_str(), "0001250"));
+/// ```
+///
+/// ... or if *id* includes more than 255 characters.
+///
+/// ```should_panic
+/// # use ontolius::TermId;
+///
+/// // A string concatenated from 256 `'0'` characters
+/// let many_zeros: String = std::iter::repeat('0').take(256).collect();
+/// let term_id = TermId::from(("HP", many_zeros.as_str()));
+/// ```
 impl From<(&str, &str)> for TermId {
     fn from(value: (&str, &str)) -> Self {
         TermId::from(InnerTermId::from(value))
@@ -165,6 +180,22 @@ impl TermId {
     pub(crate) const fn from_inner(inner: InnerTermId) -> Self {
         TermId(inner)
     }
+
+    /// Get term id's prefix as [`Prefix`].
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// use ontolius::TermId;
+    ///
+    /// let term_id: TermId = "HP:0001250".parse().unwrap();
+    /// let prefix = term_id.prefix();
+    ///
+    /// assert_eq!(&prefix, "HP");
+    /// ```
+    pub const fn prefix(&self) -> Prefix<'_> {
+        Prefix(self)
+    }
 }
 
 impl Display for TermId {
@@ -173,10 +204,125 @@ impl Display for TermId {
     }
 }
 
+/// The representation of the prefix of a [`TermId`].
+///
+/// ### Examples
+///
+/// Prefix can be obtained from a [`TermId`]:
+///
+/// ```
+/// use ontolius::TermId;
+///
+/// let seizure: TermId = "HP:0001250".parse().unwrap();
+/// let prefix = seizure.prefix();
+/// ```
+///
+/// Prefix can be tested for equality with a `&str` or with another prefix.
+///
+/// ```
+/// # use ontolius::TermId;
+/// # let seizure: TermId = "HP:0001250".parse().unwrap();
+/// # let prefix = seizure.prefix();
+/// let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+///
+/// assert!(&prefix == "HP");
+/// assert!(&arachnodactyly.prefix() == &prefix);
+/// ```
+///
+/// Prefix implements [`PartialOrd`] and [`Ord`] traits.
+/// Note that no *particular* order (e.g. alphabetical) is guaranteed.
+/// Only that the ordering is defined.
+///
+/// Prefix implements [`std::fmt::Debug`] and [`std::fmt::Display`].
+/// ```
+/// # use ontolius::TermId;
+/// # let seizure: TermId = "HP:0001250".parse().unwrap();
+/// # let prefix = seizure.prefix();
+/// assert_eq!(prefix.to_string(), String::from("HP"));
+/// ```
+#[derive(Clone, Debug, Eq, PartialOrd, Hash)]
+pub struct Prefix<'a>(&'a TermId);
+
+impl PartialEq for Prefix<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.0 .0, &other.0 .0) {
+            (InnerTermId::Known(l, _, _), InnerTermId::Known(r, _, _)) => l == r,
+            (InnerTermId::Known(kp, _, _), InnerTermId::Random(val, offset)) => {
+                kp == &val[..*offset as usize]
+            }
+            (InnerTermId::Random(val, offset), InnerTermId::Known(kp, _, _)) => {
+                kp == &val[..*offset as usize]
+            }
+            (InnerTermId::Random(lval, loffset), InnerTermId::Random(rval, roffset)) => {
+                lval[..*loffset as usize] == rval[..*roffset as usize]
+            }
+        }
+    }
+}
+
+impl PartialEq<str> for Prefix<'_> {
+    fn eq(&self, other: &str) -> bool {
+        match &self.0 .0 {
+            InnerTermId::Known(prefix, _, _) => prefix == other,
+            InnerTermId::Random(val, offset) => &val[..(*offset as usize)] == other,
+        }
+    }
+}
+
+impl Ord for Prefix<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (&self.0 .0, &other.0 .0) {
+            (InnerTermId::Known(l, _, _), InnerTermId::Known(r, _, _)) => l.cmp(r),
+            (InnerTermId::Known(_, _, _), InnerTermId::Random(_, _)) => Ordering::Less,
+            (InnerTermId::Random(_, _), InnerTermId::Known(_, _, _)) => Ordering::Greater,
+            (InnerTermId::Random(lval, loffset), InnerTermId::Random(rval, roffset)) => {
+                lval[..*loffset as usize].cmp(&rval[..*roffset as usize])
+            }
+        }
+    }
+}
+
+impl Display for Prefix<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.0 .0 {
+            InnerTermId::Known(prefix, _, _) => prefix.fmt(f),
+            InnerTermId::Random(val, offset) => write!(f, "{}", &val[..*offset as usize]),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_prefix {
+    use super::TermId;
+
+    #[test]
+    fn partial_eq() {
+        let seizure: TermId = "HP:0001250".parse().unwrap();
+        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+        
+        assert!(seizure.prefix() == arachnodactyly.prefix());
+    }
+
+    #[test]
+    fn partial_eq_with_str() {
+        let seizure: TermId = "HP:0001250".parse().unwrap();
+        let prefix = seizure.prefix();
+        
+        assert!(&prefix == "HP");
+    }
+
+    #[test]
+    fn display() {
+        let seizure: TermId = "HP:0001250".parse().unwrap();
+
+        assert_eq!(seizure.prefix().to_string().as_str(), "HP");
+    }
+}
+
 // We really want to have all these private enum members in upper case!
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum Prefix {
+pub(crate) enum KnownPrefix {
     // TODO: others?
     HP,
     OMIM,
@@ -188,54 +334,104 @@ pub(crate) enum Prefix {
     SO,
     CHEBI,
     NCIT,
+    PMID,
 }
 
-impl PartialEq<str> for Prefix {
+impl PartialEq<str> for KnownPrefix {
     fn eq(&self, other: &str) -> bool {
         match self {
-            Prefix::HP => other == "HP",
-            Prefix::OMIM => other == "OMIM",
-            Prefix::MONDO => other == "MONDO",
-            Prefix::GO => other == "GO",
-            Prefix::MAXO => other == "MAXO",
-            Prefix::ORPHA => other == "ORPHA",
-            Prefix::GENO => other == "GENO",
-            Prefix::SO => other == "SO",
-            Prefix::CHEBI => other == "CHEBI",
-            Prefix::NCIT => other == "NCIT",
+            KnownPrefix::HP => other == "HP",
+            KnownPrefix::OMIM => other == "OMIM",
+            KnownPrefix::MONDO => other == "MONDO",
+            KnownPrefix::GO => other == "GO",
+            KnownPrefix::MAXO => other == "MAXO",
+            KnownPrefix::ORPHA => other == "ORPHA",
+            KnownPrefix::GENO => other == "GENO",
+            KnownPrefix::SO => other == "SO",
+            KnownPrefix::CHEBI => other == "CHEBI",
+            KnownPrefix::NCIT => other == "NCIT",
+            KnownPrefix::PMID => other == "PMID",
         }
     }
 }
 
-impl TryFrom<&str> for Prefix {
+impl Display for KnownPrefix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KnownPrefix::HP => f.write_str("HP"),
+            KnownPrefix::OMIM => f.write_str("OMIM"),
+            KnownPrefix::MONDO => f.write_str("MONDO"),
+            KnownPrefix::GO => f.write_str("GO"),
+            KnownPrefix::MAXO => f.write_str("MAXO"),
+            KnownPrefix::ORPHA => f.write_str("ORPHA"),
+            KnownPrefix::GENO => f.write_str("GENO"),
+            KnownPrefix::SO => f.write_str("SO"),
+            KnownPrefix::CHEBI => f.write_str("CHEBI"),
+            KnownPrefix::NCIT => f.write_str("NCIT"),
+            KnownPrefix::PMID => f.write_str("PMID"),
+        }
+    }
+}
+
+impl TryFrom<&str> for KnownPrefix {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         // TODO: this could arguably be improved!
         // We could also use a trie here..
         if value.starts_with("HP") {
-            Ok(Prefix::HP)
+            Ok(KnownPrefix::HP)
         } else if value.starts_with("OMIM") {
-            Ok(Prefix::OMIM)
+            Ok(KnownPrefix::OMIM)
         } else if value.starts_with("MONDO") {
-            Ok(Prefix::MONDO)
+            Ok(KnownPrefix::MONDO)
         } else if value.starts_with("GO") {
-            Ok(Prefix::GO)
+            Ok(KnownPrefix::GO)
         } else if value.starts_with("MAXO") {
-            Ok(Prefix::MAXO)
+            Ok(KnownPrefix::MAXO)
         } else if value.starts_with("ORPHA") {
-            Ok(Prefix::ORPHA)
+            Ok(KnownPrefix::ORPHA)
         } else if value.starts_with("GENO") {
-            Ok(Prefix::GENO)
+            Ok(KnownPrefix::GENO)
         } else if value.starts_with("SO") {
-            Ok(Prefix::SO)
+            Ok(KnownPrefix::SO)
         } else if value.starts_with("CHEBI") {
-            Ok(Prefix::CHEBI)
+            Ok(KnownPrefix::CHEBI)
         } else if value.starts_with("NCIT") {
-            Ok(Prefix::NCIT)
+            Ok(KnownPrefix::NCIT)
+        } else if value.starts_with("PMID") {
+            Ok(KnownPrefix::PMID)
         } else {
             Err(())
         }
+    }
+}
+
+#[cfg(test)]
+mod test_known_prefix {
+    use super::{KnownPrefix, TermId};
+
+    #[test]
+    fn partial_eq_with_str() {
+        assert!(&KnownPrefix::HP == "HP");
+        assert!(&KnownPrefix::HP != "SO");
+
+        assert!(&KnownPrefix::SO == "SO");
+        assert!(&KnownPrefix::PMID == "PMID");
+    }
+
+    #[test]
+    fn partial_eq() {
+        let seizure: TermId = "HP:0001250".parse().unwrap();
+        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+
+        assert_eq!(seizure.prefix(), arachnodactyly.prefix());
+    }
+
+    #[test]
+    fn display() {
+        assert!(&KnownPrefix::HP.to_string() == "HP");
+        assert!(&KnownPrefix::SO.to_string() == "SO");
     }
 }
 
@@ -243,7 +439,7 @@ impl TryFrom<&str> for Prefix {
 pub(crate) enum InnerTermId {
     // Most of the time we will have a CURIE that has a known Prefix and an integral id.
     // We store the prefix, the id, and the length of the id (e.g. 7 for HP:1234567 or 6 for OMIM:256000)
-    Known(Prefix, u32, u8),
+    Known(KnownPrefix, u32, u8),
     // Boxing the String to reduce the size because the Random variant is rare.
     // Size of `Random(Box<String>, u8)` is 16 while size of `Random(String, u8)` is 32.
     // Hence, disabling the `box_collection` lint below.
@@ -278,7 +474,7 @@ impl TryFrom<&str> for InnerTermId {
 impl From<(&str, &str)> for InnerTermId {
     fn from(value: (&str, &str)) -> Self {
         let (prefix, ident) = value;
-        let p = Prefix::try_from(prefix);
+        let p = KnownPrefix::try_from(prefix);
         let a: Result<u32, _> = ident.parse();
         let id_len: Result<_, _> = u8::try_from(ident.len());
         match (p, a) {
@@ -314,13 +510,16 @@ impl Display for InnerTermId {
         match self {
             InnerTermId::Known(prefix, id, padding) => {
                 // `n` for dynamic padding of `id` to "`padding`" length.
-                write!(f, "{prefix:?}:{id:0>n$}", n = *padding as usize)
+                write!(f, "{prefix}:{id:0>n$}", n = *padding as usize)
             }
             InnerTermId::Random(val, delimiter) => {
                 let delim = *delimiter as usize;
-                let prefix = &val[..delim];
-                let id = &val[delim..];
-                write!(f, "{prefix}:{id}")
+                write!(
+                    f,
+                    "{prefix}:{id}",
+                    prefix = &val[..delim],
+                    id = &val[delim..]
+                )
             }
         }
     }

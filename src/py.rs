@@ -57,20 +57,17 @@ impl PyTermId {
     }
 }
 
-impl<'source> FromPyObject<'source> for PyTermId {
-    fn extract(ob: &'source PyAny) -> PyResult<Self> {
+impl<'py> FromPyObject<'py> for PyTermId {
+    fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         if ob.is_instance_of::<PyString>() {
             // CURIE str
-            PyTermId::from_curie(ob_to_py_string(ob)?)
+            PyTermId::from_curie(ob.extract()?)
         } else if ob.hasattr(intern!(ob.py(), "prefix"))? && ob.hasattr(intern!(ob.py(), "id"))? {
             // HPO toolkit `TermId`
             let prefix = ob.getattr("prefix")?;
             let id = ob.getattr("id")?;
             if prefix.is_instance_of::<PyString>() && id.is_instance_of::<PyString>() {
-                Ok(PyTermId(TermId::from((
-                    ob_to_py_string(prefix)?,
-                    ob_to_py_string(id)?,
-                ))))
+                Ok(PyTermId(TermId::from((prefix.extract()?, id.extract()?))))
             } else {
                 Err(PyValueError::new_err("Cannot create `PyTermId` from an object with non-str `prefix` and `id` attributes"))
             }
@@ -80,8 +77,4 @@ impl<'source> FromPyObject<'source> for PyTermId {
             ))
         }
     }
-}
-
-fn ob_to_py_string(ob: &PyAny) -> PyResult<&str> {
-    ob.downcast::<PyString>()?.to_str()
 }
