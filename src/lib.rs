@@ -9,4 +9,4 @@ pub mod py;
 pub mod term;
 mod term_id;
 
-pub use term_id::{Identified, TermId};
+pub use term_id::{Identified, TermId, Prefix};
