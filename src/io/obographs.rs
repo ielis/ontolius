@@ -46,6 +46,9 @@ fn parse_synonym_type(synonym_type: String) -> Option<SynonymType> {
         "http://purl.obolibrary.org/obo/hp#uk_spelling" => Some(SynonymType::UkSpelling),
         "http://purl.obolibrary.org/obo/hp#obsolete_synonym" => Some(SynonymType::ObsoleteSynonym),
         "http://purl.obolibrary.org/obo/hp#plural_form" => Some(SynonymType::PluralForm),
+        "http://purl.obolibrary.org/obo/hp#allelic_requirement" => {
+            Some(SynonymType::AllelicRequirement)
+        }
         "http://purl.obolibrary.org/obo/go#systematic_synonym" => {
             Some(SynonymType::SystematicSynonym)
         }
@@ -53,7 +56,7 @@ fn parse_synonym_type(synonym_type: String) -> Option<SynonymType> {
             Some(SynonymType::SyngoOfficialLabel)
         }
         _ => {
-            eprintln!("Unknown synonym category {synonym_type:?}",);
+            eprintln!("Unknown synonym type {synonym_type:?}",);
             None
         }
     }
@@ -393,5 +396,59 @@ impl OntologyLoaderBuilder<Uninitialized> {
                 parser: ObographsParser::new(tm, Arc::clone(&cu)),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod test_obographs {
+    use super::*;
+    use crate::term::SynonymType;
+
+    #[test]
+    fn test_parse_synonym_type() {
+        const PAYLOAD: [(&str, Option<SynonymType>); 8] = [
+            (
+                "http://purl.obolibrary.org/obo/hp#layperson",
+                Some(SynonymType::LaypersonTerm),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#abbreviation",
+                Some(SynonymType::Abbreviation),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#uk_spelling",
+                Some(SynonymType::UkSpelling),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#obsolete_synonym",
+                Some(SynonymType::ObsoleteSynonym),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#plural_form",
+                Some(SynonymType::PluralForm),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#allelic_requirement",
+                Some(SynonymType::AllelicRequirement),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/go#systematic_synonym",
+                Some(SynonymType::SystematicSynonym),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/go#syngo_official_label",
+                Some(SynonymType::SyngoOfficialLabel),
+            ),
+        ];
+
+        for (value, expected) in PAYLOAD {
+            let actual = parse_synonym_type(value.to_string());
+            assert_eq!(actual, expected);
+        }
+    }
+
+    #[test]
+    fn test_parse_synonym_type_no_good() {
+        assert!(parse_synonym_type("No good value".to_string()).is_none());
     }
 }
