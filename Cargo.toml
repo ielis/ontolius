@@ -1,6 +1,6 @@
 [package]
 name = "ontolius"
-version = "0.5.6-dev0"
+version = "0.5.6"
 description = "A fast and safe crate for working with biomedical ontologies."
 keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO"]
 edition = "2021"
