@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'v*'  # Trigger the workflow when a tag starting with 'v' is pushed, like v1.0.0
-  workflow_dispatch:
 
 jobs:
   deploy:
@@ -21,5 +20,5 @@ jobs:
 
       - name: Deploy to Crates IO
         run: |
-          cargo publish --dry-run \
+          cargo publish \
             --token ${{ secrets.CRATES_IO_TOKEN }}
