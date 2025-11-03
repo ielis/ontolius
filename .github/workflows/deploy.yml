@@ -1,0 +1,25 @@
+name: Deploy to Crates IO
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger the workflow when a tag starting with 'v' is pushed, like v1.0.0
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+            toolchain: stable
+
+      - name: Deploy to Crates IO
+        run: |
+          cargo publish --dry-run \
+            --token ${{ secrets.CRATES_IO_TOKEN }}
