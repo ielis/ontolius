@@ -1,7 +1,7 @@
 //! The base building blocks for working with ontology data.
 
 use std::cmp::Ordering;
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::str::FromStr;
 
@@ -299,7 +299,7 @@ mod test_prefix {
     fn partial_eq() {
         let seizure: TermId = "HP:0001250".parse().unwrap();
         let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
-        
+
         assert!(seizure.prefix() == arachnodactyly.prefix());
     }
 
@@ -307,7 +307,7 @@ mod test_prefix {
     fn partial_eq_with_str() {
         let seizure: TermId = "HP:0001250".parse().unwrap();
         let prefix = seizure.prefix();
-        
+
         assert!(&prefix == "HP");
     }
 
@@ -477,31 +477,19 @@ impl From<(&str, &str)> for InnerTermId {
         let p = KnownPrefix::try_from(prefix);
         let a: Result<u32, _> = ident.parse();
         let id_len: Result<_, _> = u8::try_from(ident.len());
-        match (p, a) {
-            (Ok(prefix), Ok(id)) => {
-                // Prefix is known
-                InnerTermId::Known(
-                    prefix,
-                    id,
-                    id_len.expect("ID should not be longer than 255 chars!"),
-                )
-            }
-            _ => {
-                //
-                let val = Box::new([prefix, ident].concat());
-                let idx = u8::try_from(prefix.chars().count())
-                    .expect("Curie prefix should not be longer than 255 chars!");
-                InnerTermId::Random(val, idx)
-            }
+        if let (Ok(prefix), Ok(id)) = (p, a) {
+            InnerTermId::Known( // Prefix is known
+                prefix,
+                id,
+                id_len.expect("ID should not be longer than 255 chars!"),
+            )
+        } else {
+            // Unknown prefix, we must allocate the data into a `String`.
+            let val = Box::new([prefix, ident].concat());
+            let idx = u8::try_from(prefix.chars().count())
+                .expect("Curie prefix should not be longer than 255 chars!");
+            InnerTermId::Random(val, idx)
         }
-    }
-}
-
-impl From<InnerTermId> for String {
-    fn from(value: InnerTermId) -> Self {
-        let mut curie = String::new();
-        write!(&mut curie, "{value}").unwrap();
-        curie
     }
 }
 
