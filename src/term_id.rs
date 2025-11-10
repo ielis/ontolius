@@ -1,11 +1,10 @@
 //! The base building blocks for working with ontology data.
 
 use std::cmp::Ordering;
+use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::str::FromStr;
-
-use anyhow::{bail, Error, Result};
 
 /// `Identified` is implemented by entities that have a [`TermId`] as an identifier.
 ///
@@ -49,14 +48,32 @@ pub trait Identified {
 /// Parsing a CURIE will fail if the CURIE does not contain either `:` or `_` as a delimiter:
 ///
 /// ```
-/// use ontolius::TermId;
+/// use ontolius::{TermId, TermIdParseError};
 ///
 /// let term_id: Result<TermId, _> = "HP*0001250".parse(); // `*` is not valid delimiter
 ///
 /// assert!(term_id.is_err());
+/// assert_eq!(term_id.unwrap_err(), TermIdParseError::MissingDelimiter);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TermId(InnerTermId);
+
+/// Represents all possible reasons for failure to parse a CURIE into a [`TermId`].
+#[derive(Debug, Clone, PartialEq)]
+pub enum TermIdParseError {
+    /// Missing colon (`:`) or underscore (`_`) in the input CURIE.
+    MissingDelimiter,
+}
+
+impl Display for TermIdParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TermIdParseError::MissingDelimiter => write!(f, "Missing delimiter"),
+        }
+    }
+}
+
+impl Error for TermIdParseError {}
 
 /// Try to convert a CURIE `str` into a `TermId`.
 ///
@@ -70,7 +87,7 @@ pub struct TermId(InnerTermId);
 /// assert_eq!(term_id.to_string(), "HP:0001250");
 /// ```
 impl FromStr for TermId {
-    type Err = Error;
+    type Err = TermIdParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         InnerTermId::try_from(s).map(TermId::from)
@@ -448,19 +465,19 @@ pub(crate) enum InnerTermId {
 }
 
 impl InnerTermId {
-    fn find_delimiter(curie: &str) -> Result<usize> {
+    fn find_delimiter(curie: &str) -> Result<usize, TermIdParseError> {
         if let Some(idx) = curie.find(':') {
             Ok(idx)
         } else if let Some(idx) = curie.find('_') {
             Ok(idx)
         } else {
-            bail!("Did not find delimiter in {curie}")
+            Err(TermIdParseError::MissingDelimiter)
         }
     }
 }
 
 impl TryFrom<&str> for InnerTermId {
-    type Error = Error;
+    type Error = TermIdParseError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let delimiter = InnerTermId::find_delimiter(value)?;
@@ -478,7 +495,8 @@ impl From<(&str, &str)> for InnerTermId {
         let a: Result<u32, _> = ident.parse();
         let id_len: Result<_, _> = u8::try_from(ident.len());
         if let (Ok(prefix), Ok(id)) = (p, a) {
-            InnerTermId::Known( // Prefix is known
+            InnerTermId::Known(
+                // Prefix is known
                 prefix,
                 id,
                 id_len.expect("ID should not be longer than 255 chars!"),
