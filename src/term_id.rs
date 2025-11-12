@@ -75,6 +75,17 @@ impl Display for TermIdParseError {
 
 impl Error for TermIdParseError {}
 
+#[cfg(test)]
+mod test_term_id_err {
+    use super::TermIdParseError;
+
+    #[test]
+    fn term_id_err_can_be_converted_into_anyhow_error() {
+        let e = anyhow::Error::from(TermIdParseError::MissingDelimiter);
+        assert_eq!(e.to_string(), "Missing delimiter".to_string());
+    }
+}
+
 /// Try to convert a CURIE `str` into a `TermId`.
 ///
 /// ## Examples
