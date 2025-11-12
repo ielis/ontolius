@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::io::BufRead;
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context};
 use curieosa::{CurieUtil, TrieCurieUtil};
 use obographs_dev::model::{
     DefinitionPropertyValue, Edge, Graph, GraphDocument, Meta, Node, SynonymPropertyValue,
@@ -134,7 +134,7 @@ impl TryFrom<SynonymPropertyValue> for Synonym {
 
 /// The term factory parses the obographs node into a term.
 pub trait ObographsTermMapper<T> {
-    fn create(&self, node: Node) -> Result<T>;
+    fn create(&self, node: Node) -> anyhow::Result<T>;
 }
 
 /// `DefaultObographsTermMapper` parses the obograph term nodes
@@ -176,7 +176,7 @@ impl<CU> ObographsTermMapper<SimpleMinimalTerm> for DefaultObographsTermMapper<C
 where
     CU: CurieUtil,
 {
-    fn create(&self, node: Node) -> Result<SimpleMinimalTerm> {
+    fn create(&self, node: Node) -> anyhow::Result<SimpleMinimalTerm> {
         let cp = self.curie_util.get_curie_data(&node.id);
 
         match (cp, node.lbl) {
@@ -209,7 +209,7 @@ impl<CU> ObographsTermMapper<SimpleTerm> for DefaultObographsTermMapper<CU>
 where
     CU: CurieUtil,
 {
-    fn create(&self, node: Node) -> Result<SimpleTerm> {
+    fn create(&self, node: Node) -> anyhow::Result<SimpleTerm> {
         let cp = self.curie_util.get_curie_data(&node.id);
 
         match (cp, node.lbl) {
@@ -269,7 +269,7 @@ impl<TM, CU> ObographsParser<TM, CU> {
 }
 
 impl<TF, CU> ObographsParser<TF, CU> {
-    pub fn load_from_graph<I, T>(&self, graph: Graph) -> Result<OntologyData<I, T>>
+    pub fn load_from_graph<I, T>(&self, graph: Graph) -> anyhow::Result<OntologyData<I, T>>
     where
         TF: ObographsTermMapper<T>,
         CU: CurieUtil,
@@ -348,7 +348,7 @@ where
     I: Index,
     T: MinimalTerm,
 {
-    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<I, T>>
+    fn load_from_buf_read<R>(&self, read: R) -> anyhow::Result<OntologyData<I, T>>
     where
         R: BufRead,
     {
@@ -395,7 +395,7 @@ where
     }
 }
 
-fn parse_relationship(pred: &str) -> Result<Relationship> {
+fn parse_relationship(pred: &str) -> anyhow::Result<Relationship> {
     match pred {
         // This may be too simplistic
         "is_a" => Ok(Relationship::Child),

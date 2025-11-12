@@ -2,7 +2,7 @@
 #[cfg(feature = "obographs")]
 pub mod obographs;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 
 use std::{
     collections::HashMap,
@@ -90,7 +90,7 @@ impl<I, T> From<(Vec<T>, Vec<GraphEdge<I>>, HashMap<String, String>)> for Ontolo
 /// Ontology data parser can read [`OntologyData`] from some input.
 pub trait OntologyDataParser<I, T> {
     /// Load ontology data from the buffered reader.
-    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<I, T>>
+    fn load_from_buf_read<R>(&self, read: R) -> anyhow::Result<OntologyData<I, T>>
     where
         R: BufRead;
 }
@@ -112,7 +112,7 @@ impl<P> OntologyLoader<P> {
 
 impl<P> OntologyLoader<P> {
     /// Load ontology from a path.
-    pub fn load_from_path<I, T, O, Q>(&self, path: Q) -> Result<O>
+    pub fn load_from_path<I, T, O, Q>(&self, path: Q) -> anyhow::Result<O>
     where
         P: OntologyDataParser<I, T>,
         Q: AsRef<Path>,
@@ -125,7 +125,7 @@ impl<P> OntologyLoader<P> {
     }
 
     /// Load ontology from a reader.
-    pub fn load_from_read<I, T, O, R>(&self, read: R) -> Result<O>
+    pub fn load_from_read<I, T, O, R>(&self, read: R) -> anyhow::Result<O>
     where
         P: OntologyDataParser<I, T>,
         R: Read,
@@ -135,7 +135,7 @@ impl<P> OntologyLoader<P> {
     }
 
     /// Load ontology from a buffered reader.
-    pub fn load_from_buf_read<I, T, O, R>(&self, read: R) -> Result<O>
+    pub fn load_from_buf_read<I, T, O, R>(&self, read: R) -> anyhow::Result<O>
     where
         P: OntologyDataParser<I, T>,
         R: BufRead,
