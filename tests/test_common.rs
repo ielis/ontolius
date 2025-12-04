@@ -1,4 +1,4 @@
-use ontolius::common::{hpo, go, maxo};
+use ontolius::common::{go, hpo, maxo};
 
 #[test]
 fn hpo_commons_are_accessible() {
