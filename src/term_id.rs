@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 /// `Identified` is implemented by entities that have a [`TermId`] as an identifier.
@@ -177,7 +177,7 @@ impl PartialEq<(&str, &str)> for &TermId {
 ///
 /// ```should_panic
 /// # use ontolius::TermId;
-///
+/// #
 /// // A string concatenated from 256 `'A'` characters
 /// let many_as: String = std::iter::repeat('A').take(256).collect();
 /// let term_id = TermId::from((many_as.as_str(), "0001250"));
@@ -187,7 +187,7 @@ impl PartialEq<(&str, &str)> for &TermId {
 ///
 /// ```should_panic
 /// # use ontolius::TermId;
-///
+/// #
 /// // A string concatenated from 256 `'0'` characters
 /// let many_zeros: String = std::iter::repeat('0').take(256).collect();
 /// let term_id = TermId::from(("HP", many_zeros.as_str()));
@@ -261,14 +261,16 @@ impl Display for TermId {
 /// Note that no *particular* order (e.g. alphabetical) is guaranteed.
 /// Only that the ordering is defined.
 ///
-/// Prefix implements [`std::fmt::Debug`] and [`std::fmt::Display`].
+/// Prefix can be hashed ([`Hash`]).
+///
+/// Prefix implements [`std::fmt::Debug`] and [`Display`].
 /// ```
 /// # use ontolius::TermId;
 /// # let seizure: TermId = "HP:0001250".parse().unwrap();
 /// # let prefix = seizure.prefix();
 /// assert_eq!(prefix.to_string(), String::from("HP"));
 /// ```
-#[derive(Clone, Debug, Eq, PartialOrd, Hash)]
+#[derive(Clone, Debug, Eq, PartialOrd)]
 pub struct Prefix<'a>(&'a TermId);
 
 impl PartialEq for Prefix<'_> {
@@ -319,24 +321,67 @@ impl Display for Prefix<'_> {
     }
 }
 
+impl Hash for Prefix<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match &self.0 .0 {
+            InnerTermId::Known(kp, _, _) => {
+                kp.hash(state);
+            }
+            InnerTermId::Random(val, offset) => {
+                val[..(*offset as usize)].hash(state);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test_prefix {
     use super::TermId;
+    use std::hash::{DefaultHasher, Hash, Hasher};
 
     #[test]
     fn partial_eq() {
         let seizure: TermId = "HP:0001250".parse().unwrap();
         let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
 
-        assert!(seizure.prefix() == arachnodactyly.prefix());
+        assert_eq!(seizure.prefix(), arachnodactyly.prefix());
+    }
+
+    #[test]
+    fn hash_known_prefix() {
+        let seizure: TermId = "HP:0001250".parse().unwrap();
+        let mut seizure_hasher = DefaultHasher::new();
+        seizure.prefix().hash(&mut seizure_hasher);
+        let seizure_hash = seizure_hasher.finish();
+
+        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+        let mut arachnodactyly_hasher = DefaultHasher::new();
+        arachnodactyly.prefix().hash(&mut arachnodactyly_hasher);
+        let arachnodactyly_hash = arachnodactyly_hasher.finish();
+
+        assert_eq!(seizure_hash, arachnodactyly_hash);
+    }
+
+    #[test]
+    fn hash_unknown_prefix() {
+        let one: TermId = "WHATNOT:1".parse().unwrap();
+        let mut one_hasher = DefaultHasher::new();
+        one.prefix().hash(&mut one_hasher);
+        let one_hash = one_hasher.finish();
+
+        let two: TermId = "WHATNOT:2".parse().unwrap();
+        let mut two_hasher = DefaultHasher::new();
+        two.prefix().hash(&mut two_hasher);
+        let two_hash = two_hasher.finish();
+
+        assert_eq!(one_hash, two_hash);
     }
 
     #[test]
     fn partial_eq_with_str() {
         let seizure: TermId = "HP:0001250".parse().unwrap();
-        let prefix = seizure.prefix();
 
-        assert!(&prefix == "HP");
+        assert_eq!(&seizure.prefix(), "HP");
     }
 
     #[test]
@@ -437,29 +482,21 @@ impl TryFrom<&str> for KnownPrefix {
 
 #[cfg(test)]
 mod test_known_prefix {
-    use super::{KnownPrefix, TermId};
+    use super::KnownPrefix;
 
     #[test]
     fn partial_eq_with_str() {
-        assert!(&KnownPrefix::HP == "HP");
-        assert!(&KnownPrefix::HP != "SO");
+        assert_eq!(&KnownPrefix::HP, "HP");
+        assert_ne!(&KnownPrefix::HP, "SO");
 
-        assert!(&KnownPrefix::SO == "SO");
-        assert!(&KnownPrefix::PMID == "PMID");
-    }
-
-    #[test]
-    fn partial_eq() {
-        let seizure: TermId = "HP:0001250".parse().unwrap();
-        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
-
-        assert_eq!(seizure.prefix(), arachnodactyly.prefix());
+        assert_eq!(&KnownPrefix::SO, "SO");
+        assert_eq!(&KnownPrefix::PMID, "PMID");
     }
 
     #[test]
     fn display() {
-        assert!(&KnownPrefix::HP.to_string() == "HP");
-        assert!(&KnownPrefix::SO.to_string() == "SO");
+        assert_eq!(&KnownPrefix::HP.to_string(), "HP");
+        assert_eq!(&KnownPrefix::SO.to_string(), "SO");
     }
 }
 
@@ -556,13 +593,13 @@ impl PartialEq<Self> for InnerTermId {
 
 impl Eq for InnerTermId {}
 
-impl std::cmp::PartialOrd for InnerTermId {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+impl PartialOrd for InnerTermId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl std::cmp::Ord for InnerTermId {
+impl Ord for InnerTermId {
     fn cmp(&self, other: &Self) -> Ordering {
         if std::mem::discriminant(self) == std::mem::discriminant(other) {
             // Comparing the same enum variants.
@@ -587,8 +624,8 @@ impl std::cmp::Ord for InnerTermId {
     }
 }
 
-impl std::hash::Hash for InnerTermId {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl Hash for InnerTermId {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             InnerTermId::Known(prefix, id, _) => {
                 prefix.hash(state);
@@ -609,7 +646,6 @@ impl Identified for TermId {
 
 #[cfg(test)]
 mod test_creation {
-
     use super::TermId;
 
     #[test]
@@ -697,7 +733,6 @@ mod test_comparison_and_ordering {
 
 #[cfg(test)]
 mod test_equalities {
-
     use super::*;
 
     macro_rules! term_ids_partial_eq {
@@ -726,7 +761,6 @@ mod test_equalities {
 
 #[cfg(test)]
 mod test_sizes {
-
     use std::mem::size_of;
 
     use super::InnerTermId;
