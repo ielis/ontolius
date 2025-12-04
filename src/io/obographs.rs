@@ -22,7 +22,7 @@ use super::{
 
 impl TryFrom<DefinitionPropertyValue> for Definition {
     type Error = Infallible; // Can be replaced with a more specific error in the future.
-    fn try_from(value: DefinitionPropertyValue) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: DefinitionPropertyValue) -> Result<Self, Self::Error> {
         Ok(Definition {
             val: value.val,
             xrefs: value.xrefs.unwrap_or_default(),
@@ -125,9 +125,9 @@ impl TryFrom<SynonymPropertyValue> for Synonym {
 
         Ok(Self {
             name: value.val,
-            category: category,
+            category,
             r#type: synonym_type,
-            xrefs: xrefs,
+            xrefs,
         })
     }
 }
@@ -138,11 +138,11 @@ pub trait ObographsTermMapper<T> {
 }
 
 /// `DefaultObographsTermMapper` parses the obograph term nodes
-/// into [[SimpleMinimalTerm]] or into [[SimpleTerm]] for a downstream use.
+/// into [`SimpleMinimalTerm`] or into [`SimpleTerm`] for a downstream use.
 ///
 /// ### Mapping behavior
 ///
-/// The errors encountered while parsing the mandatory fields of [[crate::term::MinimalTerm]] (or [[crate::term::Term]]) are reported as errors.
+/// The errors encountered while parsing the mandatory fields of [[MinimalTerm]] (or [[crate::term::Term]]) are reported as errors.
 /// However, the errors in the optional parts (e.g. one of the alternative term IDs or synonym) are *ignored*.
 ///
 #[derive(Default)]
@@ -222,7 +222,8 @@ where
                             Self::parse_alt_term_ids(&meta),
                             meta.deprecated.unwrap_or(false),
                             Self::parse_comment(meta.comments),
-                            meta.definition.map(|d| Definition::try_from(d).unwrap_or_default()), // Ignores an unparsable definition.
+                            meta.definition
+                                .map(|d| Definition::try_from(d).unwrap_or_default()), // Ignores an unparsable definition.
                             meta.synonyms
                                 .into_iter()
                                 .flat_map(Synonym::try_from) // Ignores unparsable synonyms.

@@ -196,7 +196,10 @@ pub trait HierarchyWalks {
         I: Identified;
 
     /// Returns an iterator that includes term ID belonging to the `query` as well as its ancestors.
-    fn iter_term_and_descendant_ids<'a, I>(&'a self, query: &'a I) -> impl Iterator<Item = &'a TermId>
+    fn iter_term_and_descendant_ids<'a, I>(
+        &'a self,
+        query: &'a I,
+    ) -> impl Iterator<Item = &'a TermId>
     where
         I: Identified,
     {
