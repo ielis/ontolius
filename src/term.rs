@@ -20,7 +20,7 @@ pub trait AltTermIdAware {
 /// `MinimalTerm` describes the minimal requirements of an ontology term.
 ///
 /// On top of inherited traits, such as [`Identified`], [`AltTermIdAware`], and others,
-/// the term must have a name and it is either current or obsolete.
+/// the term must have a name, and it is either current or obsolete.
 pub trait MinimalTerm: Identified + AltTermIdAware {
     /// Get the name of the term, e.g. `Seizure` for [Seizure](https://hpo.jax.org/browse/term/HP:0001250).
     fn name(&self) -> &str;

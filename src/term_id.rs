@@ -646,7 +646,6 @@ impl Identified for TermId {
 
 #[cfg(test)]
 mod test_creation {
-
     use super::TermId;
 
     #[test]
