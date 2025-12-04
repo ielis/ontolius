@@ -125,9 +125,9 @@ impl TryFrom<SynonymPropertyValue> for Synonym {
 
         Ok(Self {
             name: value.val,
-            category: category,
+            category,
             r#type: synonym_type,
-            xrefs: xrefs,
+            xrefs,
         })
     }
 }

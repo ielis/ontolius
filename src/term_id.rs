@@ -328,7 +328,7 @@ impl Hash for Prefix<'_> {
                 kp.hash(state);
             }
             InnerTermId::Random(val, offset) => {
-                (&val[..(*offset as usize)]).hash(state);
+                val[..(*offset as usize)].hash(state);
             }
         }
     }
