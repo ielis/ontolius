@@ -178,6 +178,7 @@ by default:
 * `obographs` `(*)` - support loading Ontology from Obographs JSON file
 * `pyo3` - include [`crate::py`] module with PyO3 bindings
   to selected data structs to support using from Python
+* `serde` - to provide (de)serialization functions to map [`crate::TermId`] to/from a curie (see `tests/test_serde.rs` for an example)
 
 
 ## Run tests
