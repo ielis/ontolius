@@ -232,6 +232,57 @@ impl Display for TermId {
     }
 }
 
+/// Support writing out a [`TermId`] as a curie
+/// when working with `serde`.
+#[cfg(feature = "serde")]
+mod serde {
+
+    use std::str::FromStr;
+
+    use super::TermId;
+
+    impl TermId {
+        pub fn serialize_as_curie<S>(term_id: &TermId, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            // Sadly, we must allocate a string to serialize a curie.
+            let curie = term_id.to_string();
+            serializer.serialize_str(&curie)
+        }
+
+        pub fn deserialize_from_curie<'de, D>(deserializer: D) -> Result<TermId, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            struct TermIdCurieVisitor;
+
+            impl<'de> serde::de::Visitor<'de> for TermIdCurieVisitor {
+                type Value = TermId;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    write!(formatter, "{}", "a curie (e.g. \"HP:0001250\")")
+                }
+
+                fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    match TermId::from_str(v) {
+                        Ok(term_id) => Ok(term_id),
+                        Err(_e) => Err(serde::de::Error::invalid_value(
+                            serde::de::Unexpected::Str(v),
+                            &self,
+                        )),
+                    }
+                }
+            }
+            deserializer.deserialize_str(TermIdCurieVisitor)
+        }
+    }
+}
+
+
 /// The representation of the prefix of a [`TermId`].
 ///
 /// ### Examples
