@@ -1,8 +1,11 @@
 //! Load ontology data from Obographs formats.
+use std::convert::Infallible;
+use std::error::Error;
+use std::fmt::Display;
 use std::io::BufRead;
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context};
 use curieosa::{CurieUtil, TrieCurieUtil};
 use obographs_dev::model::{
     DefinitionPropertyValue, Edge, Graph, GraphDocument, Meta, Node, SynonymPropertyValue,
@@ -17,77 +20,131 @@ use super::{
     Uninitialized, WithParser,
 };
 
-impl From<DefinitionPropertyValue> for Definition {
-    fn from(value: DefinitionPropertyValue) -> Self {
-        Definition {
+impl TryFrom<DefinitionPropertyValue> for Definition {
+    type Error = Infallible; // Can be replaced with a more specific error in the future.
+    fn try_from(value: DefinitionPropertyValue) -> Result<Self, Self::Error> {
+        Ok(Definition {
             val: value.val,
             xrefs: value.xrefs.unwrap_or_default(),
+        })
+    }
+}
+
+/// Represents the reasons why parsing of a Synonym can fail.
+///
+/// We reserve the right to add more reasons for failure in the future.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub enum SynonymParseError {
+    /// An unknown synonym type was encountered.
+    UnknownType(String),
+    /// An unknown synonym category was encountered.
+    UnknownCategory(String),
+    /// Parsing of the external reference (xref) failed.
+    UnparsableXref(String),
+}
+
+impl Display for SynonymParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SynonymParseError::UnknownType(v) => {
+                write!(f, "Unknown synonym type {v}")
+            }
+            SynonymParseError::UnknownCategory(v) => {
+                write!(f, "Unknown synonym category {v}")
+            }
+            SynonymParseError::UnparsableXref(v) => {
+                write!(f, "Unparsable xref {v}")
+            }
         }
     }
 }
 
-fn parse_synonym_category(pred: String) -> Option<SynonymCategory> {
+impl Error for SynonymParseError {}
+
+fn parse_synonym_category(pred: String) -> Result<SynonymCategory, SynonymParseError> {
     match pred.as_str() {
-        "hasExactSynonym" => Some(SynonymCategory::Exact),
-        "hasBroadSynonym" => Some(SynonymCategory::Broad),
-        "hasNarrowSynonym" => Some(SynonymCategory::Narrow),
-        "hasRelatedSynonym" => Some(SynonymCategory::Related),
-        _ => {
-            eprintln!("Unknown synonym category {pred:?}",);
-            None
-        }
+        "hasExactSynonym" => Ok(SynonymCategory::Exact),
+        "hasBroadSynonym" => Ok(SynonymCategory::Broad),
+        "hasNarrowSynonym" => Ok(SynonymCategory::Narrow),
+        "hasRelatedSynonym" => Ok(SynonymCategory::Related),
+        _ => Err(SynonymParseError::UnknownCategory(pred)),
     }
 }
 
-fn parse_synonym_type(synonym_type: String) -> Option<SynonymType> {
+fn parse_synonym_type(synonym_type: String) -> Result<SynonymType, SynonymParseError> {
     match synonym_type.as_ref() {
-        "http://purl.obolibrary.org/obo/hp#layperson" => Some(SynonymType::LaypersonTerm),
-        "http://purl.obolibrary.org/obo/hp#abbreviation" => Some(SynonymType::Abbreviation),
-        "http://purl.obolibrary.org/obo/hp#uk_spelling" => Some(SynonymType::UkSpelling),
-        "http://purl.obolibrary.org/obo/hp#obsolete_synonym" => Some(SynonymType::ObsoleteSynonym),
-        "http://purl.obolibrary.org/obo/hp#plural_form" => Some(SynonymType::PluralForm),
+        "http://purl.obolibrary.org/obo/hp#layperson" => Ok(SynonymType::LaypersonTerm),
+        "http://purl.obolibrary.org/obo/hp#abbreviation" => Ok(SynonymType::Abbreviation),
+        "http://purl.obolibrary.org/obo/hp#uk_spelling" => Ok(SynonymType::UkSpelling),
+        "http://purl.obolibrary.org/obo/hp#obsolete_synonym" => Ok(SynonymType::ObsoleteSynonym),
+        "http://purl.obolibrary.org/obo/hp#plural_form" => Ok(SynonymType::PluralForm),
+        "http://purl.obolibrary.org/obo/hp#allelic_requirement" => {
+            Ok(SynonymType::AllelicRequirement)
+        }
         "http://purl.obolibrary.org/obo/go#systematic_synonym" => {
-            Some(SynonymType::SystematicSynonym)
+            Ok(SynonymType::SystematicSynonym)
         }
         "http://purl.obolibrary.org/obo/go#syngo_official_label" => {
-            Some(SynonymType::SyngoOfficialLabel)
+            Ok(SynonymType::SyngoOfficialLabel)
         }
-        _ => {
-            eprintln!("Unknown synonym category {synonym_type:?}",);
-            None
-        }
+        _ => Err(SynonymParseError::UnknownType(synonym_type)),
     }
 }
 
-fn parse_synonym_xref(xref: String) -> Option<TermId> {
+fn parse_synonym_xref(xref: String) -> Result<TermId, SynonymParseError> {
     if let Some(remainder) = xref.strip_prefix("https://orcid.org/") {
-        Some(TermId::from(("ORCID", remainder)))
+        Ok(TermId::from(("ORCID", remainder)))
     } else {
-        xref.parse().ok()
+        xref.parse()
+            .map_err(|_x| SynonymParseError::UnparsableXref(xref))
     }
 }
 
-impl From<SynonymPropertyValue> for Synonym {
-    fn from(value: SynonymPropertyValue) -> Self {
-        Self {
+impl TryFrom<SynonymPropertyValue> for Synonym {
+    type Error = SynonymParseError;
+
+    fn try_from(value: SynonymPropertyValue) -> std::result::Result<Self, Self::Error> {
+        let category = Some(parse_synonym_category(value.pred)?);
+
+        let synonym_type = if let Some(st) = value.synonym_type {
+            Some(parse_synonym_type(st)?)
+        } else {
+            None
+        };
+
+        let xrefs = if let Some(xrefs) = value.xrefs {
+            let mut parsed = Vec::with_capacity(xrefs.len());
+            for xref in xrefs {
+                parsed.push(parse_synonym_xref(xref)?);
+            }
+            parsed
+        } else {
+            Default::default()
+        };
+
+        Ok(Self {
             name: value.val,
-            category: parse_synonym_category(value.pred),
-            r#type: value.synonym_type.and_then(parse_synonym_type),
-            xrefs: value
-                .xrefs
-                .unwrap_or_default()
-                .into_iter()
-                .flat_map(parse_synonym_xref)
-                .collect(),
-        }
+            category,
+            r#type: synonym_type,
+            xrefs,
+        })
     }
 }
 
 /// The term factory parses the obographs node into a term.
 pub trait ObographsTermMapper<T> {
-    fn create(&self, node: Node) -> Result<T>;
+    fn create(&self, node: Node) -> anyhow::Result<T>;
 }
 
+/// `DefaultObographsTermMapper` parses the obograph term nodes
+/// into [`SimpleMinimalTerm`] or into [`SimpleTerm`] for a downstream use.
+///
+/// ### Mapping behavior
+///
+/// The errors encountered while parsing the mandatory fields of [[MinimalTerm]] (or [[crate::term::Term]]) are reported as errors.
+/// However, the errors in the optional parts (e.g. one of the alternative term IDs or synonym) are *ignored*.
+///
 #[derive(Default)]
 pub struct DefaultObographsTermMapper<CU> {
     curie_util: Arc<CU>,
@@ -110,13 +167,7 @@ impl<CU> DefaultObographsTermMapper<CU> {
             .basic_property_values
             .iter()
             .filter(|&bpv| bpv.pred.ends_with("#hasAlternativeId"))
-            .flat_map(|bpv| match bpv.val.parse() {
-                Ok(term_id) => Some(term_id),
-                Err(e) => {
-                    eprintln!("{}", e); // TODO: really?
-                    None
-                }
-            })
+            .flat_map(|bpv| bpv.val.parse()) // Ignores unparsable alt term IDs.
             .collect()
     }
 }
@@ -125,7 +176,7 @@ impl<CU> ObographsTermMapper<SimpleMinimalTerm> for DefaultObographsTermMapper<C
 where
     CU: CurieUtil,
 {
-    fn create(&self, node: Node) -> Result<SimpleMinimalTerm> {
+    fn create(&self, node: Node) -> anyhow::Result<SimpleMinimalTerm> {
         let cp = self.curie_util.get_curie_data(&node.id);
 
         match (cp, node.lbl) {
@@ -158,7 +209,7 @@ impl<CU> ObographsTermMapper<SimpleTerm> for DefaultObographsTermMapper<CU>
 where
     CU: CurieUtil,
 {
-    fn create(&self, node: Node) -> Result<SimpleTerm> {
+    fn create(&self, node: Node) -> anyhow::Result<SimpleTerm> {
         let cp = self.curie_util.get_curie_data(&node.id);
 
         match (cp, node.lbl) {
@@ -171,12 +222,15 @@ where
                             Self::parse_alt_term_ids(&meta),
                             meta.deprecated.unwrap_or(false),
                             Self::parse_comment(meta.comments),
-                            meta.definition.map(Definition::from),
-                            meta.synonyms.into_iter().map(Synonym::from).collect(),
-                            // Ignore unparsable Xrefs.
+                            meta.definition
+                                .map(|d| Definition::try_from(d).unwrap_or_default()), // Ignores an unparsable definition.
+                            meta.synonyms
+                                .into_iter()
+                                .flat_map(Synonym::try_from) // Ignores unparsable synonyms.
+                                .collect(),
                             meta.xrefs
                                 .into_iter()
-                                .flat_map(|xpv| xpv.val.parse())
+                                .flat_map(|xpv| xpv.val.parse()) // Ignores unparsable xrefs.
                                 .collect(),
                         ),
                         None => Default::default(),
@@ -216,7 +270,7 @@ impl<TM, CU> ObographsParser<TM, CU> {
 }
 
 impl<TF, CU> ObographsParser<TF, CU> {
-    pub fn load_from_graph<I, T>(&self, graph: Graph) -> Result<OntologyData<I, T>>
+    pub fn load_from_graph<I, T>(&self, graph: Graph) -> anyhow::Result<OntologyData<I, T>>
     where
         TF: ObographsTermMapper<T>,
         CU: CurieUtil,
@@ -295,7 +349,7 @@ where
     I: Index,
     T: MinimalTerm,
 {
-    fn load_from_buf_read<R>(&self, read: R) -> Result<OntologyData<I, T>>
+    fn load_from_buf_read<R>(&self, read: R) -> anyhow::Result<OntologyData<I, T>>
     where
         R: BufRead,
     {
@@ -342,7 +396,7 @@ where
     }
 }
 
-fn parse_relationship(pred: &str) -> Result<Relationship> {
+fn parse_relationship(pred: &str) -> anyhow::Result<Relationship> {
     match pred {
         // This may be too simplistic
         "is_a" => Ok(Relationship::Child),
@@ -393,5 +447,59 @@ impl OntologyLoaderBuilder<Uninitialized> {
                 parser: ObographsParser::new(tm, Arc::clone(&cu)),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod test_obographs {
+    use super::*;
+    use crate::term::SynonymType;
+
+    #[test]
+    fn test_parse_synonym_type() {
+        const PAYLOAD: [(&str, Result<SynonymType, SynonymParseError>); 8] = [
+            (
+                "http://purl.obolibrary.org/obo/hp#layperson",
+                Ok(SynonymType::LaypersonTerm),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#abbreviation",
+                Ok(SynonymType::Abbreviation),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#uk_spelling",
+                Ok(SynonymType::UkSpelling),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#obsolete_synonym",
+                Ok(SynonymType::ObsoleteSynonym),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#plural_form",
+                Ok(SynonymType::PluralForm),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/hp#allelic_requirement",
+                Ok(SynonymType::AllelicRequirement),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/go#systematic_synonym",
+                Ok(SynonymType::SystematicSynonym),
+            ),
+            (
+                "http://purl.obolibrary.org/obo/go#syngo_official_label",
+                Ok(SynonymType::SyngoOfficialLabel),
+            ),
+        ];
+
+        for (value, expected) in PAYLOAD {
+            let actual = parse_synonym_type(value.to_string());
+            assert_eq!(actual, expected);
+        }
+    }
+
+    #[test]
+    fn test_parse_synonym_type_no_good() {
+        assert!(parse_synonym_type("No good value".to_string()).is_err());
     }
 }

@@ -21,7 +21,7 @@ pub mod hpo {
     pub static ALL: TermId = make_term_id(KnownPrefix::HP, 1, 7);
 
     /// [Phenotypic abnormality (HP:0000118)](http://purl.obolibrary.org/obo/HP_0000118)
-    /// is the root of the phenotypic abnormality sub-module of the HPO.
+    /// is the root of the phenotypic abnormality submodule of the HPO.
     pub static PHENOTYPIC_ABNORMALITY: TermId = make_term_id(KnownPrefix::HP, 118, 7);
 
     /// [Clinical modifier (HP:0012823)](http://purl.obolibrary.org/obo/HP_0012823)

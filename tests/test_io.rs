@@ -21,10 +21,12 @@ mod human_phenotype_ontology {
             let reader = GzDecoder::new(BufReader::new(
                 File::open(HPO_PATH).expect("Obographs JSON file should exist"),
             ));
-            
+
             let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
-            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
+            loader
+                .load_from_read(reader)
+                .expect("Obographs JSON should be well formatted")
         })
     }
 
@@ -174,7 +176,9 @@ mod gene_ontology {
                 File::open(TOY_GO_PATH).expect("Obographs JSON file should exist"),
             ));
             let loader = OntologyLoaderBuilder::new().obographs_parser().build();
-            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
+            loader
+                .load_from_read(reader)
+                .expect("Obographs JSON should be well formatted")
         })
     }
 
@@ -279,7 +283,9 @@ mod medical_action_ontology {
                 File::open(TOY_MAXO_PATH).expect("Obographs JSON file should exist"),
             ));
             let loader = OntologyLoaderBuilder::new().obographs_parser().build();
-            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
+            loader
+                .load_from_read(reader)
+                .expect("Obographs JSON should be well formatted")
         })
     }
 

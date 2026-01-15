@@ -5,10 +5,17 @@ use std::{
     iter::once,
 };
 
-use graph_builder::{index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, GraphBuilder};
+use graph_builder::{
+    index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, Graph, GraphBuilder,
+};
 
 use crate::{
-    io::{GraphEdge, OntologyData, Relationship}, ontology::{HierarchyQueries, HierarchyTraversals, HierarchyWalks, MetadataAware, OntologyTerms}, term::AltTermIdAware, Identified, TermId
+    io::{GraphEdge, OntologyData, Relationship},
+    ontology::{
+        HierarchyQueries, HierarchyTraversals, HierarchyWalks, MetadataAware, OntologyTerms,
+    },
+    term::AltTermIdAware,
+    Identified, TermId,
 };
 
 /// An ontology backed by a term array and a CSR adjacency matrix.
@@ -20,6 +27,23 @@ where
     terms: Box<[T]>,
     term_id_to_idx: HashMap<TermId, I>,
     metadata: HashMap<String, String>,
+}
+
+impl<I, T> std::fmt::Debug for CsrOntology<I, T>
+where
+    I: Idx,
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CsrOntology {{ n_terms: {0:?}, adjacency_matrix: {{ n_nodes: {1:?}, n_edges: {2:?} }}, metadata: {3:?} }}",
+            self.terms.len(),
+            self.adjacency_matrix.node_count(),
+            self.adjacency_matrix.edge_count(),
+            self.metadata,
+        )
+    }
 }
 
 impl<I, T> TryFrom<OntologyData<I, T>> for CsrOntology<I, T>
@@ -351,5 +375,32 @@ where
                 None => None,
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod test_csr_ontology {
+    use std::{collections::HashMap, fmt::Write};
+
+    use crate::{io::OntologyData, ontology::csr::CsrOntology, term::simple::SimpleMinimalTerm};
+
+    fn make_ontology_data<I, T>() -> OntologyData<I, T> {
+        OntologyData {
+            terms: vec![],
+            edges: vec![],
+            metadata: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn test_debug() {
+        let toy: CsrOntology<u8, SimpleMinimalTerm> = make_ontology_data()
+            .try_into()
+            .expect("Parsing should not fail");
+
+        let mut val = String::new();
+        write!(&mut val, "{0:?}", toy).expect("Expecting no formatting issues");
+
+        assert_eq!(&val, "CsrOntology { n_terms: 0, adjacency_matrix: { n_nodes: 1, n_edges: 0 }, metadata: {} }");
     }
 }

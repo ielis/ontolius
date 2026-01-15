@@ -24,3 +24,4 @@ fn uo_commons_are_accessible() {
     assert_eq!(uo::UNIT, ("UO", "0000000"))
 }
 
+

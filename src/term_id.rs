@@ -1,11 +1,10 @@
 //! The base building blocks for working with ontology data.
 
 use std::cmp::Ordering;
-use std::fmt::{Display, Formatter, Write};
-use std::hash::Hash;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
-
-use anyhow::{bail, Error, Result};
 
 /// `Identified` is implemented by entities that have a [`TermId`] as an identifier.
 ///
@@ -49,14 +48,43 @@ pub trait Identified {
 /// Parsing a CURIE will fail if the CURIE does not contain either `:` or `_` as a delimiter:
 ///
 /// ```
-/// use ontolius::TermId;
+/// use ontolius::{TermId, TermIdParseError};
 ///
 /// let term_id: Result<TermId, _> = "HP*0001250".parse(); // `*` is not valid delimiter
 ///
 /// assert!(term_id.is_err());
+/// assert_eq!(term_id.unwrap_err(), TermIdParseError::MissingDelimiter);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TermId(InnerTermId);
+
+/// Represents all possible reasons for failure to parse a CURIE into a [`TermId`].
+#[derive(Debug, Clone, PartialEq)]
+pub enum TermIdParseError {
+    /// Missing colon (`:`) or underscore (`_`) in the input CURIE.
+    MissingDelimiter,
+}
+
+impl Display for TermIdParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TermIdParseError::MissingDelimiter => write!(f, "Missing delimiter"),
+        }
+    }
+}
+
+impl Error for TermIdParseError {}
+
+#[cfg(test)]
+mod test_term_id_err {
+    use super::TermIdParseError;
+
+    #[test]
+    fn term_id_err_can_be_converted_into_anyhow_error() {
+        let e = anyhow::Error::from(TermIdParseError::MissingDelimiter);
+        assert_eq!(e.to_string(), "Missing delimiter".to_string());
+    }
+}
 
 /// Try to convert a CURIE `str` into a `TermId`.
 ///
@@ -70,7 +98,7 @@ pub struct TermId(InnerTermId);
 /// assert_eq!(term_id.to_string(), "HP:0001250");
 /// ```
 impl FromStr for TermId {
-    type Err = Error;
+    type Err = TermIdParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         InnerTermId::try_from(s).map(TermId::from)
@@ -149,7 +177,7 @@ impl PartialEq<(&str, &str)> for &TermId {
 ///
 /// ```should_panic
 /// # use ontolius::TermId;
-///
+/// #
 /// // A string concatenated from 256 `'A'` characters
 /// let many_as: String = std::iter::repeat('A').take(256).collect();
 /// let term_id = TermId::from((many_as.as_str(), "0001250"));
@@ -159,7 +187,7 @@ impl PartialEq<(&str, &str)> for &TermId {
 ///
 /// ```should_panic
 /// # use ontolius::TermId;
-///
+/// #
 /// // A string concatenated from 256 `'0'` characters
 /// let many_zeros: String = std::iter::repeat('0').take(256).collect();
 /// let term_id = TermId::from(("HP", many_zeros.as_str()));
@@ -233,14 +261,16 @@ impl Display for TermId {
 /// Note that no *particular* order (e.g. alphabetical) is guaranteed.
 /// Only that the ordering is defined.
 ///
-/// Prefix implements [`std::fmt::Debug`] and [`std::fmt::Display`].
+/// Prefix can be hashed ([`Hash`]).
+///
+/// Prefix implements [`std::fmt::Debug`] and [`Display`].
 /// ```
 /// # use ontolius::TermId;
 /// # let seizure: TermId = "HP:0001250".parse().unwrap();
 /// # let prefix = seizure.prefix();
 /// assert_eq!(prefix.to_string(), String::from("HP"));
 /// ```
-#[derive(Clone, Debug, Eq, PartialOrd, Hash)]
+#[derive(Clone, Debug, Eq, PartialOrd)]
 pub struct Prefix<'a>(&'a TermId);
 
 impl PartialEq for Prefix<'_> {
@@ -291,24 +321,67 @@ impl Display for Prefix<'_> {
     }
 }
 
+impl Hash for Prefix<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match &self.0 .0 {
+            InnerTermId::Known(kp, _, _) => {
+                kp.hash(state);
+            }
+            InnerTermId::Random(val, offset) => {
+                val[..(*offset as usize)].hash(state);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test_prefix {
     use super::TermId;
+    use std::hash::{DefaultHasher, Hash, Hasher};
 
     #[test]
     fn partial_eq() {
         let seizure: TermId = "HP:0001250".parse().unwrap();
         let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
-        
-        assert!(seizure.prefix() == arachnodactyly.prefix());
+
+        assert_eq!(seizure.prefix(), arachnodactyly.prefix());
+    }
+
+    #[test]
+    fn hash_known_prefix() {
+        let seizure: TermId = "HP:0001250".parse().unwrap();
+        let mut seizure_hasher = DefaultHasher::new();
+        seizure.prefix().hash(&mut seizure_hasher);
+        let seizure_hash = seizure_hasher.finish();
+
+        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+        let mut arachnodactyly_hasher = DefaultHasher::new();
+        arachnodactyly.prefix().hash(&mut arachnodactyly_hasher);
+        let arachnodactyly_hash = arachnodactyly_hasher.finish();
+
+        assert_eq!(seizure_hash, arachnodactyly_hash);
+    }
+
+    #[test]
+    fn hash_unknown_prefix() {
+        let one: TermId = "WHATNOT:1".parse().unwrap();
+        let mut one_hasher = DefaultHasher::new();
+        one.prefix().hash(&mut one_hasher);
+        let one_hash = one_hasher.finish();
+
+        let two: TermId = "WHATNOT:2".parse().unwrap();
+        let mut two_hasher = DefaultHasher::new();
+        two.prefix().hash(&mut two_hasher);
+        let two_hash = two_hasher.finish();
+
+        assert_eq!(one_hash, two_hash);
     }
 
     #[test]
     fn partial_eq_with_str() {
         let seizure: TermId = "HP:0001250".parse().unwrap();
-        let prefix = seizure.prefix();
-        
-        assert!(&prefix == "HP");
+
+        assert_eq!(&seizure.prefix(), "HP");
     }
 
     #[test]
@@ -414,29 +487,21 @@ impl TryFrom<&str> for KnownPrefix {
 
 #[cfg(test)]
 mod test_known_prefix {
-    use super::{KnownPrefix, TermId};
+    use super::KnownPrefix;
 
     #[test]
     fn partial_eq_with_str() {
-        assert!(&KnownPrefix::HP == "HP");
-        assert!(&KnownPrefix::HP != "SO");
+        assert_eq!(&KnownPrefix::HP, "HP");
+        assert_ne!(&KnownPrefix::HP, "SO");
 
-        assert!(&KnownPrefix::SO == "SO");
-        assert!(&KnownPrefix::PMID == "PMID");
-    }
-
-    #[test]
-    fn partial_eq() {
-        let seizure: TermId = "HP:0001250".parse().unwrap();
-        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
-
-        assert_eq!(seizure.prefix(), arachnodactyly.prefix());
+        assert_eq!(&KnownPrefix::SO, "SO");
+        assert_eq!(&KnownPrefix::PMID, "PMID");
     }
 
     #[test]
     fn display() {
-        assert!(&KnownPrefix::HP.to_string() == "HP");
-        assert!(&KnownPrefix::SO.to_string() == "SO");
+        assert_eq!(&KnownPrefix::HP.to_string(), "HP");
+        assert_eq!(&KnownPrefix::SO.to_string(), "SO");
     }
 }
 
@@ -453,19 +518,19 @@ pub(crate) enum InnerTermId {
 }
 
 impl InnerTermId {
-    fn find_delimiter(curie: &str) -> Result<usize> {
+    fn find_delimiter(curie: &str) -> Result<usize, TermIdParseError> {
         if let Some(idx) = curie.find(':') {
             Ok(idx)
         } else if let Some(idx) = curie.find('_') {
             Ok(idx)
         } else {
-            bail!("Did not find delimiter in {curie}")
+            Err(TermIdParseError::MissingDelimiter)
         }
     }
 }
 
 impl TryFrom<&str> for InnerTermId {
-    type Error = Error;
+    type Error = TermIdParseError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let delimiter = InnerTermId::find_delimiter(value)?;
@@ -482,31 +547,20 @@ impl From<(&str, &str)> for InnerTermId {
         let p = KnownPrefix::try_from(prefix);
         let a: Result<u32, _> = ident.parse();
         let id_len: Result<_, _> = u8::try_from(ident.len());
-        match (p, a) {
-            (Ok(prefix), Ok(id)) => {
+        if let (Ok(prefix), Ok(id)) = (p, a) {
+            InnerTermId::Known(
                 // Prefix is known
-                InnerTermId::Known(
-                    prefix,
-                    id,
-                    id_len.expect("ID should not be longer than 255 chars!"),
-                )
-            }
-            _ => {
-                //
-                let val = Box::new([prefix, ident].concat());
-                let idx = u8::try_from(prefix.chars().count())
-                    .expect("Curie prefix should not be longer than 255 chars!");
-                InnerTermId::Random(val, idx)
-            }
+                prefix,
+                id,
+                id_len.expect("ID should not be longer than 255 chars!"),
+            )
+        } else {
+            // Unknown prefix, we must allocate the data into a `String`.
+            let val = Box::new([prefix, ident].concat());
+            let idx = u8::try_from(prefix.chars().count())
+                .expect("Curie prefix should not be longer than 255 chars!");
+            InnerTermId::Random(val, idx)
         }
-    }
-}
-
-impl From<InnerTermId> for String {
-    fn from(value: InnerTermId) -> Self {
-        let mut curie = String::new();
-        write!(&mut curie, "{value}").unwrap();
-        curie
     }
 }
 
@@ -544,13 +598,13 @@ impl PartialEq<Self> for InnerTermId {
 
 impl Eq for InnerTermId {}
 
-impl std::cmp::PartialOrd for InnerTermId {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+impl PartialOrd for InnerTermId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl std::cmp::Ord for InnerTermId {
+impl Ord for InnerTermId {
     fn cmp(&self, other: &Self) -> Ordering {
         if std::mem::discriminant(self) == std::mem::discriminant(other) {
             // Comparing the same enum variants.
@@ -575,8 +629,8 @@ impl std::cmp::Ord for InnerTermId {
     }
 }
 
-impl std::hash::Hash for InnerTermId {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl Hash for InnerTermId {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             InnerTermId::Known(prefix, id, _) => {
                 prefix.hash(state);
@@ -597,7 +651,6 @@ impl Identified for TermId {
 
 #[cfg(test)]
 mod test_creation {
-
     use super::TermId;
 
     #[test]
@@ -685,7 +738,6 @@ mod test_comparison_and_ordering {
 
 #[cfg(test)]
 mod test_equalities {
-
     use super::*;
 
     macro_rules! term_ids_partial_eq {
@@ -714,7 +766,6 @@ mod test_equalities {
 
 #[cfg(test)]
 mod test_sizes {
-
     use std::mem::size_of;
 
     use super::InnerTermId;
