@@ -163,6 +163,7 @@ At this time, support for the following ontologies is tested:
 * Human Phenotype Ontology (HPO)
 * Gene Ontology (GO)
 * Medical Action Ontology (MAxO)
+* Units of Measurement Ontology (UO)
 
 Other ontologies are very likely to work too.
 In case of any problems, please let us know on our [Issue tracker](https://github.com/P2GX/ontolius/issues).
