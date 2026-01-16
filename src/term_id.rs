@@ -282,7 +282,6 @@ mod serde {
     }
 }
 
-
 /// The representation of the prefix of a [`TermId`].
 ///
 /// ### Examples
@@ -539,7 +538,7 @@ impl TryFrom<&str> for KnownPrefix {
             Ok(KnownPrefix::PMID)
         } else if value.starts_with("UO") {
             Ok(KnownPrefix::UO)
-        }else {
+        } else {
             Err(())
         }
     }

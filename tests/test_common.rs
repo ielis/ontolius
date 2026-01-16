@@ -1,4 +1,4 @@
-use ontolius::common::{hpo, go, maxo, uo};
+use ontolius::common::{go, hpo, maxo, uo};
 
 #[test]
 fn hpo_commons_are_accessible() {
@@ -23,5 +23,3 @@ fn maxo_commons_are_accessible() {
 fn uo_commons_are_accessible() {
     assert_eq!(uo::UNIT, ("UO", "0000000"))
 }
-
-

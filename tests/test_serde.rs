@@ -1,13 +1,13 @@
 /// An example of serializing a TermId as a CURIE.
-/// 
+///
 /// When working with types that use [`ontolius::TermId`]s and their serialization,
 /// we would like to derive both [`serde::Serialize`] and [`serde::Deserialize`] traits
 /// to enable interoperability with the `serde` crate.
 /// However, we cannot do this directly since [`ontolius::TermId`] does not implement the traits.
-/// 
+///
 /// As a workaround, `serde`` allows using custom serialization and deserialization functions
 /// and `ontolius` provides functions to use with (de)serialization.
-/// 
+///
 /// The functions are available on [`ontolius::TermId`] when the `serde` feature is enabled.
 /// An example usage is shown in this module.
 #[cfg(feature = "serde")]
@@ -19,7 +19,7 @@ mod test_serde {
     use ontolius::TermId;
 
     /// An example struct that we want to serialize and deserialize with serde.
-    /// 
+    ///
     /// Use the `serde` attributes on the `term_id` field
     /// to serialize the `TermId` as CURIE.
     #[derive(PartialEq, Debug, serde::Serialize, serde::Deserialize)]
