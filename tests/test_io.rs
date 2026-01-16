@@ -365,7 +365,6 @@ mod medical_action_ontology {
     }
 }
 
-
 /// Unit of Measurement Ontology (UO) tests.
 mod unit_measurement_ontology {
 
@@ -390,7 +389,9 @@ mod unit_measurement_ontology {
                 File::open(UO_PATH).expect("Obographs JSON file should exist"),
             ));
             let loader = OntologyLoaderBuilder::new().obographs_parser().build();
-            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
+            loader
+                .load_from_read(reader)
+                .expect("Obographs JSON should be well formatted")
         })
     }
 
@@ -419,7 +420,12 @@ mod unit_measurement_ontology {
         test_ancestors!(
             uo,
             "UO:0010002", // millisiemens
-            &["conduction unit", "electrical conduction unit", "siemens based unit", "unit"]
+            &[
+                "conduction unit",
+                "electrical conduction unit",
+                "siemens based unit",
+                "unit"
+            ]
         );
         test_ancestors!(
             uo,
@@ -440,6 +446,6 @@ mod unit_measurement_ontology {
     fn version_parsing() {
         let uo = uo();
 
-        assert_eq!(uo.version(), "2026-01-09") ;
+        assert_eq!(uo.version(), "2026-01-09");
     }
 }
