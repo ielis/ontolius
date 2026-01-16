@@ -459,7 +459,7 @@ pub(crate) enum KnownPrefix {
     CHEBI,
     NCIT,
     PMID,
-    UO
+    UO,
 }
 
 impl PartialEq<str> for KnownPrefix {

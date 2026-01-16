@@ -432,8 +432,8 @@ mod unit_measurement_ontology {
     fn we_get_expected_descendant_counts_for_uo_root() {
         let uo = uo();
 
-        let ma_count = uo.iter_descendant_ids(&UNIT).count();
-        assert_eq!(ma_count, 549);
+        let descendant_count = uo.iter_descendant_ids(&UNIT).count();
+        assert_eq!(descendant_count, 549);
     }
 
     #[test]
