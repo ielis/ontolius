@@ -364,3 +364,82 @@ mod medical_action_ontology {
         _ = maxo.version();
     }
 }
+
+
+/// Unit of Measurement Ontology (UO) tests.
+mod unit_measurement_ontology {
+
+    use std::fs::File;
+    use std::io::BufReader;
+    use std::sync::OnceLock;
+
+    use flate2::bufread::GzDecoder;
+    use ontolius::common::uo::UNIT;
+    use ontolius::io::OntologyLoaderBuilder;
+    use ontolius::ontology::csr::MinimalCsrOntology;
+    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
+    use ontolius::term::MinimalTerm;
+    use ontolius::TermId;
+
+    const UO_PATH: &str = "resources/uo/uo.json.gz";
+
+    fn uo() -> &'static MinimalCsrOntology {
+        static ONTOLOGY: OnceLock<MinimalCsrOntology> = OnceLock::new();
+        ONTOLOGY.get_or_init(|| {
+            let reader = GzDecoder::new(BufReader::new(
+                File::open(UO_PATH).expect("Obographs JSON file should exist"),
+            ));
+            let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+            loader.load_from_read(reader).expect("Obographs JSON should be well formatted")
+        })
+    }
+
+    macro_rules! test_ancestors {
+        ($($ontology: expr, $curie: expr, $expected: expr)*) => {
+            $(
+                let query: TermId = $curie.parse().unwrap();
+
+                let mut names: Vec<_> = $ontology
+                    .iter_ancestor_ids(&query)
+                    .map(|tid| $ontology.term_by_id(tid).map(MinimalTerm::name).unwrap())
+                    .collect();
+                names.sort();
+                assert_eq!(
+                    names,
+                    $expected,
+                );
+            )*
+        };
+    }
+
+    #[test]
+    fn iter_ancestor_ids() {
+        let uo = uo();
+
+        test_ancestors!(
+            uo,
+            "UO:0010002", // millisiemens
+            &["conduction unit", "electrical conduction unit", "siemens based unit", "unit"]
+        );
+        test_ancestors!(
+            uo,
+            "UO:0000010", // second
+            &["base unit", "second based unit", "time unit", "unit"]
+        );
+    }
+
+    #[test]
+    fn we_get_expected_descendant_counts_for_uo_root() {
+        let uo = uo();
+
+        let descendant_count = uo.iter_descendant_ids(&UNIT).count();
+        assert_eq!(descendant_count, 549);
+    }
+
+    #[test]
+    fn version_parsing() {
+        let uo = uo();
+
+        assert_eq!(uo.version(), "2026-01-09") ;
+    }
+}

@@ -41,6 +41,16 @@ pub mod maxo {
     pub static MEDICAL_ACTION: TermId = make_term_id(KnownPrefix::MAXO, 1, 7);
 }
 
+/// Constants for working with Unit of Measurement Ontology (UO).
+pub mod uo {
+    use crate::{term_id::KnownPrefix, TermId};
+
+    use super::make_term_id;
+    /// [unit (UO:0000000)](http://purl.obolibrary.org/obo/UO_0000000)
+    /// is the root of all terms in the UO.
+    pub static UNIT: TermId = make_term_id(KnownPrefix::UO, 0, 7);
+}
+
 /// Constants for working with Gene Ontology (GO).
 pub mod go {
     use crate::{term_id::KnownPrefix, TermId};
