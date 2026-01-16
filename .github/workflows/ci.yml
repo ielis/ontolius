@@ -1,27 +1,53 @@
 name: Run tests
 
 on:
-    push:
-      branches: [ development ]
-    pull_request:
-      branches: [ master, development ]
+  push:
+    branches: [development]
+  pull_request:
+    branches: [master, development]
 
 jobs:
-    run-tests:
-        runs-on: ${{ matrix.os }}
-        strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-latest, macos-latest, windows-latest]
-                toolchain: [stable]
-      
-        steps:
-            - uses: actions/checkout@v4    
-            
-            - name: Install ${{ matrix.toolchain }}
-              uses: dtolnay/rust-toolchain@master
-              with:
-                toolchain: ${{ matrix.toolchain }}
-            
-            - name: Run tests
-              run: cargo test --release
+  run-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [stable]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ${{ matrix.toolchain }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Run tests
+        run: cargo test --release
+
+  run-all-features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "stable"
+
+      - name: Run tests
+        run: cargo test --features serde,pyo3 --release
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "stable"
+
+      - name: Check formatting of Rust code with rustfmt
+        uses: actions-rust-lang/rustfmt@v1.1.1

@@ -163,9 +163,10 @@ At this time, support for the following ontologies is tested:
 * Human Phenotype Ontology (HPO)
 * Gene Ontology (GO)
 * Medical Action Ontology (MAxO)
+* Units of Measurement Ontology (UO)
 
 Other ontologies are very likely to work too.
-In case of any problems, please let us know on our [Issue tracker](https://github.com/ielis/ontolius/issues).
+In case of any problems, please let us know on our [Issue tracker](https://github.com/P2GX/ontolius/issues).
 
 
 ## Features
@@ -178,6 +179,7 @@ by default:
 * `obographs` `(*)` - support loading Ontology from Obographs JSON file
 * `pyo3` - include [`crate::py`] module with PyO3 bindings
   to selected data structs to support using from Python
+* `serde` - to provide (de)serialization functions to map [`crate::TermId`] to/from a curie (see `tests/test_serde.rs` for an example)
 
 
 ## Run tests

@@ -232,6 +232,56 @@ impl Display for TermId {
     }
 }
 
+/// Support writing out a [`TermId`] as a curie
+/// when working with `serde`.
+#[cfg(feature = "serde")]
+mod serde {
+
+    use std::str::FromStr;
+
+    use super::TermId;
+
+    impl TermId {
+        pub fn serialize_as_curie<S>(term_id: &TermId, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            // Sadly, we must allocate a string to serialize a curie.
+            let curie = term_id.to_string();
+            serializer.serialize_str(&curie)
+        }
+
+        pub fn deserialize_from_curie<'de, D>(deserializer: D) -> Result<TermId, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            struct TermIdCurieVisitor;
+
+            impl<'de> serde::de::Visitor<'de> for TermIdCurieVisitor {
+                type Value = TermId;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    write!(formatter, "{}", "a curie (e.g. \"HP:0001250\")")
+                }
+
+                fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    match TermId::from_str(v) {
+                        Ok(term_id) => Ok(term_id),
+                        Err(_e) => Err(serde::de::Error::invalid_value(
+                            serde::de::Unexpected::Str(v),
+                            &self,
+                        )),
+                    }
+                }
+            }
+            deserializer.deserialize_str(TermIdCurieVisitor)
+        }
+    }
+}
+
 /// The representation of the prefix of a [`TermId`].
 ///
 /// ### Examples
@@ -290,6 +340,15 @@ impl PartialEq for Prefix<'_> {
     }
 }
 
+/// Prefix can be tested for equality with a `&str`.
+///
+/// ```
+/// use ontolius::TermId;
+///
+/// let term_id: TermId = "HP:0001250".parse().unwrap();
+///
+/// assert!(&term_id.prefix() == "HP");
+/// ```
 impl PartialEq<str> for Prefix<'_> {
     fn eq(&self, other: &str) -> bool {
         match &self.0 .0 {
@@ -408,6 +467,7 @@ pub(crate) enum KnownPrefix {
     CHEBI,
     NCIT,
     PMID,
+    UO,
 }
 
 impl PartialEq<str> for KnownPrefix {
@@ -424,6 +484,7 @@ impl PartialEq<str> for KnownPrefix {
             KnownPrefix::CHEBI => other == "CHEBI",
             KnownPrefix::NCIT => other == "NCIT",
             KnownPrefix::PMID => other == "PMID",
+            KnownPrefix::UO => other == "UO",
         }
     }
 }
@@ -442,6 +503,7 @@ impl Display for KnownPrefix {
             KnownPrefix::CHEBI => f.write_str("CHEBI"),
             KnownPrefix::NCIT => f.write_str("NCIT"),
             KnownPrefix::PMID => f.write_str("PMID"),
+            KnownPrefix::UO => f.write_str("UO"),
         }
     }
 }
@@ -474,6 +536,8 @@ impl TryFrom<&str> for KnownPrefix {
             Ok(KnownPrefix::NCIT)
         } else if value.starts_with("PMID") {
             Ok(KnownPrefix::PMID)
+        } else if value.starts_with("UO") {
+            Ok(KnownPrefix::UO)
         } else {
             Err(())
         }
