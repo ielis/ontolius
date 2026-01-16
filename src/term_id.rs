@@ -341,6 +341,15 @@ impl PartialEq for Prefix<'_> {
     }
 }
 
+/// Prefix can be tested for equality with a `&str`.
+///
+/// ```
+/// use ontolius::TermId;
+///
+/// let term_id: TermId = "HP:0001250".parse().unwrap();
+///
+/// assert!(&term_id.prefix() == "HP");
+/// ```
 impl PartialEq<str> for Prefix<'_> {
     fn eq(&self, other: &str) -> bool {
         match &self.0 .0 {
