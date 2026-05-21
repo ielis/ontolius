@@ -66,3 +66,13 @@ pub mod go {
     /// is one of three roots of the GO.
     pub static MOLECULAR_FUNCTION: TermId = make_term_id(KnownPrefix::GO, 3674, 7);
 }
+
+/// Constants for working with Mammalian Phenotype Ontology (MP).
+pub mod mp {
+    use crate::{term_id::KnownPrefix, TermId};
+
+    use super::make_term_id;
+    /// [mammalian phenotype (MP:0000001)](http://purl.obolibrary.org/obo/MP_0000001)
+    /// is the of the MO.
+    pub static MAMMALIAN_PHENOTYPE: TermId = make_term_id(KnownPrefix::MP, 1, 7);
+}

@@ -468,6 +468,7 @@ pub(crate) enum KnownPrefix {
     NCIT,
     PMID,
     UO,
+    MP,
 }
 
 impl PartialEq<str> for KnownPrefix {
@@ -485,6 +486,7 @@ impl PartialEq<str> for KnownPrefix {
             KnownPrefix::NCIT => other == "NCIT",
             KnownPrefix::PMID => other == "PMID",
             KnownPrefix::UO => other == "UO",
+            KnownPrefix::MP => other == "MP",
         }
     }
 }
@@ -504,6 +506,7 @@ impl Display for KnownPrefix {
             KnownPrefix::NCIT => f.write_str("NCIT"),
             KnownPrefix::PMID => f.write_str("PMID"),
             KnownPrefix::UO => f.write_str("UO"),
+            KnownPrefix::MP => f.write_str("MP"),
         }
     }
 }
@@ -538,6 +541,8 @@ impl TryFrom<&str> for KnownPrefix {
             Ok(KnownPrefix::PMID)
         } else if value.starts_with("UO") {
             Ok(KnownPrefix::UO)
+        } else if value.starts_with("MP") {
+            Ok(KnownPrefix::MP)
         } else {
             Err(())
         }
