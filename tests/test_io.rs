@@ -449,3 +449,91 @@ mod unit_measurement_ontology {
         assert_eq!(uo.version(), "2026-01-09");
     }
 }
+
+mod mammalian_phenotype_ontology {
+    use std::{fs::File, io::BufReader, str::FromStr, sync::OnceLock};
+
+    use flate2::bufread::GzDecoder;
+    use ontolius::{
+        io::OntologyLoaderBuilder,
+        ontology::{csr::MinimalCsrOntology, HierarchyWalks, MetadataAware, OntologyTerms},
+        term::MinimalTerm,
+        TermId,
+    };
+
+    const MP_PATH: &str = "resources/mp/mp.toy.json.gz";
+
+    fn mp() -> &'static MinimalCsrOntology {
+        static ONTOLOGY: OnceLock<MinimalCsrOntology> = OnceLock::new();
+        ONTOLOGY.get_or_init(|| {
+            let reader = GzDecoder::new(BufReader::new(
+                File::open(MP_PATH).expect("Obographs JSON file should exist"),
+            ));
+            let loader = OntologyLoaderBuilder::new().obographs_parser().build();
+            loader
+                .load_from_read(reader)
+                .expect("Obographs JSON should be well formatted")
+        })
+    }
+
+    #[test]
+    fn test_version_parsing() {
+        let mp = mp();
+
+        assert_eq!(mp.version(), "2026-05-19")
+    }
+    #[test]
+    fn get_ancestors() {
+        let mp = mp();
+
+        // pale liver
+        let term_id = TermId::from_str("MP:0000603").unwrap();
+        let mut lbls: Vec<_> = mp
+            .iter_term_and_ancestor_ids(&term_id)
+            .flat_map(|t| mp.term_by_id(t).map(|t| t.name()))
+            .collect();
+
+        lbls.sort();
+
+        assert_eq!(
+            &lbls,
+            &[
+                "abnormal digestive system morphology",
+                "abnormal endocrine gland morphology",
+                "abnormal exocrine gland morphology",
+                "abnormal gland morphology",
+                "abnormal hepatobiliary system morphology",
+                "abnormal liver morphology",
+                "digestive/alimentary phenotype",
+                "endocrine/exocrine gland phenotype",
+                "liver/biliary system phenotype",
+                "mammalian phenotype",
+                "pale liver",
+            ]
+        );
+    }
+
+    #[test]
+    fn check_children() {
+        let mp = mp();
+
+        let mut lbls: Vec<_> = mp
+            .iter_child_ids(&ontolius::common::mp::MAMMALIAN_PHENOTYPE)
+            .flat_map(|t| mp.term_by_id(t).map(|t| t.name()))
+            .collect();
+
+        lbls.sort();
+
+        assert_eq!(
+            &lbls,
+            &[
+                "digestive/alimentary phenotype",
+                "endocrine/exocrine gland phenotype",
+                "hematopoietic system phenotype",
+                "homeostasis/metabolism phenotype",
+                "immune system phenotype",
+                "liver/biliary system phenotype"
+            ]
+        );
+    }
+}

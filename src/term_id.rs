@@ -114,6 +114,7 @@ impl FromStr for TermId {
 ///
 /// assert_eq!(TermId::from(("HP", "0001250")), ("HP", "0001250"));
 /// assert_eq!(TermId::from(("NCIT", "C2852")), ("NCIT", "C2852"));
+/// assert_eq!(TermId::from(("MPATH", "0")), ("MPATH", "0"));
 /// ```
 impl PartialEq<(&str, &str)> for TermId {
     fn eq(&self, other: &(&str, &str)) -> bool {
@@ -468,6 +469,7 @@ pub(crate) enum KnownPrefix {
     NCIT,
     PMID,
     UO,
+    MP,
 }
 
 impl PartialEq<str> for KnownPrefix {
@@ -485,6 +487,7 @@ impl PartialEq<str> for KnownPrefix {
             KnownPrefix::NCIT => other == "NCIT",
             KnownPrefix::PMID => other == "PMID",
             KnownPrefix::UO => other == "UO",
+            KnownPrefix::MP => other == "MP",
         }
     }
 }
@@ -504,6 +507,7 @@ impl Display for KnownPrefix {
             KnownPrefix::NCIT => f.write_str("NCIT"),
             KnownPrefix::PMID => f.write_str("PMID"),
             KnownPrefix::UO => f.write_str("UO"),
+            KnownPrefix::MP => f.write_str("MP"),
         }
     }
 }
@@ -514,30 +518,32 @@ impl TryFrom<&str> for KnownPrefix {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         // TODO: this could arguably be improved!
         // We could also use a trie here..
-        if value.starts_with("HP") {
+        if value.eq("HP") {
             Ok(KnownPrefix::HP)
-        } else if value.starts_with("OMIM") {
+        } else if value.eq("OMIM") {
             Ok(KnownPrefix::OMIM)
-        } else if value.starts_with("MONDO") {
+        } else if value.eq("MONDO") {
             Ok(KnownPrefix::MONDO)
-        } else if value.starts_with("GO") {
+        } else if value.eq("GO") {
             Ok(KnownPrefix::GO)
-        } else if value.starts_with("MAXO") {
+        } else if value.eq("MAXO") {
             Ok(KnownPrefix::MAXO)
-        } else if value.starts_with("ORPHA") {
+        } else if value.eq("ORPHA") {
             Ok(KnownPrefix::ORPHA)
-        } else if value.starts_with("GENO") {
+        } else if value.eq("GENO") {
             Ok(KnownPrefix::GENO)
-        } else if value.starts_with("SO") {
+        } else if value.eq("SO") {
             Ok(KnownPrefix::SO)
-        } else if value.starts_with("CHEBI") {
+        } else if value.eq("CHEBI") {
             Ok(KnownPrefix::CHEBI)
-        } else if value.starts_with("NCIT") {
+        } else if value.eq("NCIT") {
             Ok(KnownPrefix::NCIT)
-        } else if value.starts_with("PMID") {
+        } else if value.eq("PMID") {
             Ok(KnownPrefix::PMID)
-        } else if value.starts_with("UO") {
+        } else if value.eq("UO") {
             Ok(KnownPrefix::UO)
+        } else if value.eq("MP") {
+            Ok(KnownPrefix::MP)
         } else {
             Err(())
         }
