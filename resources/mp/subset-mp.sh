@@ -5,7 +5,6 @@ MP="/path/to/maxo-base.obo"
 
 # TODO: setup Robot by following instructions
 # at https://robot.obolibrary.org/
-echo ${MP}
 module load robot
 
 # MP:0000603 pale liver
