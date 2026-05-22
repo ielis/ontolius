@@ -125,6 +125,8 @@ where
 }
 
 /// Traversals in the ontology index space.
+///
+/// The child-parent relationship is established solely via the `is_a` relationship.
 pub trait HierarchyTraversals<I> {
     /// Get the index of the `query` term or `None` if the term is unknown.
     fn term_index<Q>(&self, query: &Q) -> Option<I>
@@ -208,6 +210,8 @@ pub trait HierarchyWalks {
 }
 
 /// Tests if an ontology term is a parent, a child, an ancestor, or descendant of another term.
+///
+/// The child-parent relationship is established solely via the `is_a` relationship.
 pub trait HierarchyQueries {
     /// Test if `sub` is child of `obj`.
     ///
