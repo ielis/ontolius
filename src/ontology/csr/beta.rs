@@ -115,6 +115,31 @@ where
     }
 }
 
+macro_rules! impl_ontology_terms {
+    ($t:ty) => {
+        impl<I, T> OntologyTerms<T> for $t
+        where
+            I: Idx,
+        {
+            fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
+            where
+                T: 'a,
+            {
+                (**self).iter_terms()
+            }
+
+            fn term_by_id<ID>(&self, id: &ID) -> Option<&T>
+            where
+                ID: Identified,
+            {
+                (**self).term_by_id(id)
+            }
+        }
+    };
+}
+impl_ontology_terms!(&CsrOntology<I, T>);
+impl_ontology_terms!(Box<CsrOntology<I, T>>);
+
 impl<I, T> HierarchyTraversals<I> for CsrOntology<I, T>
 where
     I: Idx + Hash,
@@ -150,6 +175,39 @@ where
         }
     }
 }
+macro_rules! impl_hierarchy_traversal {
+    ($t:ty) => {
+        impl<I, T> HierarchyTraversals<I> for $t
+        where
+            I: Idx + Hash,
+        {
+            fn term_index<Q>(&self, query: &Q) -> Option<I>
+            where
+                Q: Identified,
+            {
+                (**self).term_index(query)
+            }
+
+            fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I> {
+                (**self).iter_child_idxs(query)
+            }
+
+            fn iter_descendant_idxs(&self, query: I) -> impl Iterator<Item = I> {
+                (**self).iter_descendant_idxs(query)
+            }
+
+            fn iter_parent_idxs(&self, query: I) -> impl Iterator<Item = I> {
+                (**self).iter_descendant_idxs(query)
+            }
+
+            fn iter_ancestor_idxs(&self, query: I) -> impl Iterator<Item = I> {
+                (**self).iter_ancestor_idxs(query)
+            }
+        }
+    };
+}
+impl_hierarchy_traversal!(&CsrOntology<I, T>);
+impl_hierarchy_traversal!(Box<CsrOntology<I, T>>);
 
 impl<I, T> HierarchyWalks for CsrOntology<I, T>
 where
@@ -213,6 +271,46 @@ where
     }
 }
 
+macro_rules! impl_hierarchy_walks {
+    ($t:ty) => {
+        impl<I, T> HierarchyWalks for $t
+        where
+            I: Idx + Hash,
+            T: Identified,
+        {
+            fn iter_parent_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+            where
+                ID: Identified,
+            {
+                (**self).iter_parent_ids(query)
+            }
+
+            fn iter_child_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+            where
+                ID: Identified,
+            {
+                (**self).iter_child_ids(query)
+            }
+
+            fn iter_ancestor_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+            where
+                ID: Identified,
+            {
+                (**self).iter_ancestor_ids(query)
+            }
+
+            fn iter_descendant_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+            where
+                ID: Identified,
+            {
+                (**self).iter_descendant_ids(query)
+            }
+        }
+    };
+}
+impl_hierarchy_walks!(&CsrOntology<I, T>);
+impl_hierarchy_walks!(Box<CsrOntology<I, T>>);
+
 impl<I, T> HierarchyQueries for CsrOntology<I, T>
 where
     I: Idx + Hash,
@@ -273,6 +371,49 @@ where
         }
     }
 }
+
+macro_rules! impl_hierarchy_queries {
+    ($t:ty) => {
+        impl<I, T> HierarchyQueries for $t
+        where
+            I: Idx + Hash,
+        {
+            fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
+            where
+                S: Identified,
+                O: Identified,
+            {
+                (**self).is_child_of(sub, obj)
+            }
+
+            fn is_descendant_of<S, O>(&self, sub: &S, obj: &O) -> bool
+            where
+                S: Identified,
+                O: Identified,
+            {
+                (**self).is_descendant_of(sub, obj)
+            }
+
+            fn is_parent_of<S, O>(&self, sub: &S, obj: &O) -> bool
+            where
+                S: Identified,
+                O: Identified,
+            {
+                (**self).is_parent_of(sub, obj)
+            }
+
+            fn is_ancestor_of<S, O>(&self, sub: &S, obj: &O) -> bool
+            where
+                S: Identified,
+                O: Identified,
+            {
+                (**self).is_ancestor_of(sub, obj)
+            }
+        }
+    };
+}
+impl_hierarchy_queries!(&CsrOntology<I, T>);
+impl_hierarchy_queries!(Box<CsrOntology<I, T>>);
 
 impl<I, T> MetadataAware for CsrOntology<I, T>
 where

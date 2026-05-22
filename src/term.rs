@@ -135,6 +135,12 @@ pub mod simple {
         }
     }
 
+    impl Identified for &SimpleMinimalTerm {
+        fn identifier(&self) -> &TermId {
+            (**self).identifier()
+        }
+    }
+
     impl AltTermIdAware for SimpleMinimalTerm {
         type TermIdIter<'a>
             = std::slice::Iter<'a, TermId>
@@ -150,6 +156,21 @@ pub mod simple {
         }
     }
 
+    impl AltTermIdAware for &SimpleMinimalTerm {
+        type TermIdIter<'a>
+            = std::slice::Iter<'a, TermId>
+        where
+            Self: 'a;
+
+        fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
+            (**self).iter_alt_term_ids()
+        }
+
+        fn alt_term_id_count(&self) -> usize {
+            (**self).alt_term_id_count()
+        }
+    }
+
     impl MinimalTerm for SimpleMinimalTerm {
         fn name(&self) -> &str {
             self.name.as_str()
@@ -157,6 +178,16 @@ pub mod simple {
 
         fn is_current(&self) -> bool {
             !self.is_obsolete
+        }
+    }
+
+    impl MinimalTerm for &SimpleMinimalTerm {
+        fn name(&self) -> &str {
+            (**self).name()
+        }
+
+        fn is_current(&self) -> bool {
+            (**self).is_current()
         }
     }
 

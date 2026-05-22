@@ -16,6 +16,7 @@ Cargo.lock
 # IDE files
 .vscode/
 .idea/
+.zed/
 
 # Perf data
 perf.data*
