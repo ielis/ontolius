@@ -2,6 +2,19 @@
 
 A fast and safe crate for working with biomedical ontologies.
 
+## Supported ontologies
+
+At this time, support for the following ontologies is tested:
+
+* Human Phenotype Ontology (HPO)
+* Gene Ontology (GO)
+* Medical Action Ontology (MAxO)
+* Units of Measurement Ontology (UO)
+* Mammalian Phenotype Ontology (MP)
+
+Other ontologies are very likely to work too.
+In case of any problems, please let us know on our [Issue tracker](https://github.com/P2GX/ontolius/issues).
+
 ## Examples
 
 We provide examples of loading ontology and its subsequent usage
@@ -154,19 +167,6 @@ assert_eq!(vec!["Slender finger", "Long fingers"], parent_names);
 We first create the `TermId` that corresponds to *Arachnodactyly* and then we query `hpo` for its parents by calling `iter_parent_ids`. We retrieve the term that corresponds to term id, extract its name, and collect the names into a vector.
 
 Similar methods exist for getting term IDs of ancestors, children, and descendants of a term. See [`crate::ontology::HierarchyWalks`] for more info.
-
-
-## Supported ontologies
-
-At this time, support for the following ontologies is tested:
-
-* Human Phenotype Ontology (HPO)
-* Gene Ontology (GO)
-* Medical Action Ontology (MAxO)
-* Units of Measurement Ontology (UO)
-
-Other ontologies are very likely to work too.
-In case of any problems, please let us know on our [Issue tracker](https://github.com/P2GX/ontolius/issues).
 
 
 ## Features
