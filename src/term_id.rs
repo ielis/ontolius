@@ -518,31 +518,31 @@ impl TryFrom<&str> for KnownPrefix {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         // TODO: this could arguably be improved!
         // We could also use a trie here..
-        if value.starts_with("HP") {
+        if value.eq("HP") {
             Ok(KnownPrefix::HP)
-        } else if value.starts_with("OMIM") {
+        } else if value.eq("OMIM") {
             Ok(KnownPrefix::OMIM)
-        } else if value.starts_with("MONDO") {
+        } else if value.eq("MONDO") {
             Ok(KnownPrefix::MONDO)
-        } else if value.starts_with("GO") {
+        } else if value.eq("GO") {
             Ok(KnownPrefix::GO)
-        } else if value.starts_with("MAXO") {
+        } else if value.eq("MAXO") {
             Ok(KnownPrefix::MAXO)
-        } else if value.starts_with("ORPHA") {
+        } else if value.eq("ORPHA") {
             Ok(KnownPrefix::ORPHA)
-        } else if value.starts_with("GENO") {
+        } else if value.eq("GENO") {
             Ok(KnownPrefix::GENO)
-        } else if value.starts_with("SO") {
+        } else if value.eq("SO") {
             Ok(KnownPrefix::SO)
-        } else if value.starts_with("CHEBI") {
+        } else if value.eq("CHEBI") {
             Ok(KnownPrefix::CHEBI)
-        } else if value.starts_with("NCIT") {
+        } else if value.eq("NCIT") {
             Ok(KnownPrefix::NCIT)
-        } else if value.starts_with("PMID") {
+        } else if value.eq("PMID") {
             Ok(KnownPrefix::PMID)
-        } else if value.starts_with("UO") {
+        } else if value.eq("UO") {
             Ok(KnownPrefix::UO)
-        } else if value.starts_with("MP") {
+        } else if value.eq("MP") {
             Ok(KnownPrefix::MP)
         } else {
             Err(())
