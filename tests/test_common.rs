@@ -1,4 +1,4 @@
-use ontolius::common::{go, hpo, maxo, uo};
+use ontolius::common::{go, hpo, maxo, mp, uo};
 
 #[test]
 fn hpo_commons_are_accessible() {
@@ -22,4 +22,9 @@ fn maxo_commons_are_accessible() {
 #[test]
 fn uo_commons_are_accessible() {
     assert_eq!(uo::UNIT, ("UO", "0000000"))
+}
+
+#[test]
+fn mp_commons_are_accessible() {
+    assert_eq!(mp::MAMMALIAN_PHENOTYPE, ("MP", "0000001"))
 }

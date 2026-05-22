@@ -114,6 +114,7 @@ impl FromStr for TermId {
 ///
 /// assert_eq!(TermId::from(("HP", "0001250")), ("HP", "0001250"));
 /// assert_eq!(TermId::from(("NCIT", "C2852")), ("NCIT", "C2852"));
+/// assert_eq!(TermId::from(("MPATH", "0")), ("MPATH", "0"));
 /// ```
 impl PartialEq<(&str, &str)> for TermId {
     fn eq(&self, other: &(&str, &str)) -> bool {
