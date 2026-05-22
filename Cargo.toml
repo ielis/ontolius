@@ -1,12 +1,12 @@
 [package]
 name = "ontolius"
-version = "0.7.3-dev0"
+version = "0.7.3"
 description = "A fast and safe crate for working with biomedical ontologies."
 keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO"]
 edition = "2021"
 
-homepage = "https://github.com/P2GX/ontolius"
-repository = "https://github.com/P2GX/ontolius"
+homepage = "https://github.com/ielis/ontolius"
+repository = "https://github.com/ielis/ontolius"
 readme = "README.md"
 license-file = "LICENSE"
 
