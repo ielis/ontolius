@@ -24,7 +24,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
 
       - name: Run tests
-        run: cargo test --release
+        run: cargo test 
 
   run-all-features:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
           toolchain: "stable"
 
       - name: Run tests
-        run: cargo test --features serde,pyo3 --release
+        run: cargo test --features serde,pyo3 
 
   format:
     runs-on: ubuntu-latest
