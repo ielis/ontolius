@@ -204,6 +204,8 @@ pub mod simple {
     }
 
     impl SimpleTerm {
+        // A builder would be an alternative, for now, not going to implement it.
+        #[allow(clippy::too_many_arguments)]
         pub fn new<T, A>(
             term_id: TermId,
             name: T,

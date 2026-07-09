@@ -29,6 +29,14 @@ mod test_serde {
             deserialize_with = "TermId::deserialize_from_curie"
         )]
         term_id: TermId,
+
+        /// Use the methods appended with `_seq` to support serialization
+        /// to/from types `T: IntoIterator<TermId> + FromIterator<TermId>`.
+        #[serde(
+            serialize_with = "TermId::serialize_as_curie_seq",
+            deserialize_with = "TermId::deserialize_from_curie_seq"
+        )]
+        alt_term_ids: Vec<TermId>,
     }
 
     /// Test that serializing `Feature` produces the expected Serde tokens and that
@@ -37,6 +45,10 @@ mod test_serde {
     fn test_serialize() {
         let feature = Feature {
             term_id: TermId::from(("HP", "0001250")),
+            alt_term_ids: vec![
+                TermId::from(("HP", "0000123")),
+                TermId::from(("HP", "0000118")),
+            ],
         };
 
         assert_tokens(
@@ -44,10 +56,15 @@ mod test_serde {
             &[
                 Token::Struct {
                     name: "Feature",
-                    len: 1,
+                    len: 2,
                 },
                 Token::Str("term_id"),
                 Token::Str("HP:0001250"),
+                Token::Str("alt_term_ids"),
+                Token::Seq { len: Some(2) },
+                Token::Str("HP:0000123"),
+                Token::Str("HP:0000118"),
+                Token::SeqEnd,
                 Token::StructEnd,
             ],
         )
@@ -58,7 +75,7 @@ mod test_serde {
         let tokens = [
             Token::Struct {
                 name: "Feature",
-                len: 1,
+                len: 2,
             },
             Token::Str("term_id"),
             Token::Str("INVALID"),
