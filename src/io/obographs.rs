@@ -20,6 +20,7 @@ use super::{
     Uninitialized, WithParser,
 };
 
+#[allow(clippy::infallible_try_from)]
 impl TryFrom<DefinitionPropertyValue> for Definition {
     type Error = Infallible; // Can be replaced with a more specific error in the future.
     fn try_from(value: DefinitionPropertyValue) -> Result<Self, Self::Error> {

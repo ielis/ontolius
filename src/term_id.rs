@@ -238,7 +238,9 @@ impl Display for TermId {
 #[cfg(feature = "serde")]
 mod serde {
 
-    use std::str::FromStr;
+    use std::{borrow::Cow, collections::HashSet, fmt::Write, str::FromStr};
+
+    use crate::TermIdParseError;
 
     use super::TermId;
 
@@ -252,6 +254,40 @@ mod serde {
             serializer.serialize_str(&curie)
         }
 
+        pub fn serialize_as_curie_seq<'a, S, I>(
+            term_ids: I,
+            serializer: S,
+        ) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+            I: IntoIterator<Item = &'a TermId>,
+        {
+            let iter = term_ids.into_iter();
+            let (lower, _) = iter.size_hint();
+            let mut ser = serializer.serialize_seq(Some(lower))?;
+            let mut buf = String::new();
+            for term_id in iter {
+                write!(&mut buf, "{}", term_id).unwrap();
+                serde::ser::SerializeSeq::serialize_element(&mut ser, buf.as_str())?;
+                buf.clear();
+            }
+            serde::ser::SerializeSeq::end(ser)
+        }
+
+        pub fn serialize_as_curie_set<S>(
+            term_ids: &HashSet<TermId>,
+            serializer: S,
+        ) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            use serde::ser::SerializeSeq;
+            let mut seq = serializer.serialize_seq(Some(term_ids.len()))?;
+            for id in term_ids {
+                seq.serialize_element(&id.to_string())?;
+            }
+            seq.end()
+        }
         pub fn deserialize_from_curie<'de, D>(deserializer: D) -> Result<TermId, D::Error>
         where
             D: serde::Deserializer<'de>,
@@ -262,7 +298,7 @@ mod serde {
                 type Value = TermId;
 
                 fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                    write!(formatter, "{}", "a curie (e.g. \"HP:0001250\")")
+                    write!(formatter, "a curie (e.g. \"HP:0001250\")")
                 }
 
                 fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -279,6 +315,47 @@ mod serde {
                 }
             }
             deserializer.deserialize_str(TermIdCurieVisitor)
+        }
+
+        pub fn deserialize_from_curie_seq<'de, D, C>(deserializer: D) -> Result<C, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+            C: FromIterator<TermId>,
+        {
+            struct TermIdCuriesVisitor;
+
+            impl<'de> serde::de::Visitor<'de> for TermIdCuriesVisitor {
+                type Value = Vec<TermId>;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    write!(formatter, "a sequence of borrowed or owned strings (e.g. [\"HP:0001250\", \"HP:0000118\"])")
+                }
+
+                fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+                where
+                    A: serde::de::SeqAccess<'de>,
+                {
+                    let mut items = vec![];
+                    while let Some(curie) = seq.next_element::<Cow<'de, str>>()? {
+                        match TermId::from_str(&curie) {
+                            Ok(tid) => items.push(tid),
+                            Err(e) => match e {
+                                TermIdParseError::MissingDelimiter => {
+                                    return Err(serde::de::Error::invalid_value(
+                                        serde::de::Unexpected::Str(&curie),
+                                        &"missing delimiter",
+                                    ))
+                                }
+                            },
+                        }
+                    }
+                    Ok(items)
+                }
+            }
+
+            Ok(C::from_iter(
+                deserializer.deserialize_seq(TermIdCuriesVisitor)?,
+            ))
         }
     }
 }
