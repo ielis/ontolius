@@ -1,7 +1,8 @@
 use std::fs::File;
+use std::hint::black_box;
 use std::io::BufReader;
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
 use flate2::bufread::GzDecoder;
 use ontolius::io::OntologyLoaderBuilder;

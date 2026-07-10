@@ -1,7 +1,8 @@
 use std::fs::File;
+use std::hint::black_box;
 use std::io::{BufReader, Read};
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 use flate2::bufread::GzDecoder;
 use ontolius::io::OntologyLoaderBuilder;
@@ -21,7 +22,7 @@ fn load_csr_ontology(c: &mut Criterion) {
     let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
     let mut group = c.benchmark_group("CsrOntologyLoader");
-    group.bench_function("CsrOntologyLoader::load", |b| {
+    group.sample_size(40).bench_function("CsrOntologyLoader::load", |b| {
         b.iter(|| {
             let ontology: MinimalCsrOntology =
                 loader.load_from_buf_read(black_box(&*data)).unwrap();
