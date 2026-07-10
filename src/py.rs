@@ -57,8 +57,10 @@ impl PyTermId {
     }
 }
 
-impl<'py> FromPyObject<'py> for PyTermId {
-    fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
+impl<'py> FromPyObject<'_, 'py> for PyTermId {
+    type Error = PyErr;
+
+    fn extract(ob: Borrowed<'_, 'py, PyAny>) -> Result<Self, Self::Error> {
         if ob.is_instance_of::<PyString>() {
             // CURIE str
             PyTermId::from_curie(ob.extract()?)
