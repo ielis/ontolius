@@ -1,6 +1,6 @@
-use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use ontolius::TermId;
+use std::hint::black_box;
 
 fn bench_term_id(c: &mut Criterion) {
     // Bench parsing CURIE parts.

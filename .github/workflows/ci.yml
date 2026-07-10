@@ -37,7 +37,7 @@ jobs:
           toolchain: "stable"
 
       - name: Run tests
-        run: cargo test --features serde,pyo3 
+        run: cargo test --all-features
 
   format:
     runs-on: ubuntu-latest

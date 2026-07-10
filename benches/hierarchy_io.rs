@@ -22,13 +22,15 @@ fn load_csr_ontology(c: &mut Criterion) {
     let loader = OntologyLoaderBuilder::new().obographs_parser().build();
 
     let mut group = c.benchmark_group("CsrOntologyLoader");
-    group.sample_size(40).bench_function("CsrOntologyLoader::load", |b| {
-        b.iter(|| {
-            let ontology: MinimalCsrOntology =
-                loader.load_from_buf_read(black_box(&*data)).unwrap();
-            black_box(ontology);
-        })
-    });
+    group
+        .sample_size(40)
+        .bench_function("CsrOntologyLoader::load", |b| {
+            b.iter(|| {
+                let ontology: MinimalCsrOntology =
+                    loader.load_from_buf_read(black_box(&*data)).unwrap();
+                black_box(ontology);
+            })
+        });
     group.finish();
 }
 
