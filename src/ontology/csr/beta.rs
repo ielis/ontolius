@@ -143,12 +143,17 @@ impl_ontology_terms!(Box<CsrOntology<I, T>>);
 impl<I, T> HierarchyTraversals<I> for CsrOntology<I, T>
 where
     I: Idx + Hash,
+    T: Identified,
 {
     fn term_index<Q>(&self, query: &Q) -> Option<I>
     where
         Q: Identified,
     {
         self.term_id_to_idx.get(query.identifier()).copied()
+    }
+
+    fn idx_to_term_id(&self, query: I) -> Option<&TermId> {
+        self.terms.get(query.index()).map(|t| t.identifier())
     }
 
     fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I> {
@@ -180,12 +185,17 @@ macro_rules! impl_hierarchy_traversal {
         impl<I, T> HierarchyTraversals<I> for $t
         where
             I: Idx + Hash,
+            T: Identified,
         {
             fn term_index<Q>(&self, query: &Q) -> Option<I>
             where
                 Q: Identified,
             {
                 (**self).term_index(query)
+            }
+
+            fn idx_to_term_id(&self, query: I) -> Option<&TermId> {
+                (**self).idx_to_term_id(query)
             }
 
             fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I> {
@@ -314,6 +324,7 @@ impl_hierarchy_walks!(Box<CsrOntology<I, T>>);
 impl<I, T> HierarchyQueries for CsrOntology<I, T>
 where
     I: Idx + Hash,
+    T: Identified,
 {
     fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
     where
@@ -377,6 +388,7 @@ macro_rules! impl_hierarchy_queries {
         impl<I, T> HierarchyQueries for $t
         where
             I: Idx + Hash,
+            T: Identified,
         {
             fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
             where
@@ -543,5 +555,26 @@ mod test_csr_ontology {
         write!(&mut val, "{0:?}", toy).expect("Expecting no formatting issues");
 
         assert_eq!(&val, "CsrOntology { n_terms: 0, adjacency_matrix: { n_nodes: 1, n_edges: 0 }, metadata: {} }");
+    }
+
+    mod hierarchy_traversals {
+        use crate::{
+            common::hpo::PHENOTYPIC_ABNORMALITY,
+            ontology::{HierarchyTraversals, HierarchyWalks},
+            test::hpo,
+        };
+
+        #[test]
+        fn term_id_to_idx_roundtrip() {
+            let hpo = hpo();
+
+            let root = &PHENOTYPIC_ABNORMALITY;
+
+            for term_id in hpo.iter_term_and_child_ids(root) {
+                let idx = hpo.term_index(term_id).expect("Index must be present");
+                let other = hpo.idx_to_term_id(idx).expect("Term id must be present");
+                assert_eq!(term_id, other);
+            }
+        }
     }
 }

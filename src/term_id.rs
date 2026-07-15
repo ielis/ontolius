@@ -791,6 +791,12 @@ impl Identified for TermId {
     }
 }
 
+impl Identified for &'_ TermId {
+    fn identifier(&self) -> &TermId {
+        self
+    }
+}
+
 #[cfg(test)]
 mod test_creation {
     use super::TermId;

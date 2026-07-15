@@ -10,5 +10,7 @@ pub mod py;
 pub mod sim;
 pub mod term;
 mod term_id;
+#[cfg(all(test, feature = "csr"))]
+pub(crate) mod test;
 
 pub use term_id::{Identified, Prefix, TermId, TermIdParseError};

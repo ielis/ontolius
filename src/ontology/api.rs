@@ -133,6 +133,10 @@ pub trait HierarchyTraversals<I> {
     where
         Q: Identified;
 
+    /// Look up the reference to the [`TermId`] for the index.
+    /// Returns `None` if no such [`TermId`] exists.
+    fn idx_to_term_id(&self, query: I) -> Option<&TermId>;
+
     /// Get an iterator with all children nodes of the `query`.
     fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I>;
 

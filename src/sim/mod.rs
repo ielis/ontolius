@@ -1,5 +1,5 @@
 mod base;
-pub mod mica;
+pub mod ic;
 pub mod phenomizer;
 // #[cfg(test)]
 // pub(super) mod test;

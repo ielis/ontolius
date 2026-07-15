@@ -3,7 +3,7 @@ use crate::{
     TermId,
 };
 
-use super::mica::IcMicaAccessor;
+use super::ic::IcMicaAccessor;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScoringMode {
@@ -83,7 +83,7 @@ mod test_phenomizer {
 
     use super::{Phenomizer, ScoringMode};
     use crate::{
-        sim::{mica::TermIdPair, SimilarityMeasure},
+        sim::{ic::TermIdPair, SimilarityMeasure},
         TermId,
     };
 
