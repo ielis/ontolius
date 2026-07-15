@@ -29,6 +29,18 @@ pub mod hpo {
     /// and specify the phenotypic abnormalities defined in the Phenotypic abnormality subontology,
     /// with respect to severity, laterality, age of onset, and other aspects.
     pub static CLINICAL_MODIFIER: TermId = make_term_id(KnownPrefix::HP, 12823, 7);
+
+    #[cfg(test)]
+    pub mod test {
+        use super::super::make_term_id;
+        use crate::{term_id::KnownPrefix, TermId};
+
+        pub static ARACHNODACTYLY: TermId = make_term_id(KnownPrefix::HP, 1166, 7);
+        pub static CLONIC_SEIZURE: TermId = make_term_id(KnownPrefix::HP, 20221, 7);
+        pub static SEIZURE: TermId = make_term_id(KnownPrefix::HP, 1250, 7);
+        pub static POLYDACTYLY: TermId = make_term_id(KnownPrefix::HP, 10442, 7);
+        pub static HYPERTENSION: TermId = make_term_id(KnownPrefix::HP, 822, 7);
+    }
 }
 
 /// Constants for working with Medical Action Ontology (MAxO).

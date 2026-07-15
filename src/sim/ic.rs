@@ -48,14 +48,14 @@ impl IcMicaAccessor for std::collections::BTreeMap<TermIdPair, f64> {
 
 /// Compute the $IC_{MICA$ by traversing the ontology graph and then
 /// looking up the $IC_t$ in a `HashMap<TermId, f64>`.
-pub struct DynamicIcAccessor<G> {
-    graph: G,
+pub struct DynamicIcAccessor<H> {
+    graph: H,
     term_id2ic: HashMap<TermId, f64>,
 }
 
-impl<T> IcMicaAccessor for DynamicIcAccessor<T>
+impl<H> IcMicaAccessor for DynamicIcAccessor<H>
 where
-    T: HierarchyWalks,
+    H: HierarchyWalks,
 {
     fn get_ic_mica(&self, a: &TermId, b: &TermId) -> f64 {
         let mut ic = 0f64;
@@ -70,6 +70,31 @@ where
         }
 
         ic
+    }
+}
+
+pub fn compute_ic_mica<H, IC, TP>(h: H, root: &TermId, ic: IC, mut dest: TP)
+where
+    H: HierarchyWalks,
+    IC: Fn(&TermId) -> Option<f64>,
+    TP: FnMut(TermIdPair, f64),
+{
+    let terms: Vec<_> = h.iter_term_and_descendant_ids(root).collect();
+    let mut anc: HashSet<_> = HashSet::new();
+    for (i, &left) in terms.iter().enumerate() {
+        anc.extend(h.iter_term_and_ancestor_ids(left));
+        for &right in &terms[i..] {
+            if let Some(ic_mica) = h
+                .iter_term_and_ancestor_ids(right)
+                .filter(|&t| anc.contains(t))
+                .map(|t| ic(t).filter(|&f| f > 0.))
+                .flatten()
+                .reduce(f64::max)
+            {
+                dest(TermIdPair::from([left, right]), ic_mica)
+            }
+        }
+        anc.clear();
     }
 }
 
@@ -197,7 +222,12 @@ mod test_ic_calculator {
 
     use super::IcCalculator;
     use crate::{
-        common::hpo::PHENOTYPIC_ABNORMALITY, sim::base::concrete::IndividualTermId, test::hpo,
+        common::hpo::{
+            test::{ARACHNODACTYLY, CLONIC_SEIZURE, HYPERTENSION, POLYDACTYLY, SEIZURE},
+            PHENOTYPIC_ABNORMALITY,
+        },
+        sim::base::concrete::IndividualTermId,
+        test::hpo,
         TermId,
     };
 
@@ -217,32 +247,22 @@ mod test_ic_calculator {
         let hpo = hpo();
         let mut calc = IcCalculator::new(hpo);
 
-        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
-        let clonic_seizure: TermId = "HP:0020221".parse().unwrap();
-        let seizure: TermId = "HP:0001250".parse().unwrap();
-        let polydactyly: TermId = "HP:0010442".parse().unwrap();
-        let hypertension: TermId = "HP:0000822".parse().unwrap();
-
         calc.submit_item(&[
-            IndividualTermId::present(arachnodactyly.clone()),
-            IndividualTermId::present(clonic_seizure.clone()),
+            IndividualTermId::present(ARACHNODACTYLY.clone()),
+            IndividualTermId::present(CLONIC_SEIZURE.clone()),
         ]);
         calc.submit_item(&[
-            IndividualTermId::present(seizure.clone()),
-            IndividualTermId::present(hypertension.clone()),
+            IndividualTermId::present(SEIZURE.clone()),
+            IndividualTermId::present(HYPERTENSION.clone()),
         ]);
-        calc.submit_item(&[IndividualTermId::present(polydactyly.clone())]);
-        calc.submit_item(&[IndividualTermId::present(seizure.clone())]);
+        calc.submit_item(&[IndividualTermId::present(POLYDACTYLY.clone())]);
+        calc.submit_item(&[IndividualTermId::present(SEIZURE.clone())]);
 
         let root = &PHENOTYPIC_ABNORMALITY;
         let mut collector: HashMap<_, _> = HashMap::new();
         calc.collect_ic(root, &mut collector);
 
-        assert_eq!(collector.get(root), Some(&0.));
-        assert_eq!(collector.get(&arachnodactyly), Some(&2.));
-        assert_abs_diff_eq!(collector.get(&seizure).unwrap(), &0.415_037, epsilon = 5e-5);
-        assert_eq!(collector.get(&clonic_seizure), Some(&2.));
-        assert_eq!(collector.get(&polydactyly), Some(&2.));
+        check_collector(&collector);
     }
 
     #[test]
@@ -250,23 +270,17 @@ mod test_ic_calculator {
         let hpo = hpo();
         let mut calc = IcCalculator::new(hpo);
 
-        let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
-        let clonic_seizure: TermId = "HP:0020221".parse().unwrap();
-        let seizure: TermId = "HP:0001250".parse().unwrap();
-        let polydactyly: TermId = "HP:0010442".parse().unwrap();
-        let hypertension: TermId = "HP:0000822".parse().unwrap();
-
         let items = vec![
             vec![
-                IndividualTermId::present(arachnodactyly.clone()),
-                IndividualTermId::present(clonic_seizure.clone()),
+                IndividualTermId::present(ARACHNODACTYLY.clone()),
+                IndividualTermId::present(CLONIC_SEIZURE.clone()),
             ],
             vec![
-                IndividualTermId::present(seizure.clone()),
-                IndividualTermId::present(hypertension.clone()),
+                IndividualTermId::present(SEIZURE.clone()),
+                IndividualTermId::present(HYPERTENSION.clone()),
             ],
-            vec![IndividualTermId::present(polydactyly.clone())],
-            vec![IndividualTermId::present(seizure.clone())],
+            vec![IndividualTermId::present(POLYDACTYLY.clone())],
+            vec![IndividualTermId::present(SEIZURE.clone())],
         ];
 
         calc.submit_items(&items);
@@ -275,10 +289,71 @@ mod test_ic_calculator {
         let mut collector: HashMap<_, _> = HashMap::new();
         calc.collect_ic(root, &mut collector);
 
-        assert_eq!(collector.get(root), Some(&0.));
-        assert_eq!(collector.get(&arachnodactyly), Some(&2.));
-        assert_abs_diff_eq!(collector.get(&seizure).unwrap(), &0.415_037, epsilon = 5e-5);
-        assert_eq!(collector.get(&clonic_seizure), Some(&2.));
-        assert_eq!(collector.get(&polydactyly), Some(&2.));
+        check_collector(&collector);
+    }
+
+    fn check_collector(collector: &HashMap<TermId, f64>) {
+        assert_eq!(collector.get(&PHENOTYPIC_ABNORMALITY), Some(&0.));
+        assert_eq!(collector.get(&ARACHNODACTYLY), Some(&2.));
+        assert_abs_diff_eq!(collector.get(&SEIZURE).unwrap(), &0.415_037, epsilon = 5e-5);
+        assert_eq!(collector.get(&CLONIC_SEIZURE), Some(&2.));
+        assert_eq!(collector.get(&POLYDACTYLY), Some(&2.));
+    }
+}
+
+#[cfg(test)]
+mod test_compute_ic_mica {
+    use std::collections::HashMap;
+
+    use crate::{
+        common::hpo::{
+            test::{ARACHNODACTYLY, CLONIC_SEIZURE, HYPERTENSION, POLYDACTYLY, SEIZURE},
+            PHENOTYPIC_ABNORMALITY,
+        },
+        sim::{
+            base::concrete::IndividualTermId,
+            ic::{compute_ic_mica, IcCalculator},
+        },
+        test::hpo,
+        TermId,
+    };
+
+    #[test]
+    #[ignore = "ran manually"]
+    fn compute_ic_mica_naive() {
+        let hpo = hpo();
+
+        let mut ic_calculator = IcCalculator::new(hpo);
+
+        let items = vec![
+            vec![
+                IndividualTermId::present(ARACHNODACTYLY.clone()),
+                IndividualTermId::present(CLONIC_SEIZURE.clone()),
+            ],
+            vec![
+                IndividualTermId::present(SEIZURE.clone()),
+                IndividualTermId::present(HYPERTENSION.clone()),
+            ],
+            vec![IndividualTermId::present(POLYDACTYLY.clone())],
+            vec![IndividualTermId::present(SEIZURE.clone())],
+        ];
+        ic_calculator.submit_items(&items);
+
+        let mut ic: HashMap<TermId, f64> = HashMap::new();
+        ic_calculator.collect_ic(&PHENOTYPIC_ABNORMALITY, &mut ic);
+
+        let mut dest = HashMap::new();
+
+        compute_ic_mica(
+            hpo,
+            &PHENOTYPIC_ABNORMALITY,
+            |t| ic.get(t).copied(),
+            |tp, ic| {
+                dest.insert(tp, ic);
+            },
+        );
+
+        println!("Computed for {} term pairs", dest.len());
+        // Takes around 134 seconds on the release build.
     }
 }
