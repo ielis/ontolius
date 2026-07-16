@@ -294,3 +294,34 @@ pub trait MetadataAware {
     /// Get the version of the ontology.
     fn version(&self) -> &str;
 }
+
+#[cfg(test)]
+mod api_test {
+
+    use std::marker::PhantomData;
+
+    use crate::{ontology::csr::MinimalCsrOntology, term::MinimalTerm};
+
+    use super::OntologyTerms;
+
+    #[test]
+    fn showcase_ontology_terms_usage() {
+        let o: Option<MinimalCsrOntology> = None;
+        if let Some(o) = o {
+            use_in_a_generic_function(o);
+        }
+
+        fn use_in_a_generic_function<T, O>(o: O)
+        where
+            T: MinimalTerm,
+            O: OntologyTerms<T>,
+        {
+            let _foo = Foo(o, PhantomData);
+            
+            struct Foo<T, O>(O, PhantomData<T>)
+            where
+                O: OntologyTerms<T>,
+                T: MinimalTerm;
+        }
+    }
+}
