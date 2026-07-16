@@ -17,6 +17,34 @@ pub trait AltTermIdAware {
     }
 }
 
+impl<T> AltTermIdAware for &T
+where
+    T: AltTermIdAware,
+{
+    type TermIdIter<'a>
+        = T::TermIdIter<'a>
+    where
+        Self: 'a;
+
+    fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
+        (*self).iter_alt_term_ids()
+    }
+}
+
+impl<T> AltTermIdAware for Box<T>
+where
+    T: AltTermIdAware,
+{
+    type TermIdIter<'a>
+        = T::TermIdIter<'a>
+    where
+        Self: 'a;
+
+    fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
+        (**self).iter_alt_term_ids()
+    }
+}
+
 /// `MinimalTerm` describes the minimal requirements of an ontology term.
 ///
 /// On top of inherited traits, such as [`Identified`], [`AltTermIdAware`], and others,
@@ -135,12 +163,6 @@ pub mod simple {
         }
     }
 
-    impl Identified for &SimpleMinimalTerm {
-        fn identifier(&self) -> &TermId {
-            (**self).identifier()
-        }
-    }
-
     impl AltTermIdAware for SimpleMinimalTerm {
         type TermIdIter<'a>
             = std::slice::Iter<'a, TermId>
@@ -153,21 +175,6 @@ pub mod simple {
 
         fn alt_term_id_count(&self) -> usize {
             self.alt_term_ids.len()
-        }
-    }
-
-    impl AltTermIdAware for &SimpleMinimalTerm {
-        type TermIdIter<'a>
-            = std::slice::Iter<'a, TermId>
-        where
-            Self: 'a;
-
-        fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
-            (**self).iter_alt_term_ids()
-        }
-
-        fn alt_term_id_count(&self) -> usize {
-            (**self).alt_term_id_count()
         }
     }
 

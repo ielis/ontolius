@@ -1,11 +1,10 @@
+//! Semantic similarity methods.
 mod base;
+pub mod feature;
 pub mod ic;
 pub mod phenomizer;
 pub mod setsim;
 // #[cfg(test)]
 // pub(super) mod test;
 
-pub use base::{
-    IndividualFeature, IndividualFeatureBuilder, ObservationStatus, Observed, PresentFeature,
-    SimilarityMeasure,
-};
+pub use base::{ObservationStatus, Observed, Ratio, Aggregated, SimilarityMeasure};

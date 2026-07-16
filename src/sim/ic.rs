@@ -1,3 +1,4 @@
+//! Functionality for computing Information Content (IC) of ontology terms.
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
@@ -226,7 +227,10 @@ mod test_ic_calculator {
             test::{ARACHNODACTYLY, CLONIC_SEIZURE, HYPERTENSION, POLYDACTYLY, SEIZURE},
             PHENOTYPIC_ABNORMALITY,
         },
-        sim::{IndividualFeature, IndividualFeatureBuilder, ObservationStatus},
+        sim::{
+            feature::{IndividualFeature, IndividualFeatureBuilder},
+            ObservationStatus,
+        },
         test::hpo,
         TermId,
     };
@@ -317,8 +321,9 @@ mod test_compute_ic_mica {
             PHENOTYPIC_ABNORMALITY,
         },
         sim::{
+            feature::{IndividualFeature, IndividualFeatureBuilder},
             ic::{compute_ic_mica, IcCalculator},
-            IndividualFeature, IndividualFeatureBuilder, ObservationStatus,
+            ObservationStatus,
         },
         test::hpo,
         TermId,

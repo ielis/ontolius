@@ -1,5 +1,5 @@
 use crate::{
-    sim::{base::PresentFeature, SimilarityMeasure},
+    sim::{Observed, SimilarityMeasure},
     Identified,
 };
 
@@ -38,14 +38,20 @@ where
     fn one_sided_sim<'a, I, T>(&self, a: I, b: I) -> f64
     where
         I: IntoIterator<Item = T> + Clone,
-        T: Identified,
+        T: Identified + Observed,
     {
         let mut sim = 0.;
         let mut n = 0f64;
         for at in a {
+            if at.is_excluded() {
+                continue;
+            }
             let mut max_ic = 0f64;
 
             for bt in Clone::clone(&b) {
+                if bt.is_excluded() {
+                    continue;
+                }
                 max_ic = self
                     .ic
                     .get_ic_mica(at.identifier(), bt.identifier())
@@ -61,13 +67,14 @@ where
     }
 }
 
-impl<IC> SimilarityMeasure<PresentFeature<'_>> for Phenomizer<IC>
+impl<IC, T> SimilarityMeasure<T> for Phenomizer<IC>
 where
     IC: IcMicaAccessor,
+    T: Identified + Observed,
 {
     type Sim = f64;
 
-    fn compute(&self, a: &[PresentFeature<'_>], b: &[PresentFeature<'_>]) -> Self::Sim {
+    fn compute(&self, a: &[T], b: &[T]) -> Self::Sim {
         let a_sim = self.one_sided_sim(a, b);
         match self.mode {
             ScoringMode::Asymmetric => a_sim,
@@ -85,7 +92,7 @@ mod test_phenomizer {
 
     use super::{Phenomizer, ScoringMode};
     use crate::{
-        sim::{base::PresentFeature, ic::TermIdPair, SimilarityMeasure},
+        sim::{feature::PresentFeature, ic::TermIdPair, SimilarityMeasure},
         TermId,
     };
 

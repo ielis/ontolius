@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     ontology::HierarchyWalks,
-    sim::{base::PresentFeature, IndividualFeature, SimilarityMeasure},
+    sim::{Observed, SimilarityMeasure},
     Identified, TermId,
 };
 
@@ -22,10 +22,10 @@ impl<H> SetSim<H>
 where
     H: HierarchyWalks,
 {
-    fn induce_graph<'a, F, I>(&'a self, features: F) -> HashSet<&'a TermId>
+    fn induce_graph<'a, F, T>(&'a self, features: F) -> HashSet<&'a TermId>
     where
-        F: IntoIterator<Item = &'a I>,
-        I: Identified + Clone + 'a,
+        F: IntoIterator<Item = &'a T>,
+        T: Identified + Clone + 'a,
     {
         let mut ig = HashSet::new();
         for feature in features {
@@ -38,27 +38,17 @@ where
     }
 }
 
-impl<H> SimilarityMeasure<PresentFeature<'_>> for SetSim<H>
+impl<H, T> SimilarityMeasure<T> for SetSim<H>
 where
     H: HierarchyWalks,
+    T: Identified + Observed + Clone,
 {
     type Sim = f64;
 
-    fn compute(&self, a: &[PresentFeature<'_>], b: &[PresentFeature<'_>]) -> Self::Sim {
+    fn compute(&self, a: &[T], b: &[T]) -> Self::Sim {
+        // TODO: implement the PE variant
         let aig = self.induce_graph(a);
         let big = self.induce_graph(b);
         aig.union(&big).map(|&t| self.tici.get(t)).flatten().sum()
-    }
-}
-
-impl<H> SimilarityMeasure<IndividualFeature<'_>> for SetSim<H>
-where
-    H: HierarchyWalks,
-{
-    type Sim = f64;
-
-    fn compute(&self, a: &[IndividualFeature<'_>], b: &[IndividualFeature<'_>]) -> Self::Sim {
-        // TODO: implement the PE variant
-        todo!()
     }
 }

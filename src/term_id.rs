@@ -24,6 +24,23 @@ pub trait Identified {
     fn identifier(&self) -> &TermId;
 }
 
+impl<T> Identified for &T
+where
+    T: Identified,
+{
+    fn identifier(&self) -> &TermId {
+        (*self).identifier()
+    }
+}
+impl<T> Identified for Box<T>
+where
+    T: Identified,
+{
+    fn identifier(&self) -> &TermId {
+        (**self).identifier()
+    }
+}
+
 /// Identifier of an ontology concept.
 ///
 /// ## Examples
@@ -786,12 +803,6 @@ impl Hash for InnerTermId {
 }
 
 impl Identified for TermId {
-    fn identifier(&self) -> &TermId {
-        self
-    }
-}
-
-impl Identified for &'_ TermId {
     fn identifier(&self) -> &TermId {
         self
     }
