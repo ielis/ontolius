@@ -35,7 +35,7 @@ impl<IC> Phenomizer<IC>
 where
     IC: IcMicaAccessor,
 {
-    fn one_sided_sim<'a, I, T>(&self, a: I, b: I) -> f64
+    fn one_sided_sim<I, T>(&self, a: I, b: I) -> f64
     where
         I: IntoIterator<Item = T> + Clone,
         T: Identified + Observed,

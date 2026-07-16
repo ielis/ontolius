@@ -169,7 +169,7 @@ impl<'a> From<&'a PresentFeature<'a>> for IndividualFeature<'a> {
     fn from(value: &'a PresentFeature<'a>) -> Self {
         Self {
             term_id: std::borrow::Cow::Borrowed(&value.term_id),
-            status: value.status().clone(),
+            status: value.status(),
         }
     }
 }

@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::hash::Hash;
 
 use crate::{
     ontology::{HierarchyTraversals, HierarchyWalks},
@@ -14,22 +11,22 @@ use crate::{
 
 pub struct SetSim<H> {
     hierarchy: H,
-    tici: HashMap<TermId, f64>,
-    tic: f64,
+    cond_ics: std::collections::HashMap<TermId, f64>,
+    total_cic: f64,
 }
 
 impl<H> SetSim<H> {
-    pub fn new(hierarchy: H, tici: HashMap<TermId, f64>) -> Self {
-        let tic = tici.iter().fold(0., |acc, entry| acc + entry.1);
+    pub fn new(hierarchy: H, cond_ics: std::collections::HashMap<TermId, f64>) -> Self {
+        let total_cic = cond_ics.values().sum();
         Self {
             hierarchy,
-            tici,
-            tic,
+            cond_ics,
+            total_cic,
         }
     }
 
     pub fn max_dist(&self) -> f64 {
-        self.tic
+        self.total_cic
     }
 }
 
@@ -37,25 +34,56 @@ impl<H> SetSim<H>
 where
     H: HierarchyWalks,
 {
-    fn induce_graph<'a, F, T>(&'a self, features: F) -> HashSet<TermIdAndCic<'a>>
+    fn induce_pgraph<'a, F, T>(&'a self, features: F) -> std::collections::HashSet<TermIdAndCic<'a>>
     where
         F: IntoIterator<Item = &'a T>,
         T: Identified + Observed + Clone + 'a,
     {
-        let mut nodes = HashSet::new();
+        let mut nodes = std::collections::HashSet::new();
 
         for feature in features {
             if feature.is_present() {
                 nodes.extend(
                     self.hierarchy
                         .iter_term_and_ancestor_ids(feature.identifier())
-                        .map(|term_id| {
-                            self.tici.get(term_id).map(|&conditional_ic| TermIdAndCic {
-                                term_id,
-                                conditional_ic,
-                            })
-                        })
-                        .flatten(),
+                        .flat_map(|term_id| {
+                            self.cond_ics
+                                .get(term_id)
+                                .map(|&conditional_ic| TermIdAndCic {
+                                    term_id,
+                                    conditional_ic,
+                                })
+                        }),
+                );
+            }
+        }
+
+        nodes
+    }
+
+    fn induce_exgraph<'a, F, T>(
+        &'a self,
+        features: F,
+    ) -> std::collections::HashSet<TermIdAndCic<'a>>
+    where
+        F: IntoIterator<Item = &'a T>,
+        T: Identified + Observed + Clone + 'a,
+    {
+        let mut nodes = std::collections::HashSet::new();
+
+        for feature in features {
+            if feature.is_excluded() {
+                nodes.extend(
+                    self.hierarchy
+                        .iter_term_and_descendant_ids(feature.identifier())
+                        .flat_map(|term_id| {
+                            self.cond_ics
+                                .get(term_id)
+                                .map(|&conditional_ic| TermIdAndCic {
+                                    term_id,
+                                    conditional_ic,
+                                })
+                        }),
                 );
             }
         }
@@ -72,18 +100,24 @@ where
     type Sim = f64;
 
     fn compute(&self, a: &[T], b: &[T]) -> Self::Sim {
-        // TODO: implement the PE variant
-        let aig = self.induce_graph(a);
-        let big = self.induce_graph(b);
+        let a_pres_ig = self.induce_pgraph(a);
+        let b_pres_ig = self.induce_pgraph(b);
 
-        let p = aig
-            .intersection(&big)
+        let p = a_pres_ig
+            .intersection(&b_pres_ig)
             .fold(0., |acc, val| acc + val.conditional_ic);
 
-        p
+        let a_ex_ig = self.induce_exgraph(a);
+        let b_ex_ig = self.induce_exgraph(b);
+        let e = a_ex_ig
+            .intersection(&b_ex_ig)
+            .fold(0., |acc, val| acc + val.conditional_ic);
+
+        p + e
     }
 }
 
+/// Term ID and its conditional information content.
 #[derive(Debug, Clone)]
 struct TermIdAndCic<'a> {
     term_id: &'a TermId,
@@ -193,12 +227,12 @@ where
         self.ic_calculator.submit_items(corpus)
     }
 
-    pub fn collect_cic<R, C>(&mut self, root: R, mut collector: C)
+    pub fn collect_cic<R, C>(&mut self, root: &R, collector: &mut C)
     where
         R: Identified,
         C: IcCollector,
     {
-        let mut ic_collector = HashMap::new();
+        let mut ic_collector = std::collections::HashMap::new();
         self.ic_calculator
             .collect_ic(root.identifier(), &mut ic_collector);
         self.ic_calculator.clear();
@@ -221,7 +255,7 @@ where
                 ic - mean
             };
 
-            collector.collect(term_id, cond_ic);
+            collector.collect(term_id.clone(), cond_ic);
         }
     }
 }
@@ -232,16 +266,17 @@ mod test_conditional_ic_calculator {
 
     use crate::{
         common::hpo::{
-            test::{ARACHNODACTYLY, CLONIC_SEIZURE, HYPERTENSION, POLYDACTYLY, SEIZURE},
+            test::{
+                ABNORMALITY_OF_THE_CARDIOVASCULAR_SYSTEM, ABNORMALITY_OF_THE_NERVOUS_SYSTEM,
+                ARACHNODACTYLY, CLONIC_SEIZURE, HYPERTENSION, MOTOR_SEIZURE, POLYDACTYLY, SEIZURE,
+            },
             PHENOTYPIC_ABNORMALITY,
         },
-        ontology::OntologyTerms,
         sim::{
             feature::{IndividualFeature, IndividualFeatureBuilder},
             setsim::ConditionalIcCalculator,
             ObservationStatus,
         },
-        term::MinimalTerm,
         test::hpo,
         TermId,
     };
@@ -270,10 +305,32 @@ mod test_conditional_ic_calculator {
         let mut collector: HashMap<_, _> = HashMap::new();
         calc.collect_cic(&PHENOTYPIC_ABNORMALITY, &mut collector);
 
-        for (term_id, cond_ic) in &collector {
-            let name = hpo.term_by_id(term_id).map(|t| t.name()).unwrap();
-            println!("{term_id} {name:<50} {cond_ic:.4}");
-        }
+        check_collector(&collector);
+    }
+
+    fn check_collector(collector: &HashMap<TermId, f64>) {
+        // for (term_id, cond_ic) in collector {
+        //     let name = hpo.term_by_id(term_id).map(|t| t.name()).unwrap();
+        //     println!("{term_id} {name:<50} {cond_ic:.6}");
+        // }
+        assert_eq!(collector.get(&PHENOTYPIC_ABNORMALITY), Some(&0.));
+        assert_eq!(collector.get(&ARACHNODACTYLY), Some(&0.));
+        assert_eq!(collector.get(&SEIZURE), Some(&0.));
+        approx::assert_abs_diff_eq!(
+            collector.get(&ABNORMALITY_OF_THE_NERVOUS_SYSTEM).unwrap(),
+            &0.415_037,
+            epsilon = 5e-6
+        );
+        approx::assert_abs_diff_eq!(
+            collector.get(&MOTOR_SEIZURE).unwrap(),
+            &1.584_963,
+            epsilon = 5e-6
+        );
+        assert_eq!(
+            collector.get(&ABNORMALITY_OF_THE_CARDIOVASCULAR_SYSTEM),
+            Some(&2.)
+        );
+        assert_eq!(collector.get(&POLYDACTYLY), Some(&1.));
     }
 
     fn make_feature<'a>(term_id: &'a TermId, status: ObservationStatus) -> IndividualFeature<'a> {

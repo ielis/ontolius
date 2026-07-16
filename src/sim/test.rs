@@ -11,7 +11,7 @@ impl<'a> TestIndividual<'a> {
             .into_iter()
             .map(|f| {
                 IndividualFeature::builder()
-                    .owned(f.0.parse().expect("Kosher curie"))
+                    .owned(f.0.parse().expect("all test curies should be OK"))
                     .with_status(if f.1 {
                         ObservationStatus::Present
                     } else {

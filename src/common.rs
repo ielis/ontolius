@@ -39,6 +39,9 @@ pub mod hpo {
             make_term_id(KnownPrefix::HP, 33127, 7);
         /// Abnormality of limbs (HP:0040064)
         pub static ABNORMALITY_OF_LIMBS: TermId = make_term_id(KnownPrefix::HP, 40064, 7);
+        /// Abnormality of the cardiovascular system (HP:0001626)
+        pub static ABNORMALITY_OF_THE_CARDIOVASCULAR_SYSTEM: TermId =
+            make_term_id(KnownPrefix::HP, 1626, 7);
         /// Abnormality of the nervous system (HP:0000707)
         pub static ABNORMALITY_OF_THE_NERVOUS_SYSTEM: TermId =
             make_term_id(KnownPrefix::HP, 707, 7);
@@ -46,6 +49,8 @@ pub mod hpo {
         pub static ARACHNODACTYLY: TermId = make_term_id(KnownPrefix::HP, 1166, 7);
         /// Clonic seizure (HP:0020221)
         pub static CLONIC_SEIZURE: TermId = make_term_id(KnownPrefix::HP, 20221, 7);
+        /// Motor seizure (HP:0020219)
+        pub static MOTOR_SEIZURE: TermId = make_term_id(KnownPrefix::HP, 20219, 7);
         /// Seizure (HP:0001250)
         pub static SEIZURE: TermId = make_term_id(KnownPrefix::HP, 1250, 7);
         /// Polydactyly (HP:0010442)

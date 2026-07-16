@@ -295,6 +295,24 @@ pub trait MetadataAware {
     fn version(&self) -> &str;
 }
 
+impl<T> MetadataAware for &T
+where
+    T: MetadataAware,
+{
+    fn version(&self) -> &str {
+        (*self).version()
+    }
+}
+
+impl<T> MetadataAware for Box<T>
+where
+    T: MetadataAware,
+{
+    fn version(&self) -> &str {
+        (**self).version()
+    }
+}
+
 #[cfg(test)]
 mod api_test {
 

@@ -19,15 +19,16 @@ pub enum ObservationStatus {
 
 impl ObservationStatus {
     pub fn is_present(&self) -> bool {
-        return *self == ObservationStatus::Present;
+        *self == ObservationStatus::Present
     }
 
     pub fn is_excluded(&self) -> bool {
-        return *self == ObservationStatus::Excluded;
+        *self == ObservationStatus::Excluded
     }
 }
 
-/// Represents status of a feature (e.g. an HPO term) in an individual.
+/// Represents status of a feature (e.g. an HPO term)
+/// in one or multiple individuals.
 pub trait Observed {
     fn status(&self) -> ObservationStatus;
 
@@ -61,6 +62,9 @@ where
 /// Implemented by features (e.g. ontology terms) that were assessed
 /// and found to be present in `n` of `m` annotated items (e.g. individuals).
 ///
+/// Any aggregated feature can also be used as [`Observed`],
+/// since it conveys information about one or more entities.
+/// 
 /// # Implementation notes
 ///
 /// The implementors must ensure that `n<=m`.

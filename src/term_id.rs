@@ -255,7 +255,7 @@ impl Display for TermId {
 #[cfg(feature = "serde")]
 mod serde {
 
-    use std::{borrow::Cow, collections::HashSet, fmt::Write, str::FromStr};
+    use std::{borrow::Cow, fmt::Write, str::FromStr};
 
     use crate::TermIdParseError;
 
@@ -291,20 +291,6 @@ mod serde {
             serde::ser::SerializeSeq::end(ser)
         }
 
-        pub fn serialize_as_curie_set<S>(
-            term_ids: &HashSet<TermId>,
-            serializer: S,
-        ) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            use serde::ser::SerializeSeq;
-            let mut seq = serializer.serialize_seq(Some(term_ids.len()))?;
-            for id in term_ids {
-                seq.serialize_element(&id.to_string())?;
-            }
-            seq.end()
-        }
         pub fn deserialize_from_curie<'de, D>(deserializer: D) -> Result<TermId, D::Error>
         where
             D: serde::Deserializer<'de>,
