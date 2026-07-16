@@ -58,7 +58,7 @@ where
 }
 
 /// A simple wrapper around [`TermId`] to represent a phenotypic feature
-/// observed in an individual.
+/// that was observed in an individual.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub struct PresentFeature<'a> {
     term_id: std::borrow::Cow<'a, TermId>,
@@ -76,6 +76,23 @@ impl From<TermId> for PresentFeature<'_> {
     fn from(value: TermId) -> Self {
         Self {
             term_id: std::borrow::Cow::Owned(value),
+        }
+    }
+}
+
+/// Convert [`IndividualFeature`] $a$ into [`PresentFeature`]
+/// if $a$ is present.
+/// 
+/// Returns `Err(a)` if $a$ is excluded.
+impl<'a> TryFrom<IndividualFeature<'a>> for PresentFeature<'a> {
+    type Error = IndividualFeature<'a>;
+
+    fn try_from(value: IndividualFeature<'a>) -> Result<Self, Self::Error> {
+        match value.status {
+            ObservationStatus::Present => Ok(Self {
+                term_id: value.term_id,
+            }),
+            ObservationStatus::Excluded => Err(value),
         }
     }
 }
@@ -192,6 +209,15 @@ impl IndividualFeature<'_> {
     pub fn to_excluded(mut self) -> Self {
         self.status = ObservationStatus::Excluded;
         self
+    }
+}
+
+impl<'a> From<PresentFeature<'a>> for IndividualFeature<'a> {
+    fn from(value: PresentFeature<'a>) -> Self {
+        Self {
+            term_id: value.term_id,
+            status: ObservationStatus::Present,
+        }
     }
 }
 
