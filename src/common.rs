@@ -34,7 +34,14 @@ pub mod hpo {
     pub mod test {
         use super::super::make_term_id;
         use crate::{term_id::KnownPrefix, TermId};
-
+        /// Abnormality of the musculoskeletal system (HP:0033127)
+        pub static ABNORMALITY_OF_MUSCULOSKELETAL_SYSTEM: TermId =
+            make_term_id(KnownPrefix::HP, 33127, 7);
+        /// Abnormality of limbs (HP:0040064)
+        pub static ABNORMALITY_OF_LIMBS: TermId = make_term_id(KnownPrefix::HP, 40064, 7);
+        /// Abnormality of the nervous system (HP:0000707)
+        pub static ABNORMALITY_OF_THE_NERVOUS_SYSTEM: TermId =
+            make_term_id(KnownPrefix::HP, 707, 7);
         /// Arachnodactyly (HP:0001166)
         pub static ARACHNODACTYLY: TermId = make_term_id(KnownPrefix::HP, 1166, 7);
         /// Clonic seizure (HP:0020221)

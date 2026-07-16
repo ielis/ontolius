@@ -7,4 +7,4 @@ pub mod setsim;
 // #[cfg(test)]
 // pub(super) mod test;
 
-pub use base::{ObservationStatus, Observed, Ratio, Aggregated, SimilarityMeasure};
+pub use base::{Aggregated, ObservationStatus, Observed, Ratio, SimilarityMeasure};

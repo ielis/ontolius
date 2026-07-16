@@ -6,7 +6,6 @@ pub mod io;
 pub mod ontology;
 #[cfg(feature = "pyo3")]
 pub mod py;
-#[cfg(feature = "sim")]
 pub mod sim;
 pub mod term;
 mod term_id;

@@ -33,7 +33,6 @@ csr = ["dep:graph_builder"]
 obographs = ["dep:obographs-dev", "dep:curieosa"]
 pyo3 = ["dep:pyo3"]
 serde = ["dep:serde"]
-sim = []
 
 [[bench]]
 name = "hierarchy_io"
