@@ -4,8 +4,11 @@ use std::{
 };
 
 use crate::{
-    ontology::HierarchyWalks,
-    sim::{Observed, SimilarityMeasure},
+    ontology::{HierarchyTraversals, HierarchyWalks},
+    sim::{
+        ic::{IcCalculator, IcCollector},
+        Observed, SimilarityMeasure,
+    },
     Identified, TermId,
 };
 
@@ -76,7 +79,7 @@ where
         let p = aig
             .intersection(&big)
             .fold(0., |acc, val| acc + val.conditional_ic);
-        
+
         p
     }
 }
@@ -147,5 +150,135 @@ mod test_setsim {
         let sim = setsim.compute(&a, &b);
 
         approx::assert_abs_diff_eq!(sim, 2.)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ConditionalIcCalculator<H, K = u32> {
+    hierarchy: H,
+    ic_calculator: IcCalculator<H, K>,
+}
+
+impl<H> ConditionalIcCalculator<H>
+where
+    H: Clone,
+{
+    pub fn new(hierarchy: H) -> Self {
+        Self {
+            hierarchy: Clone::clone(&hierarchy),
+            ic_calculator: IcCalculator::new(hierarchy),
+        }
+    }
+}
+
+impl<H, K> ConditionalIcCalculator<H, K>
+where
+    H: HierarchyTraversals<K> + HierarchyWalks,
+    K: Eq + Hash + Clone,
+{
+    pub fn submit_item<I, F>(&mut self, item: I)
+    where
+        I: IntoIterator<Item = F>,
+        F: Identified + Observed,
+    {
+        self.ic_calculator.submit_item(item)
+    }
+
+    pub fn submit_items<C, I, F>(&mut self, corpus: C)
+    where
+        C: IntoIterator<Item = I>,
+        I: IntoIterator<Item = F>,
+        F: Identified + Observed,
+    {
+        self.ic_calculator.submit_items(corpus)
+    }
+
+    pub fn collect_cic<R, C>(&mut self, root: R, mut collector: C)
+    where
+        R: Identified,
+        C: IcCollector,
+    {
+        let mut ic_collector = HashMap::new();
+        self.ic_calculator
+            .collect_ic(root.identifier(), &mut ic_collector);
+        self.ic_calculator.clear();
+
+        for (term_id, ic) in &ic_collector {
+            let cond_ic = if term_id == root.identifier() {
+                0.
+            } else {
+                let mut mean = 0.;
+                let mut n = 0.;
+
+                for parent_id in self.hierarchy.iter_parent_ids(term_id) {
+                    if let Some(parent_ic) = ic_collector.get(parent_id) {
+                        mean = n * mean + parent_ic;
+                        n += 1.;
+                        mean /= n;
+                    }
+                }
+
+                ic - mean
+            };
+
+            collector.collect(term_id, cond_ic);
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_conditional_ic_calculator {
+    use std::collections::HashMap;
+
+    use crate::{
+        common::hpo::{
+            test::{ARACHNODACTYLY, CLONIC_SEIZURE, HYPERTENSION, POLYDACTYLY, SEIZURE},
+            PHENOTYPIC_ABNORMALITY,
+        },
+        ontology::OntologyTerms,
+        sim::{
+            feature::{IndividualFeature, IndividualFeatureBuilder},
+            setsim::ConditionalIcCalculator,
+            ObservationStatus,
+        },
+        term::MinimalTerm,
+        test::hpo,
+        TermId,
+    };
+
+    #[test]
+    fn test_submit_items_and_collect_cic() {
+        let hpo = hpo();
+
+        let mut calc = ConditionalIcCalculator::new(hpo);
+
+        let items = vec![
+            vec![
+                make_feature(&ARACHNODACTYLY, ObservationStatus::Present),
+                make_feature(&CLONIC_SEIZURE, ObservationStatus::Present),
+            ],
+            vec![
+                make_feature(&SEIZURE, ObservationStatus::Present),
+                make_feature(&HYPERTENSION, ObservationStatus::Present),
+            ],
+            vec![make_feature(&POLYDACTYLY, ObservationStatus::Present)],
+            vec![make_feature(&SEIZURE, ObservationStatus::Present)],
+        ];
+
+        calc.submit_items(&items);
+
+        let mut collector: HashMap<_, _> = HashMap::new();
+        calc.collect_cic(&PHENOTYPIC_ABNORMALITY, &mut collector);
+
+        for (term_id, cond_ic) in &collector {
+            let name = hpo.term_by_id(term_id).map(|t| t.name()).unwrap();
+            println!("{term_id} {name:<50} {cond_ic:.4}");
+        }
+    }
+
+    fn make_feature<'a>(term_id: &'a TermId, status: ObservationStatus) -> IndividualFeature<'a> {
+        IndividualFeatureBuilder::from(term_id)
+            .with_status(status)
+            .build()
     }
 }

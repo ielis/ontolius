@@ -134,7 +134,9 @@ impl<H> IcCalculator<H> {
             counter: HashMap::new(),
         }
     }
+}
 
+impl<H, K> IcCalculator<H, K> {
     /// Clear the calculator's state to prepare for another corpora.
     pub fn clear(&mut self) {
         self.counter.clear();

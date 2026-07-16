@@ -1,43 +1,27 @@
-use crate::{
-    sim::base::{ObservationStatus, PresentFeatures},
-    TermId,
-};
+use crate::sim::{base::ObservationStatus, feature::IndividualFeature};
 
-pub(crate) struct Individual {
-    label: &'static str,
-    features: Vec<TermId>,
-    states: Vec<ObservationStatus>,
+pub struct TestIndividual<'a> {
+    pub label: &'a str,
+    pub features: Vec<IndividualFeature<'a>>,
 }
 
-impl Individual {
-    pub fn label(&self) -> &'static str {
-        self.label
-    }
+impl<'a> TestIndividual<'a> {
+    pub fn new(label: &'a str, features: &'a [(&'a str, bool)]) -> Self {
+        let features: Vec<_> = features
+            .into_iter()
+            .map(|f| {
+                IndividualFeature::builder()
+                    .owned(f.0.parse().expect("Kosher curie"))
+                    .with_status(if f.1 {
+                        ObservationStatus::Present
+                    } else {
+                        ObservationStatus::Excluded
+                    })
+                    .build()
+            })
+            .collect();
 
-    fn make_sample(label: &'static str, phenotypes: &[(&str, bool)]) -> Self {
-        let mut features = vec![];
-        let mut states = vec![];
-        for ele in phenotypes {
-            features.push(ele.0.parse::<TermId>().expect("Curie should be parsable"));
-            states.push(if ele.1 {
-                ObservationStatus::Present
-            } else {
-                ObservationStatus::Excluded
-            });
-        }
-        Self {
-            label,
-            features,
-            states,
-        }
-    }
-}
-
-impl PresentFeatures for Individual {
-    fn present_features(&self) -> impl Iterator<Item = &TermId> {
-        (0..self.features.len())
-            .filter(|&i| self.states[i].is_present())
-            .map(|i| &self.features[i])
+        Self { label, features }
     }
 }
 
@@ -49,13 +33,19 @@ pub mod fbn1 {
     use crate::{
         io::OntologyLoaderBuilder,
         ontology::{csr::MinimalCsrOntology, OntologyTerms},
+        sim::Observed,
         term::MinimalTerm,
+        Identified,
     };
 
-    use super::Individual;
+    use super::TestIndividual;
 
-    pub fn bm() -> Individual {
-        Individual::make_sample(
+    pub fn fbn1_individuals() -> Vec<TestIndividual<'static>> {
+        vec![bm(), jl(), op(), rwt(), vw()]
+    }
+
+    pub fn bm() -> TestIndividual<'static> {
+        TestIndividual::new(
             "BM",
             &[
                 ("HP:0001083", true),  // Ectopia lentis
@@ -77,8 +67,8 @@ pub mod fbn1 {
         )
     }
 
-    pub fn jl() -> Individual {
-        Individual::make_sample(
+    pub fn jl() -> TestIndividual<'static> {
+        TestIndividual::new(
             "JL",
             &[
                 ("HP:0001083", true),  // Ectopia lentis
@@ -100,8 +90,8 @@ pub mod fbn1 {
         )
     }
 
-    pub fn op() -> Individual {
-        Individual::make_sample(
+    pub fn op() -> TestIndividual<'static> {
+        TestIndividual::new(
             "OP",
             &[
                 ("HP:0001083", true),  // Ectopia lentis
@@ -123,8 +113,8 @@ pub mod fbn1 {
         )
     }
 
-    pub fn rwt() -> Individual {
-        Individual::make_sample(
+    pub fn rwt() -> TestIndividual<'static> {
+        TestIndividual::new(
             "RWT",
             &[
                 ("HP:0001083", true),  // Ectopia lentis
@@ -146,8 +136,8 @@ pub mod fbn1 {
         )
     }
 
-    pub fn vw() -> Individual {
-        Individual::make_sample(
+    pub fn vw() -> TestIndividual<'static> {
+        TestIndividual::new(
             "VW",
             &[
                 ("HP:0001083", true),  // Ectopia lentis
@@ -181,13 +171,13 @@ pub mod fbn1 {
 
         let individual = vw();
 
-        for (term_id, status) in individual.features.iter().zip(individual.states.iter()) {
-            let pti = hpo.primary_term_id(term_id).unwrap();
+        for feature in individual.features.iter() {
+            let pti = hpo.primary_term_id(feature).unwrap();
             let term = hpo.term_by_id(pti).expect("Term should be present");
             println!(
                 "(\"{}\", {}), // {}",
-                term_id,
-                status.is_present(),
+                feature.identifier(),
+                feature.is_present(),
                 term.name()
             );
         }
