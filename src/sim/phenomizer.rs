@@ -1,6 +1,6 @@
 use crate::{
-    sim::{base::PresentFeatures, SimilarityMeasure},
-    TermId,
+    sim::{base::PresentFeature, SimilarityMeasure},
+    Identified,
 };
 
 use super::ic::IcMicaAccessor;
@@ -35,18 +35,21 @@ impl<IC> Phenomizer<IC>
 where
     IC: IcMicaAccessor,
 {
-    fn one_sided_sim<'a, I, T>(&self, a: I, b: &T) -> f64
+    fn one_sided_sim<'a, I, T>(&self, a: I, b: I) -> f64
     where
-        I: Iterator<Item = &'a TermId>,
-        T: PresentFeatures,
+        I: IntoIterator<Item = T> + Clone,
+        T: Identified,
     {
         let mut sim = 0.;
         let mut n = 0f64;
         for at in a {
             let mut max_ic = 0f64;
 
-            for bt in b.present_features() {
-                max_ic = self.ic.get_ic_mica(at, bt).max(max_ic);
+            for bt in Clone::clone(&b) {
+                max_ic = self
+                    .ic
+                    .get_ic_mica(at.identifier(), bt.identifier())
+                    .max(max_ic);
             }
 
             sim = max_ic + n * sim;
@@ -58,19 +61,18 @@ where
     }
 }
 
-impl<T, IC> SimilarityMeasure<T> for Phenomizer<IC>
+impl<IC> SimilarityMeasure<PresentFeature<'_>> for Phenomizer<IC>
 where
-    T: PresentFeatures,
     IC: IcMicaAccessor,
 {
     type Sim = f64;
 
-    fn compute(&self, a: &T, b: &T) -> Self::Sim {
-        let a_sim = self.one_sided_sim(a.present_features(), b);
+    fn compute(&self, a: &[PresentFeature<'_>], b: &[PresentFeature<'_>]) -> Self::Sim {
+        let a_sim = self.one_sided_sim(a, b);
         match self.mode {
             ScoringMode::Asymmetric => a_sim,
             ScoringMode::Symmetric => {
-                let b_sim = self.one_sided_sim(b.present_features(), a);
+                let b_sim = self.one_sided_sim(b, a);
                 (a_sim + b_sim) / 2.
             }
         }
@@ -83,7 +85,7 @@ mod test_phenomizer {
 
     use super::{Phenomizer, ScoringMode};
     use crate::{
-        sim::{ic::TermIdPair, SimilarityMeasure},
+        sim::{base::PresentFeature, ic::TermIdPair, SimilarityMeasure},
         TermId,
     };
 
@@ -133,10 +135,10 @@ mod test_phenomizer {
         approx::assert_abs_diff_eq!(ba, 3.);
     }
 
-    fn make_terms(curies: &[&str]) -> Vec<TermId> {
+    fn make_terms<'a>(curies: &'a [&str]) -> Vec<PresentFeature<'a>> {
         curies
             .into_iter()
-            .map(|t| t.parse().expect("CURIE should be OK"))
+            .map(|t| t.parse::<TermId>().expect("CURIE should be OK").into())
             .collect()
     }
 }

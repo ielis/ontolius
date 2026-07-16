@@ -1,13 +1,15 @@
-use crate::TermId;
+use std::marker::PhantomData;
 
-/// Compute semantic similarity between a pair of items `a` and `b`.
+use crate::{Identified, TermId};
+
+/// Compute semantic similarity between a pair of annotated items `a` and `b`.
 ///
 /// The computation is infallible.
-pub trait SimilarityMeasure<I> {
+pub trait SimilarityMeasure<T> {
     type Sim;
 
     /// Compute the semantic similarity
-    fn compute(&self, a: &I, b: &I) -> Self::Sim;
+    fn compute(&self, a: &[T], b: &[T]) -> Self::Sim;
 }
 
 /// Implemented by features (e.g. ontology terms) that were assessed
@@ -55,78 +57,260 @@ where
     }
 }
 
-pub trait PresentFeatures {
-    fn present_features(&self) -> impl Iterator<Item = &TermId>;
+/// A simple wrapper around [`TermId`] to represent a phenotypic feature
+/// observed in an individual.
+#[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq, Hash)]
+pub struct PresentFeature<'a> {
+    term_id: std::borrow::Cow<'a, TermId>,
 }
 
-impl<T> PresentFeatures for T
-where
-    T: AsRef<[TermId]>,
-{
-    fn present_features(&self) -> impl Iterator<Item = &TermId> {
-        self.as_ref().iter()
+impl<'a> From<&'a TermId> for PresentFeature<'a> {
+    fn from(value: &'a TermId) -> Self {
+        Self {
+            term_id: std::borrow::Cow::Borrowed(value),
+        }
     }
 }
 
-pub mod concrete {
-    use std::borrow::Cow;
-
-    use crate::{Identified, TermId};
-
-    use super::RatioAware;
-
-    pub struct IndividualTermId<'a> {
-        term_id: std::borrow::Cow<'a, TermId>,
-        is_present: bool,
-    }
-
-    impl<'a> IndividualTermId<'a> {
-        pub fn present(term_id: TermId) -> Self {
-            Self {
-                term_id: Cow::Owned(term_id),
-                is_present: true,
-            }
-        }
-        pub fn excluded(term_id: TermId) -> Self {
-            Self {
-                term_id: Cow::Owned(term_id),
-                is_present: false,
-            }
+impl From<TermId> for PresentFeature<'_> {
+    fn from(value: TermId) -> Self {
+        Self {
+            term_id: std::borrow::Cow::Owned(value),
         }
     }
+}
 
-    impl Identified for IndividualTermId<'_> {
-        fn identifier(&self) -> &TermId {
-            self.term_id.as_ref()
+impl Identified for PresentFeature<'_> {
+    fn identifier(&self) -> &TermId {
+        self.term_id.as_ref()
+    }
+}
+
+impl<'a> Identified for &'a PresentFeature<'_> {
+    fn identifier(&self) -> &TermId {
+        (*self).identifier()
+    }
+}
+
+impl RatioAware for PresentFeature<'_> {
+    fn n(&self) -> u32 {
+        1
+    }
+
+    fn m(&self) -> u32 {
+        1
+    }
+}
+
+impl<'a> RatioAware for &'a PresentFeature<'_> {
+    fn n(&self) -> u32 {
+        (*self).n()
+    }
+
+    fn m(&self) -> u32 {
+        (*self).m()
+    }
+}
+
+#[cfg(test)]
+mod test_present_feature {
+    use crate::{
+        common::hpo::test::{ARACHNODACTYLY, SEIZURE},
+        sim::base::PresentFeature,
+        Identified,
+    };
+
+    /// The features are equal regardless of the Cow variant.
+    #[test]
+    fn owned_and_borrowed_are_equal() {
+        let owned = PresentFeature::from(ARACHNODACTYLY.clone());
+        let borrowed = PresentFeature::from(&ARACHNODACTYLY);
+
+        assert_eq!(owned, borrowed);
+    }
+
+    /// The Cow variant does not affect sorting.
+    #[test]
+    fn features_can_be_sorted() {
+        let ar_owned = PresentFeature::from(ARACHNODACTYLY.clone());
+        let ar_borrowed = PresentFeature::from(&ARACHNODACTYLY);
+        let sei_owned = PresentFeature::from(SEIZURE.clone());
+        let sei_borrowed = PresentFeature::from(&SEIZURE);
+
+        let mut features = [&sei_borrowed, &ar_owned];
+        features.sort();
+        assert_eq!(features, [&ar_owned, &sei_borrowed]);
+
+        let mut features = [&sei_owned, &ar_borrowed];
+        features.sort();
+        assert_eq!(features, [&ar_borrowed, &sei_owned]);
+    }
+
+    /// Borrowed variant can be converted to owned
+    #[test]
+    fn borrowed_can_be_converted_to_cloned() {
+        let borrowed = PresentFeature::from(&ARACHNODACTYLY);
+        let owned = borrowed.to_owned();
+
+        assert_eq!(&borrowed, &owned);
+
+        // The lifetimes are truly independent.
+        drop(borrowed);
+        let _ = owned.identifier();
+    }
+}
+
+/// Represents a feature that can be present or excluded (see [`ObservationStatus`])
+/// in an individual.
+///
+/// See [`PresentFeature`] for an individual feature that cannot be excluded.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct IndividualFeature<'a> {
+    term_id: std::borrow::Cow<'a, TermId>,
+    status: ObservationStatus,
+}
+
+impl<'a> IndividualFeature<'a> {
+    /// Get a builder for building a feature.
+    pub fn builder() -> IndividualFeatureBuilder<'a, Unset, Unset> {
+        IndividualFeatureBuilder {
+            term_id: None,
+            status: None,
+            state: PhantomData,
+        }
+    }
+}
+
+impl IndividualFeature<'_> {
+    /// Set the state to [`ObservationStatus::Present`].
+    pub fn to_present(mut self) -> Self {
+        self.status = ObservationStatus::Present;
+        self
+    }
+
+    /// Set the state to [`ObservationStatus::Excluded`].
+    pub fn to_excluded(mut self) -> Self {
+        self.status = ObservationStatus::Excluded;
+        self
+    }
+}
+
+impl Identified for IndividualFeature<'_> {
+    fn identifier(&self) -> &TermId {
+        self.term_id.as_ref()
+    }
+}
+
+impl<'a> Identified for &'a IndividualFeature<'_> {
+    fn identifier(&self) -> &TermId {
+        (*self).identifier()
+    }
+}
+impl RatioAware for IndividualFeature<'_> {
+    fn n(&self) -> u32 {
+        match self.status {
+            ObservationStatus::Present => 1,
+            ObservationStatus::Excluded => 0,
         }
     }
 
-    impl<'a> Identified for &'a IndividualTermId<'_> {
-        fn identifier(&self) -> &TermId {
-            (*self).identifier()
-        }
+    fn m(&self) -> u32 {
+        1
     }
-    impl RatioAware for IndividualTermId<'_> {
-        fn n(&self) -> u32 {
-            if self.is_present {
-                1
-            } else {
-                0
-            }
-        }
+}
 
-        fn m(&self) -> u32 {
-            1
-        }
+impl<'a> RatioAware for &'a IndividualFeature<'_> {
+    fn n(&self) -> u32 {
+        (*self).n()
     }
 
-    impl<'a> RatioAware for &'a IndividualTermId<'_> {
-        fn n(&self) -> u32 {
-            (*self).n()
-        }
+    fn m(&self) -> u32 {
+        (*self).m()
+    }
+}
+/// A marker struct to indicate that a required field of [`IndividualFeatureBuilder`] was set.
+pub struct Set;
 
-        fn m(&self) -> u32 {
-            (*self).m()
+/// A marker struct to indicate that a required field of [`IndividualFeatureBuilder`] was not set.
+pub struct Unset;
+
+/// A builder for building an [`IndividualFeature`].
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
+pub struct IndividualFeatureBuilder<'a, T, S> {
+    term_id: Option<std::borrow::Cow<'a, TermId>>,
+    status: Option<ObservationStatus>,
+    state: PhantomData<(T, S)>,
+}
+
+impl<'a> From<&'a TermId> for IndividualFeatureBuilder<'a, Set, Unset> {
+    fn from(value: &'a TermId) -> Self {
+        Self {
+            term_id: Some(std::borrow::Cow::Borrowed(value)),
+            status: None,
+            state: PhantomData,
+        }
+    }
+}
+
+impl<'a> From<TermId> for IndividualFeatureBuilder<'a, Set, Unset> {
+    fn from(value: TermId) -> Self {
+        Self {
+            term_id: Some(std::borrow::Cow::Owned(value)),
+            status: None,
+            state: PhantomData,
+        }
+    }
+}
+
+impl<'a, T, S> IndividualFeatureBuilder<'a, T, S> {
+    /// Use a borrowed term id.
+    pub fn borrowed(self, term_id: &'a TermId) -> IndividualFeatureBuilder<'a, Set, S> {
+        IndividualFeatureBuilder {
+            term_id: Some(std::borrow::Cow::Borrowed(term_id)),
+            status: self.status,
+            state: PhantomData,
+        }
+    }
+
+    /// Use an owned term id.
+    pub fn owned(self, term_id: TermId) -> IndividualFeatureBuilder<'a, Set, S> {
+        IndividualFeatureBuilder {
+            term_id: Some(std::borrow::Cow::Owned(term_id)),
+            status: self.status,
+            state: PhantomData,
+        }
+    }
+
+    /// Set the observation status to *present*.
+    pub fn present(self) -> IndividualFeatureBuilder<'a, T, Set> {
+        self.with_status(ObservationStatus::Present)
+    }
+
+    /// Set the observation status to *excluded*.
+    pub fn excluded(self) -> IndividualFeatureBuilder<'a, T, Set> {
+        self.with_status(ObservationStatus::Excluded)
+    }
+
+    /// Set the observation status to provided `status` value.
+    pub fn with_status(self, status: ObservationStatus) -> IndividualFeatureBuilder<'a, T, Set> {
+        IndividualFeatureBuilder {
+            term_id: self.term_id,
+            status: Some(status),
+            state: PhantomData,
+        }
+    }
+}
+
+impl<'a> IndividualFeatureBuilder<'a, Set, Set> {
+    /// Build the final individual feature.
+    pub fn build(self) -> IndividualFeature<'a> {
+        IndividualFeature {
+            term_id: self
+                .term_id
+                .expect("build can be called only after term_id is set"),
+            status: self
+                .status
+                .expect("Build can only be called after status is set"),
         }
     }
 }

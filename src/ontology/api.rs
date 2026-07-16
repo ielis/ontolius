@@ -317,7 +317,7 @@ mod api_test {
             O: OntologyTerms<T>,
         {
             let _foo = Foo(o, PhantomData);
-            
+
             struct Foo<T, O>(O, PhantomData<T>)
             where
                 O: OntologyTerms<T>,

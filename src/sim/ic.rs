@@ -152,7 +152,7 @@ where
         F: Identified + Observed,
     {
         let mut ig = HashSet::new();
-        self.account_item(&mut ig, item);
+        self.account_an_item(&mut ig, item);
     }
 
     /// Submit a corpus of annotated items.
@@ -164,11 +164,11 @@ where
     {
         let mut ig = HashSet::new();
         for item in corpus {
-            self.account_item(&mut ig, item);
+            self.account_an_item(&mut ig, item);
         }
     }
 
-    fn account_item<I, F>(&mut self, ig: &mut HashSet<K>, item: I)
+    fn account_an_item<I, F>(&mut self, ig: &mut HashSet<K>, item: I)
     where
         I: IntoIterator<Item = F>,
         F: Identified + Observed,
@@ -226,10 +226,16 @@ mod test_ic_calculator {
             test::{ARACHNODACTYLY, CLONIC_SEIZURE, HYPERTENSION, POLYDACTYLY, SEIZURE},
             PHENOTYPIC_ABNORMALITY,
         },
-        sim::base::concrete::IndividualTermId,
+        sim::{IndividualFeature, IndividualFeatureBuilder, ObservationStatus},
         test::hpo,
         TermId,
     };
+
+    fn make_feature<'a>(term_id: &'a TermId, status: ObservationStatus) -> IndividualFeature<'a> {
+        IndividualFeatureBuilder::from(term_id)
+            .with_status(status)
+            .build()
+    }
 
     #[test]
     fn no_ic_is_collected_when_no_items_are_submitted() {
@@ -248,15 +254,15 @@ mod test_ic_calculator {
         let mut calc = IcCalculator::new(hpo);
 
         calc.submit_item(&[
-            IndividualTermId::present(ARACHNODACTYLY.clone()),
-            IndividualTermId::present(CLONIC_SEIZURE.clone()),
+            make_feature(&ARACHNODACTYLY, ObservationStatus::Present),
+            make_feature(&CLONIC_SEIZURE, ObservationStatus::Present),
         ]);
         calc.submit_item(&[
-            IndividualTermId::present(SEIZURE.clone()),
-            IndividualTermId::present(HYPERTENSION.clone()),
+            make_feature(&SEIZURE, ObservationStatus::Present),
+            make_feature(&HYPERTENSION, ObservationStatus::Present),
         ]);
-        calc.submit_item(&[IndividualTermId::present(POLYDACTYLY.clone())]);
-        calc.submit_item(&[IndividualTermId::present(SEIZURE.clone())]);
+        calc.submit_item(&[make_feature(&POLYDACTYLY, ObservationStatus::Present)]);
+        calc.submit_item(&[make_feature(&SEIZURE, ObservationStatus::Present)]);
 
         let root = &PHENOTYPIC_ABNORMALITY;
         let mut collector: HashMap<_, _> = HashMap::new();
@@ -272,15 +278,15 @@ mod test_ic_calculator {
 
         let items = vec![
             vec![
-                IndividualTermId::present(ARACHNODACTYLY.clone()),
-                IndividualTermId::present(CLONIC_SEIZURE.clone()),
+                make_feature(&ARACHNODACTYLY, ObservationStatus::Present),
+                make_feature(&CLONIC_SEIZURE, ObservationStatus::Present),
             ],
             vec![
-                IndividualTermId::present(SEIZURE.clone()),
-                IndividualTermId::present(HYPERTENSION.clone()),
+                make_feature(&SEIZURE, ObservationStatus::Present),
+                make_feature(&HYPERTENSION, ObservationStatus::Present),
             ],
-            vec![IndividualTermId::present(POLYDACTYLY.clone())],
-            vec![IndividualTermId::present(SEIZURE.clone())],
+            vec![make_feature(&POLYDACTYLY, ObservationStatus::Present)],
+            vec![make_feature(&SEIZURE, ObservationStatus::Present)],
         ];
 
         calc.submit_items(&items);
@@ -311,12 +317,18 @@ mod test_compute_ic_mica {
             PHENOTYPIC_ABNORMALITY,
         },
         sim::{
-            base::concrete::IndividualTermId,
             ic::{compute_ic_mica, IcCalculator},
+            IndividualFeature, IndividualFeatureBuilder, ObservationStatus,
         },
         test::hpo,
         TermId,
     };
+
+    fn make_feature<'a>(term_id: &'a TermId, status: ObservationStatus) -> IndividualFeature<'a> {
+        IndividualFeatureBuilder::from(term_id)
+            .with_status(status)
+            .build()
+    }
 
     #[test]
     #[ignore = "ran manually"]
@@ -327,15 +339,15 @@ mod test_compute_ic_mica {
 
         let items = vec![
             vec![
-                IndividualTermId::present(ARACHNODACTYLY.clone()),
-                IndividualTermId::present(CLONIC_SEIZURE.clone()),
+                make_feature(&ARACHNODACTYLY, ObservationStatus::Present),
+                make_feature(&CLONIC_SEIZURE, ObservationStatus::Present),
             ],
             vec![
-                IndividualTermId::present(SEIZURE.clone()),
-                IndividualTermId::present(HYPERTENSION.clone()),
+                make_feature(&SEIZURE, ObservationStatus::Present),
+                make_feature(&HYPERTENSION, ObservationStatus::Present),
             ],
-            vec![IndividualTermId::present(POLYDACTYLY.clone())],
-            vec![IndividualTermId::present(SEIZURE.clone())],
+            vec![make_feature(&POLYDACTYLY, ObservationStatus::Present)],
+            vec![make_feature(&SEIZURE, ObservationStatus::Present)],
         ];
         ic_calculator.submit_items(&items);
 

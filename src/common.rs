@@ -35,10 +35,15 @@ pub mod hpo {
         use super::super::make_term_id;
         use crate::{term_id::KnownPrefix, TermId};
 
+        /// Arachnodactyly (HP:0001166)
         pub static ARACHNODACTYLY: TermId = make_term_id(KnownPrefix::HP, 1166, 7);
+        /// Clonic seizure (HP:0020221)
         pub static CLONIC_SEIZURE: TermId = make_term_id(KnownPrefix::HP, 20221, 7);
+        /// Seizure (HP:0001250)
         pub static SEIZURE: TermId = make_term_id(KnownPrefix::HP, 1250, 7);
+        /// Polydactyly (HP:0010442)
         pub static POLYDACTYLY: TermId = make_term_id(KnownPrefix::HP, 10442, 7);
+        /// Hypertension (HP:0000822)
         pub static HYPERTENSION: TermId = make_term_id(KnownPrefix::HP, 822, 7);
     }
 }
