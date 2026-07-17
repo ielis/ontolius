@@ -1,4 +1,4 @@
-use crate::sim::{base::ObservationStatus, feature::IndividualFeature};
+use crate::sim::{base::ObservationStatus, feature::IndividualFeature, Individual};
 
 pub struct TestIndividual<'a> {
     pub label: &'a str,
@@ -22,6 +22,14 @@ impl<'a> TestIndividual<'a> {
             .collect();
 
         Self { label, features }
+    }
+}
+
+impl<'a> Individual for TestIndividual<'a> {
+    type Feature = IndividualFeature<'a>;
+
+    fn features(&self) -> &[Self::Feature] {
+        self.features.as_ref()
     }
 }
 
