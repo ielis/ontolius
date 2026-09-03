@@ -155,6 +155,7 @@ pub trait TaxonomyTraversal {
 /// Traversals in the ontology index space.
 ///
 /// The child-parent relationship is established solely via the `is_a` relationship.
+// TODO[0.9.0]: remove
 #[deprecated(
     note = "Use `ontolius::ontology::TaxonomyTraversal` instead",
     since = "0.7.6"
@@ -219,6 +220,7 @@ where
 /// ancestor, or descendant term ids of the `query` node.
 ///
 /// The child-parent relationship is established solely via the `is_a` relationship.
+// TODO[0.9.0]: remove
 #[deprecated(
     note = "Use `ontolius::ontology::TaxonomyWalk` instead",
     since = "0.7.6"
@@ -451,6 +453,7 @@ pub trait TaxonomyQuery {
 /// Tests if an ontology term is a parent, a child, an ancestor, or descendant of another term.
 ///
 /// The child-parent relationship is established solely via the `is_a` relationship.
+// TODO[0.9.0]: remove
 #[deprecated(
     note = "Use `ontolius::ontology::TaxonomyQuery` instead",
     since = "0.7.6"
