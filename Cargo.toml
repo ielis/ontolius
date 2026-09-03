@@ -34,11 +34,11 @@ pyo3 = ["dep:pyo3"]
 serde = ["dep:serde"]
 
 [[bench]]
-name = "hierarchy_io"
+name = "ontology_io"
 harness = false
 
 [[bench]]
-name = "hierarchy_traversals"
+name = "taxonomy_traversals"
 harness = false
 
 [[bench]]
