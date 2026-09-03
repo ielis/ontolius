@@ -7,7 +7,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use flate2::bufread::GzDecoder;
 use ontolius::io::OntologyLoaderBuilder;
 use ontolius::ontology::csr::MinimalCsrOntology;
-use ontolius::ontology::{HierarchyTraversals, HierarchyWalks};
+use ontolius::ontology::{TaxonomyTraversal, TaxonomyWalk};
 use ontolius::TermId;
 
 const HPO_PATH: &str = "resources/hp.v2024-08-13.json.gz";
@@ -30,10 +30,10 @@ fn load_hpo(hpo_path: &str) -> MinimalCsrOntology {
         .expect("HPO should be parsable")
 }
 
-fn hierarchy_traversals(c: &mut Criterion) {
+fn taxonomy_traversals(c: &mut Criterion) {
     let hpo = load_hpo(HPO_PATH);
 
-    macro_rules! benchmark_hierarchy_traversal {
+    macro_rules! benchmark_taxonomy_traversal {
         ($group: expr, $func: expr, $name: expr, $curie: expr) => {
             $group.bench_function(BenchmarkId::from_parameter($name), |b| {
                 let term_id = $curie.parse::<TermId>().expect("Curie should be valid");
@@ -47,40 +47,40 @@ fn hierarchy_traversals(c: &mut Criterion) {
         };
     }
 
-    let mut group = c.benchmark_group("HierarchyTraversals::iter_parent_idxs");
+    let mut group = c.benchmark_group("TaxonomyTraversal::iter_parent_idxs");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_traversal!(group, |idx| hpo.iter_parent_idxs(idx), label, curie);
+        benchmark_taxonomy_traversal!(group, |idx| hpo.iter_parent_idxs(idx), label, curie);
     }
     group.finish();
 
-    let mut group = c.benchmark_group("HierarchyTraversals::iter_ancestor_idxs");
+    let mut group = c.benchmark_group("TaxonomyTraversal::iter_ancestor_idxs");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_traversal!(group, |idx| hpo.iter_ancestor_idxs(idx), label, curie);
+        benchmark_taxonomy_traversal!(group, |idx| hpo.iter_ancestor_idxs(idx), label, curie);
     }
     group.finish();
 
-    let mut group = c.benchmark_group("HierarchyTraversals::iter_child_idxs");
+    let mut group = c.benchmark_group("TaxonomyTraversal::iter_child_idxs");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_traversal!(group, |idx| hpo.iter_child_idxs(idx), label, curie);
+        benchmark_taxonomy_traversal!(group, |idx| hpo.iter_child_idxs(idx), label, curie);
     }
     group.finish();
 
     // Iterate descendants indices
-    let mut group = c.benchmark_group("HierarchyTraversals::iter_descendant_idxs");
+    let mut group = c.benchmark_group("TaxonomyTraversal::iter_descendant_idxs");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_traversal!(group, |idx| hpo.iter_descendant_idxs(idx), label, curie);
+        benchmark_taxonomy_traversal!(group, |idx| hpo.iter_descendant_idxs(idx), label, curie);
     }
     group.finish();
 }
 
-fn hierarchy_walks(c: &mut Criterion) {
+fn taxonomy_walks(c: &mut Criterion) {
     let hpo = load_hpo(HPO_PATH);
 
-    macro_rules! benchmark_hierarchy_walk {
+    macro_rules! benchmark_taxonomy_walk {
         ($group: expr, $func: expr, $name: expr, $curie: expr) => {
             $group.bench_function(BenchmarkId::from_parameter($name), |b| {
                 let term_id = $curie.parse::<TermId>().expect("Curie should be valid");
@@ -93,34 +93,34 @@ fn hierarchy_walks(c: &mut Criterion) {
         };
     }
 
-    let mut group = c.benchmark_group("HierarchyWalks::iter_parent_ids");
+    let mut group = c.benchmark_group("TaxonomyWalk::iter_parent_ids");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_walk!(group, |idx| hpo.iter_parent_ids(idx), label, curie);
+        benchmark_taxonomy_walk!(group, |idx| hpo.iter_parent_ids(idx), label, curie);
     }
     group.finish();
 
-    let mut group = c.benchmark_group("HierarchyWalks::iter_ancestor_ids");
+    let mut group = c.benchmark_group("TaxonomyWalk::iter_ancestor_ids");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_walk!(group, |idx| hpo.iter_ancestor_ids(idx), label, curie);
+        benchmark_taxonomy_walk!(group, |idx| hpo.iter_ancestor_ids(idx), label, curie);
     }
     group.finish();
 
-    let mut group = c.benchmark_group("HierarchyWalks::iter_child_ids");
+    let mut group = c.benchmark_group("TaxonomyWalk::iter_child_ids");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_walk!(group, |idx| hpo.iter_child_ids(idx), label, curie);
+        benchmark_taxonomy_walk!(group, |idx| hpo.iter_child_ids(idx), label, curie);
     }
     group.finish();
 
-    let mut group = c.benchmark_group("HierarchyWalks::iter_descendant_ids");
+    let mut group = c.benchmark_group("TaxonomyWalk::iter_descendant_ids");
     group.throughput(criterion::Throughput::Elements(1));
     for &(label, curie) in &PAYLOAD {
-        benchmark_hierarchy_walk!(group, |idx| hpo.iter_descendant_ids(idx), label, curie);
+        benchmark_taxonomy_walk!(group, |idx| hpo.iter_descendant_ids(idx), label, curie);
     }
     group.finish();
 }
 
-criterion_group!(benches, hierarchy_traversals, hierarchy_walks);
+criterion_group!(benches, taxonomy_traversals, taxonomy_walks);
 criterion_main!(benches);
