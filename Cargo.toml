@@ -33,6 +33,11 @@ obographs = ["dep:obographs-dev", "dep:curieosa"]
 pyo3 = ["dep:pyo3"]
 serde = ["dep:serde"]
 
+[lib]
+# to disable `libtest`.
+# See this for more info: https://criterion-rs.github.io/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+bench = false
+
 [[bench]]
 name = "ontology_io"
 harness = false
