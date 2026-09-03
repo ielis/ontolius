@@ -11,9 +11,7 @@ use graph_builder::{
 
 use crate::{
     io::{GraphEdge, OntologyData, Relationship},
-    ontology::{
-        HierarchyQueries, HierarchyTraversals, HierarchyWalks, MetadataAware, OntologyTerms,
-    },
+    ontology::{api::TaxonomyTraversal, MetadataAware, OntologyTerms, TaxonomyQuery, TaxonomyWalk},
     term::AltTermIdAware,
     Identified, TermId,
 };
@@ -140,22 +138,28 @@ macro_rules! impl_ontology_terms {
 impl_ontology_terms!(&CsrOntology<I, T>);
 impl_ontology_terms!(Box<CsrOntology<I, T>>);
 
-impl<I, T> HierarchyTraversals<I> for CsrOntology<I, T>
+impl<I, T> TaxonomyTraversal for CsrOntology<I, T>
 where
     I: Idx + Hash,
+    T: Identified,
 {
-    fn term_index<Q>(&self, query: &Q) -> Option<I>
+    type Idx = I;
+    fn term_index<Q>(&self, query: &Q) -> Option<Self::Idx>
     where
         Q: Identified,
     {
         self.term_id_to_idx.get(query.identifier()).copied()
     }
 
-    fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I> {
+    fn idx_to_term_id(&self, query: Self::Idx) -> Option<&TermId> {
+        self.terms.get(query.index()).map(|t| t.identifier())
+    }
+
+    fn iter_child_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
         self.adjacency_matrix.in_neighbors(query).copied()
     }
 
-    fn iter_descendant_idxs(&self, query: I) -> impl Iterator<Item = I> {
+    fn iter_descendant_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
         DfsIter {
             source: |x| self.adjacency_matrix.in_neighbors(x).copied(),
             seen: HashSet::new(),
@@ -163,11 +167,11 @@ where
         }
     }
 
-    fn iter_parent_idxs(&self, query: I) -> impl Iterator<Item = I> {
+    fn iter_parent_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
         self.adjacency_matrix.out_neighbors(query).copied()
     }
 
-    fn iter_ancestor_idxs(&self, query: I) -> impl Iterator<Item = I> {
+    fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
         DfsIter {
             source: |x| self.adjacency_matrix.out_neighbors(x).copied(),
             seen: HashSet::new(),
@@ -175,41 +179,47 @@ where
         }
     }
 }
-macro_rules! impl_hierarchy_traversal {
+macro_rules! impl_taxonomy_traversal {
     ($t:ty) => {
-        impl<I, T> HierarchyTraversals<I> for $t
+        impl<I, T> TaxonomyTraversal for $t
         where
             I: Idx + Hash,
+            T: Identified,
         {
-            fn term_index<Q>(&self, query: &Q) -> Option<I>
+            type Idx = I;
+            fn term_index<Q>(&self, query: &Q) -> Option<Self::Idx>
             where
                 Q: Identified,
             {
                 (**self).term_index(query)
             }
 
-            fn iter_child_idxs(&self, query: I) -> impl Iterator<Item = I> {
+            fn idx_to_term_id(&self, query: Self::Idx) -> Option<&TermId> {
+                (**self).idx_to_term_id(query)
+            }
+
+            fn iter_child_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
                 (**self).iter_child_idxs(query)
             }
 
-            fn iter_descendant_idxs(&self, query: I) -> impl Iterator<Item = I> {
+            fn iter_descendant_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
                 (**self).iter_descendant_idxs(query)
             }
 
-            fn iter_parent_idxs(&self, query: I) -> impl Iterator<Item = I> {
+            fn iter_parent_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
                 (**self).iter_descendant_idxs(query)
             }
 
-            fn iter_ancestor_idxs(&self, query: I) -> impl Iterator<Item = I> {
+            fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
                 (**self).iter_ancestor_idxs(query)
             }
         }
     };
 }
-impl_hierarchy_traversal!(&CsrOntology<I, T>);
-impl_hierarchy_traversal!(Box<CsrOntology<I, T>>);
+impl_taxonomy_traversal!(&CsrOntology<I, T>);
+impl_taxonomy_traversal!(Box<CsrOntology<I, T>>);
 
-impl<I, T> HierarchyWalks for CsrOntology<I, T>
+impl<I, T> TaxonomyWalk for CsrOntology<I, T>
 where
     I: Idx + Hash,
     T: Identified,
@@ -221,7 +231,7 @@ where
         if let Some(&idx) = self.term_id_to_idx.get(query.identifier()) {
             WalkingIter::Known {
                 terms: &self.terms,
-                iterator: self.iter_parent_idxs(idx),
+                iterator: TaxonomyTraversal::iter_parent_idxs(self, idx),
             }
         } else {
             WalkingIter::UnknownQuery
@@ -271,9 +281,9 @@ where
     }
 }
 
-macro_rules! impl_hierarchy_walks {
+macro_rules! impl_taxonomy_walk {
     ($t:ty) => {
-        impl<I, T> HierarchyWalks for $t
+        impl<I, T> TaxonomyWalk for $t
         where
             I: Idx + Hash,
             T: Identified,
@@ -308,12 +318,13 @@ macro_rules! impl_hierarchy_walks {
         }
     };
 }
-impl_hierarchy_walks!(&CsrOntology<I, T>);
-impl_hierarchy_walks!(Box<CsrOntology<I, T>>);
+impl_taxonomy_walk!(&CsrOntology<I, T>);
+impl_taxonomy_walk!(Box<CsrOntology<I, T>>);
 
-impl<I, T> HierarchyQueries for CsrOntology<I, T>
+impl<I, T> TaxonomyQuery for CsrOntology<I, T>
 where
     I: Idx + Hash,
+    T: Identified,
 {
     fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
     where
@@ -372,11 +383,12 @@ where
     }
 }
 
-macro_rules! impl_hierarchy_queries {
+macro_rules! impl_taxonomy_query {
     ($t:ty) => {
-        impl<I, T> HierarchyQueries for $t
+        impl<I, T> TaxonomyQuery for $t
         where
             I: Idx + Hash,
+            T: Identified,
         {
             fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
             where
@@ -412,8 +424,8 @@ macro_rules! impl_hierarchy_queries {
         }
     };
 }
-impl_hierarchy_queries!(&CsrOntology<I, T>);
-impl_hierarchy_queries!(Box<CsrOntology<I, T>>);
+impl_taxonomy_query!(&CsrOntology<I, T>);
+impl_taxonomy_query!(Box<CsrOntology<I, T>>);
 
 impl<I, T> MetadataAware for CsrOntology<I, T>
 where
@@ -543,5 +555,26 @@ mod test_csr_ontology {
         write!(&mut val, "{0:?}", toy).expect("Expecting no formatting issues");
 
         assert_eq!(&val, "CsrOntology { n_terms: 0, adjacency_matrix: { n_nodes: 1, n_edges: 0 }, metadata: {} }");
+    }
+
+    mod hierarchy_traversals {
+        use crate::{
+            common::hpo::PHENOTYPIC_ABNORMALITY,
+            ontology::{TaxonomyTraversal, TaxonomyWalk},
+            test::hpo,
+        };
+
+        #[test]
+        fn term_id_to_idx_roundtrip() {
+            let hpo = hpo();
+
+            let root = &PHENOTYPIC_ABNORMALITY;
+
+            for term_id in hpo.iter_term_and_child_ids(root) {
+                let idx = hpo.term_index(term_id).expect("Index must be present");
+                let other = hpo.idx_to_term_id(idx).expect("Term id must be present");
+                assert_eq!(term_id, other);
+            }
+        }
     }
 }
