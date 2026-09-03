@@ -5,6 +5,6 @@ mod api;
 #[cfg(feature = "csr")]
 pub mod csr;
 
-pub use api::{
-    HierarchyQueries, HierarchyTraversals, HierarchyWalks, MetadataAware, OntologyTerms,
-};
+#[allow(deprecated)]
+pub use api::{HierarchyQueries, HierarchyTraversals, HierarchyWalks};
+pub use api::{MetadataAware, OntologyTerms, TaxonomyQuery, TaxonomyTraversal, TaxonomyWalk};

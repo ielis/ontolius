@@ -8,7 +8,7 @@ mod human_phenotype_ontology {
     use flate2::bufread::GzDecoder;
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::{CsrOntology, MinimalCsrOntology};
-    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
+    use ontolius::ontology::{MetadataAware, OntologyTerms, TaxonomyWalk};
     use ontolius::term::simple::SimpleTerm;
     use ontolius::term::{MinimalTerm, Term};
     use ontolius::TermId;
@@ -54,7 +54,7 @@ mod human_phenotype_ontology {
 
     test_hierarchy_walks! {
         // Generalized-onset motor seizure
-        test_iter_child_ids: (HierarchyWalks::iter_child_ids, "HP:0032677", [
+        test_iter_child_ids: (TaxonomyWalk::iter_child_ids, "HP:0032677", [
             "Bilateral tonic-clonic seizure with generalized onset",
             "Generalized atonic seizure",
             "Generalized clonic seizure",
@@ -65,7 +65,7 @@ mod human_phenotype_ontology {
             "Generalized-onset epileptic spasm",
         ]),
         // Generalized-onset motor seizure
-        test_iter_term_and_child_ids: (HierarchyWalks::iter_term_and_child_ids, "HP:0032677", [
+        test_iter_term_and_child_ids: (TaxonomyWalk::iter_term_and_child_ids, "HP:0032677", [
             "Generalized-onset motor seizure", // <- the query term's name
             "Bilateral tonic-clonic seizure with generalized onset",
             "Generalized atonic seizure",
@@ -78,7 +78,7 @@ mod human_phenotype_ontology {
         ]),
 
         // Myelodysplasia
-        test_iter_descendant_ids: (HierarchyWalks::iter_descendant_ids, "HP:0002863", [
+        test_iter_descendant_ids: (TaxonomyWalk::iter_descendant_ids, "HP:0002863", [
             "Single lineage myelodysplasia",
             // Child of Single lineage myelodysplasia
             "Refractory anemia with ringed sideroblasts",
@@ -86,7 +86,7 @@ mod human_phenotype_ontology {
             "Bilineage myelodysplasia",
         ]),
          // Myelodysplasia
-         test_iter_term_and_descendant_ids: (HierarchyWalks::iter_term_and_descendant_ids, "HP:0002863", [
+         test_iter_term_and_descendant_ids: (TaxonomyWalk::iter_term_and_descendant_ids, "HP:0002863", [
             "Myelodysplasia", // <- the query term's name
             "Single lineage myelodysplasia",
             // Child of Single lineage myelodysplasia
@@ -96,16 +96,16 @@ mod human_phenotype_ontology {
         ]),
 
         // Generalized-onset motor seizure
-        test_iter_parent_ids: (HierarchyWalks::iter_parent_ids, "HP:0032677", [
+        test_iter_parent_ids: (TaxonomyWalk::iter_parent_ids, "HP:0032677", [
             "Generalized-onset seizure", "Motor seizure"
         ]),
         // Generalized-onset motor seizure
-        test_iter_term_and_parent_ids: (HierarchyWalks::iter_term_and_parent_ids, "HP:0032677", [
+        test_iter_term_and_parent_ids: (TaxonomyWalk::iter_term_and_parent_ids, "HP:0032677", [
             "Generalized-onset motor seizure",
             "Generalized-onset seizure", "Motor seizure"
         ]),
         // Focal clonic seizure
-        test_iter_ancestor_ids: (HierarchyWalks::iter_ancestor_ids, "HP:0002266", [
+        test_iter_ancestor_ids: (TaxonomyWalk::iter_ancestor_ids, "HP:0002266", [
             "Focal motor seizure",
             "Focal-onset seizure",
             "Motor seizure",
@@ -117,7 +117,7 @@ mod human_phenotype_ontology {
             "All",
         ]),
         // Focal clonic seizure
-        test_iter_term_and_ancestor_ids: (HierarchyWalks::iter_term_and_ancestor_ids, "HP:0002266", [
+        test_iter_term_and_ancestor_ids: (TaxonomyWalk::iter_term_and_ancestor_ids, "HP:0002266", [
             "Focal clonic seizure",
             "Focal motor seizure",
             "Focal-onset seizure",
@@ -163,7 +163,7 @@ mod gene_ontology {
     use ontolius::common::go::{BIOLOGICAL_PROCESS, CELLULAR_COMPONENT, MOLECULAR_FUNCTION};
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::MinimalCsrOntology;
-    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
+    use ontolius::ontology::{MetadataAware, OntologyTerms, TaxonomyWalk};
     use ontolius::term::MinimalTerm;
     use ontolius::TermId;
 
@@ -270,7 +270,7 @@ mod medical_action_ontology {
     use ontolius::common::maxo::MEDICAL_ACTION;
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::MinimalCsrOntology;
-    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
+    use ontolius::ontology::{MetadataAware, OntologyTerms, TaxonomyWalk};
     use ontolius::term::MinimalTerm;
     use ontolius::TermId;
 
@@ -376,7 +376,7 @@ mod unit_measurement_ontology {
     use ontolius::common::uo::UNIT;
     use ontolius::io::OntologyLoaderBuilder;
     use ontolius::ontology::csr::MinimalCsrOntology;
-    use ontolius::ontology::{HierarchyWalks, MetadataAware, OntologyTerms};
+    use ontolius::ontology::{MetadataAware, OntologyTerms, TaxonomyWalk};
     use ontolius::term::MinimalTerm;
     use ontolius::TermId;
 
@@ -456,7 +456,7 @@ mod mammalian_phenotype_ontology {
     use flate2::bufread::GzDecoder;
     use ontolius::{
         io::OntologyLoaderBuilder,
-        ontology::{csr::MinimalCsrOntology, HierarchyWalks, MetadataAware, OntologyTerms},
+        ontology::{csr::MinimalCsrOntology, MetadataAware, OntologyTerms, TaxonomyWalk},
         term::MinimalTerm,
         TermId,
     };

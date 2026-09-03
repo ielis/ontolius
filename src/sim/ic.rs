@@ -2,7 +2,7 @@
 use std::hash::Hash;
 
 use crate::{
-    ontology::{HierarchyTraversals, HierarchyWalks},
+    ontology::{TaxonomyTraversal, TaxonomyWalk},
     sim::Observed,
     Identified, TermId,
 };
@@ -71,7 +71,7 @@ pub struct DynamicIcMicaAccessor<H> {
 
 impl<H> IcMicaAccessor for DynamicIcMicaAccessor<H>
 where
-    H: HierarchyWalks,
+    H: TaxonomyWalk,
 {
     fn get_ic_mica(&self, a: &TermId, b: &TermId) -> f64 {
         let mut ic = 0f64;
@@ -371,7 +371,7 @@ mod ic_mica_container_serde {
 
 pub fn compute_ic_mica<H, IC, C>(o: &H, root: &TermId, ic: IC, collector: &mut C)
 where
-    H: HierarchyWalks,
+    H: TaxonomyWalk,
     IC: Fn(&TermId) -> Option<f64>,
     C: IcMicaCollector,
 {
@@ -439,7 +439,7 @@ impl<H, K> IcCalculator<H, K> {
 
 impl<H, K> IcCalculator<H, K>
 where
-    H: HierarchyTraversals<K>,
+    H: TaxonomyTraversal<Idx = K>,
     K: Eq + Hash + Clone,
 {
     /// Submit an annotated item.

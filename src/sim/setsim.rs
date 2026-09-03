@@ -1,7 +1,7 @@
 use std::hash::Hash;
 
 use crate::{
-    ontology::{HierarchyTraversals, HierarchyWalks},
+    ontology::{TaxonomyTraversal, TaxonomyWalk},
     sim::{
         ic::{IcCalculator, IcCollector},
         Observed, SimilarityMeasure,
@@ -32,7 +32,7 @@ impl<H> SetSim<H> {
 
 impl<H> SetSim<H>
 where
-    H: HierarchyWalks,
+    H: TaxonomyWalk,
 {
     fn induce_pgraph<'a, F, T>(&'a self, features: F) -> std::collections::HashSet<TermIdAndCic<'a>>
     where
@@ -94,7 +94,7 @@ where
 
 impl<H, T> SimilarityMeasure<T> for SetSim<H>
 where
-    H: HierarchyWalks,
+    H: TaxonomyWalk,
     T: Identified + Observed + Clone,
 {
     type Sim = f64;
@@ -207,7 +207,7 @@ where
 
 impl<H, K> ConditionalIcCalculator<H, K>
 where
-    H: HierarchyTraversals<K> + HierarchyWalks,
+    H: TaxonomyWalk + TaxonomyTraversal<Idx = K>,
     K: Eq + Hash + Clone,
 {
     pub fn submit_item<I, F>(&mut self, item: I)
