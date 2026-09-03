@@ -4,18 +4,18 @@ use crate::term::{AltTermIdAware, MinimalTerm};
 use crate::{Identified, TermId};
 
 /// A container of ontology terms.
-///
-/// `T` is the ontology term type.
-pub trait OntologyTerms<T> {
+pub trait OntologyTerms {
+    /// The ontology term type.
+    type Term: MinimalTerm;
     /// Get the iterator over the *primary* ontology terms.
-    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a Self::Term>
     where
-        T: 'a;
+        Self::Term: 'a;
 
-    /// Get term `T` for given term ID.
+    /// Get a term for given a term id.
     ///
-    /// Returns `None` if the ID does not correspond to a concept from the ontology.
-    fn term_by_id<ID>(&self, id: &ID) -> Option<&T>
+    /// Returns `None` if the id corresponds to no concept from the ontology.
+    fn term_by_id<ID>(&self, id: &ID) -> Option<&Self::Term>
     where
         ID: Identified;
 
@@ -25,7 +25,6 @@ pub trait OntologyTerms<T> {
     fn primary_term_id<'a, ID>(&'a self, term_id: &ID) -> Option<&'a TermId>
     where
         ID: Identified,
-        T: 'a + Identified,
     {
         self.term_by_id(term_id).map(|term| term.identifier())
     }
@@ -41,16 +40,16 @@ pub trait OntologyTerms<T> {
     }
 
     /// Iterate over term IDs of the *primary* terms.
-    fn iter_term_ids(&self) -> TermIdIter<'_, T> {
+    fn iter_term_ids(&self) -> TermIdIter<'_, Self::Term> {
         TermIdIter {
             terms: Box::new(self.iter_terms()),
         }
     }
 
     /// Iterate over term IDs of *all* terms (primary and obsolete).
-    fn iter_all_term_ids(&self) -> AllTermIdsIter<'_, T>
+    fn iter_all_term_ids(&self) -> AllTermIdsIter<'_, Self::Term>
     where
-        T: AltTermIdAware,
+        Self::Term: AltTermIdAware,
     {
         AllTermIdsIter {
             state: State::Primary,

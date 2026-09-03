@@ -12,7 +12,7 @@ use graph_builder::{
 use crate::{
     io::{GraphEdge, OntologyData, Relationship},
     ontology::{api::TaxonomyTraversal, MetadataAware, OntologyTerms, TaxonomyQuery, TaxonomyWalk},
-    term::AltTermIdAware,
+    term::{AltTermIdAware, MinimalTerm},
     Identified, TermId,
 };
 
@@ -92,18 +92,20 @@ fn make_edge_iterator<I>(graph_edges: Vec<GraphEdge<I>>) -> impl Iterator<Item =
     })
 }
 
-impl<I, T> OntologyTerms<T> for CsrOntology<I, T>
+impl<I, T> OntologyTerms for CsrOntology<I, T>
 where
     I: Idx,
+    T: MinimalTerm,
 {
-    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
+    type Term = T;
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a Self::Term>
     where
-        T: 'a,
+        Self::Term: 'a,
     {
         self.terms.iter()
     }
 
-    fn term_by_id<ID>(&self, id: &ID) -> Option<&T>
+    fn term_by_id<ID>(&self, id: &ID) -> Option<&Self::Term>
     where
         ID: Identified,
     {
@@ -115,18 +117,20 @@ where
 
 macro_rules! impl_ontology_terms {
     ($t:ty) => {
-        impl<I, T> OntologyTerms<T> for $t
+        impl<I, T> OntologyTerms for $t
         where
             I: Idx,
+            T: MinimalTerm,
         {
-            fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a T>
+            type Term = T;
+            fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a Self::Term>
             where
                 T: 'a,
             {
                 (**self).iter_terms()
             }
 
-            fn term_by_id<ID>(&self, id: &ID) -> Option<&T>
+            fn term_by_id<ID>(&self, id: &ID) -> Option<&Self::Term>
             where
                 ID: Identified,
             {

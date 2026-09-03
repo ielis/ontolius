@@ -26,7 +26,7 @@ mod csr {
         fn pretend_to_use_taxonomy_query(_o: impl TaxonomyQuery) {}
         fn pretend_to_use_taxonomy_walk(_o: impl TaxonomyWalk) {}
         fn pretend_to_use_taxonomy_traversal(_o: impl TaxonomyTraversal) {}
-        fn pretend_to_use_ontology_terms<T>(_o: impl OntologyTerms<T>) {}
+        fn pretend_to_use_ontology_terms(_o: impl OntologyTerms) {}
         #[allow(deprecated)]
         fn pretend_to_use_hierarchy_queries(_o: impl HierarchyQueries) {}
         #[allow(deprecated)]
