@@ -200,7 +200,7 @@ where
                 ))
             }
             (Some(cp), None) => bail!("Missing term label for {}:{}", cp.get_prefix(), cp.get_id()),
-            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, &node.id),
+            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, node.id),
             _ => bail!("Unparsable node"),
         }
     }
@@ -224,7 +224,7 @@ where
                             meta.deprecated.unwrap_or(false),
                             Self::parse_comment(meta.comments),
                             meta.definition
-                                .map(|d| Definition::try_from(d).unwrap_or_default()), // Ignores an unparsable definition.
+                                .and_then(|d| Definition::try_from(d).ok()), // Ignores an unparsable definition.
                             meta.synonyms
                                 .into_iter()
                                 .flat_map(Synonym::try_from) // Ignores unparsable synonyms.
@@ -249,7 +249,7 @@ where
                 ))
             }
             (Some(cp), None) => bail!("Missing term label for {}:{}", cp.get_prefix(), cp.get_id()),
-            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, &node.id),
+            (None, Some(lbl)) => bail!("Unparsable term id of {}: {}", lbl, node.id),
             _ => bail!("Unparsable node"),
         }
     }
