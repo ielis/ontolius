@@ -476,40 +476,6 @@ where
     }
 }
 
-/// An iterator for traversing the source elements in a breadth-first fashion.
-///
-/// `F`: a function for supplying elements.
-/// `I`: element type.
-#[allow(dead_code)] // This is dead for now ...
-struct BfsIter<F, T> {
-    source: F,
-    seen: HashSet<T>,
-    stack: Vec<T>,
-}
-
-/// Implement iterator if `F` is a supplier of items `I` that are supplied from `F`.
-///
-/// An example `F` can include a function that provides e.g. parents nodes of an ontology graph.
-impl<F, T, I> Iterator for BfsIter<F, T>
-where
-    F: Fn(T) -> I,
-    T: Eq + Hash + Copy,
-    I: Iterator<Item = T>,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(i) = self.stack.pop() {
-            if self.seen.insert(i) {
-                // newly inserted
-                self.stack.extend((self.source)(i));
-                return Some(i);
-            }
-        }
-        None
-    }
-}
-
 /// Iterator over [`TermId`]s that correspond to parents, ancestors, children, or descendants of the
 enum WalkingIter<'a, T, I> {
     UnknownQuery,
