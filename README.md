@@ -6,11 +6,11 @@ A fast and safe crate for working with biomedical ontologies.
 
 At this time, support for the following ontologies is tested:
 
-* Human Phenotype Ontology (HPO)
-* Gene Ontology (GO)
-* Medical Action Ontology (MAxO)
-* Units of Measurement Ontology (UO)
-* Mammalian Phenotype Ontology (MP)
+- Human Phenotype Ontology (HPO)
+- Gene Ontology (GO)
+- Medical Action Ontology (MAxO)
+- Units of Measurement Ontology (UO)
+- Mammalian Phenotype Ontology (MP)
 
 Other ontologies are very likely to work too.
 In case of any problems, please let us know on our [Issue tracker](https://github.com/P2GX/ontolius/issues).
@@ -20,7 +20,7 @@ In case of any problems, please let us know on our [Issue tracker](https://githu
 We provide examples of loading ontology and its subsequent usage
 in applications.
 
-### Load ontology 🪄
+### 🪄 Load ontology
 
 `ontolius` can load ontology from Obographs JSON file.
 For the sake of this example, we use
@@ -50,24 +50,24 @@ let hpo: MinimalCsrOntology = loader.load_from_read(reader)
                                 .expect("HPO should be loaded");
 ```
 
-We loaded HPO from a toy JSON file into [`crate::ontology::csr::MinimalCsrOntology`].
+We loaded HPO from a toy JSON file into [`MinimalCsrOntology`](crate::ontology::csr::MinimalCsrOntology).
 The loading includes parsing terms and edges from the Obographs file
 and construction of the ontology graph.
 In case of `MinimalCsrOntology`,
 the graph is backed by a compressed sparse row (CSR) adjacency matrix.
 
-See [`crate::io::OntologyLoader`] for more info on loading.
+See [`OntologyLoader`](crate::io::OntologyLoader) for more info on loading.
 
-### Use ontology 🤸
+### 🤸 Use the ontology
 
 In the previous section, we loaded an ontology from Obographs JSON file.
-Now we have an instance of [`crate::ontology::csr::MinimalCsrOntology`] that can 
+Now we have an instance of [`MinimalCsrOntology`](crate::ontology::csr::MinimalCsrOntology) that can
 be used for various tasks.
 
 #### Work with ontology terms
 
-`MinimalCsrOntology` implements [`crate::ontology::OntologyTerms`] trait,
-to support retrieval of specific terms by its index or `TermId`, and to iterate 
+`MinimalCsrOntology` implements the [`OntologyTerms`](crate::ontology::OntologyTerms) trait,
+to support retrieval of specific terms by its index or `TermId`, and to iterate
 over all terms and `TermId`s.
 
 We can get a term by its `TermId`:
@@ -87,8 +87,7 @@ use ontolius::TermId;
 use ontolius::term::MinimalTerm;
 use ontolius::ontology::OntologyTerms;
 
-// `HP:0001250` corresponds to `Arachnodactyly``
-let term_id: TermId = "HP:0001166".parse().unwrap();
+let term_id: TermId = "HP:0001166".parse().unwrap(); // Arachnodactyly
 
 // Get the term by its term ID ...
 let term = hpo.term_by_id(&term_id);
@@ -123,20 +122,22 @@ assert_eq!(hpo.iter_term_ids().count(), 614);
 assert_eq!(hpo.iter_all_term_ids().count(), 1121);
 ```
 
-See [`crate::ontology::OntologyTerms`] trait for more details.
+See the [`OntologyTerms`](crate::ontology::OntologyTerms) trait for more details.
 
-### Browse the hierarchy
+### Browse the taxonomy hierarchy
 
-`ontolius` enables to leverage the ontology hierarchy
-via several traits. This typically includes iteration over term's parents, ancestors, children, or descendants.
+`ontolius` exposes the taxonomy relationships via several traits.
+A typical usage includes iteration over term's ancestors or descendants, or the ancestry-related tests.
 
-The [`crate::ontology::HierarchyWalks`] trait supports iterating through [`TermId`]s whereas [`crate::ontology::HierarchyTraversals`] enables iteration over ontology graph indices. Iterating over indices is slightly faster and can be useful if we do not really care about the actual term IDs (e.g. to test if term `a` is an ancestor of term `b`).
+The [`TaxonomyWalk`](crate::ontology::TaxonomyWalk) trait supports iterating through [`TermId`]s whereas [`TaxonomyTraversal`](crate::ontology::TaxonomyTraversal) enables iteration over ontology graph indices. Iterating over indices is slightly faster and can be useful if we do not really care about the actual term IDs (e.g. to test if a term is an ancestor of another term).
 
-The [`crate::ontology::HierarchyQueries`] simplifies testing if term `a` is a parent, child, ancestor, or descendant of term `b`.
+The [`TaxonomyQuery`](crate::ontology::TaxonomyQuery) trait allow testing if a term is a parent, child, ancestor, or descendant of another term.
 
-In all cases, the hierarchy is represented as a directed acyclic graph that is built from `is_a` relationships.
+In all cases, the taxonomy is represented as a directed acyclic graph defined by the `is_a` relationships.
 
-Let's see how to use the ontology hierarchy. For instance, we can use [`crate::ontology::HierarchyWalks::iter_parent_ids`] to get parent ids of a term:
+#### Example
+
+Let's get the labels of the parent terms of [Arachnodactyly](https://hpo.jax.org/browse/term/HP:0001166):
 
 ```rust
 # use std::fs::File;
@@ -151,7 +152,7 @@ Let's see how to use the ontology hierarchy. For instance, we can use [`crate::o
 # let hpo: MinimalCsrOntology = loader.load_from_read(reader)
 #                                    .expect("HPO should be loaded");
 
-use ontolius::ontology::{HierarchyWalks, OntologyTerms};
+use ontolius::ontology::{TaxonomyWalk, OntologyTerms};
 
 
 let arachnodactyly: TermId = "HP:0001166".parse()
@@ -164,23 +165,21 @@ let parent_names: Vec<_> = hpo.iter_parent_ids(&arachnodactyly)
 assert_eq!(vec!["Slender finger", "Long fingers"], parent_names);
 ```
 
-We first create the `TermId` that corresponds to *Arachnodactyly* and then we query `hpo` for its parents by calling `iter_parent_ids`. We retrieve the term that corresponds to term id, extract its name, and collect the names into a vector.
+We first create the `TermId` that corresponds to _Arachnodactyly_ and then we query `hpo` for its parents by calling the [`TaxonomyWalk::iter_parent_ids`](crate::ontology::TaxonomyWalk::iter_parent_ids) method. We retrieve the term that corresponds to term id, extract its name, and collect the names into a vector.
 
-Similar methods exist for getting term IDs of ancestors, children, and descendants of a term. See [`crate::ontology::HierarchyWalks`] for more info.
-
+Similar methods exist for getting term IDs of ancestors, children, and descendants of a term. See the [`TaxonomyWalk`](crate::ontology::TaxonomyWalk) documentation for more info.
 
 ## Features
 
 Ontolius includes several features, with the features marked by `(*)` being enabled
 by default:
 
-* `csr` `(*)` - include [`crate::ontology::csr`] module
+- `csr` `(*)` - include [`crate::ontology::csr`] module
   with implementation of ontology with graph backed by a CSR adjacency matrix
-* `obographs` `(*)` - support loading Ontology from Obographs JSON file
-* `pyo3` - include [`crate::py`] module with PyO3 bindings
+- `obographs` `(*)` - support loading Ontology from Obographs JSON file
+- `pyo3` - include [`crate::py`] module with PyO3 bindings
   to selected data structs to support using from Python
-* `serde` - to provide (de)serialization functions to map [`crate::TermId`] to/from a curie (see `tests/test_serde.rs` for an example)
-
+- `serde` - to provide (de)serialization functions to map [`crate::TermId`] to/from a curie (see `tests/test_serde.rs` for examples)
 
 ## Run tests
 

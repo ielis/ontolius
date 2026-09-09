@@ -157,7 +157,7 @@ pub trait TaxonomyTraversal {
 /// The child-parent relationship is established solely via the `is_a` relationship.
 // TODO[0.9.0]: remove
 #[deprecated(
-    note = "Use `ontolius::ontology::TaxonomyTraversal` instead",
+    note = "Use [TaxonomyTraversal](crate::ontology::TaxonomyTraversal) instead.",
     since = "0.7.6"
 )]
 pub trait HierarchyTraversals<I> {
@@ -222,7 +222,7 @@ where
 /// The child-parent relationship is established solely via the `is_a` relationship.
 // TODO[0.9.0]: remove
 #[deprecated(
-    note = "Use `ontolius::ontology::TaxonomyWalk` instead",
+    note = "Use [TaxonomyWalk](crate::ontology::TaxonomyWalk) instead.",
     since = "0.7.6"
 )]
 pub trait HierarchyWalks {
@@ -455,7 +455,7 @@ pub trait TaxonomyQuery {
 /// The child-parent relationship is established solely via the `is_a` relationship.
 // TODO[0.9.0]: remove
 #[deprecated(
-    note = "Use `ontolius::ontology::TaxonomyQuery` instead",
+    note = "Use [TaxonomyQuery](crate::ontology::TaxonomyQuery) instead.",
     since = "0.7.6"
 )]
 pub trait HierarchyQueries {
