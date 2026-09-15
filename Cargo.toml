@@ -25,6 +25,7 @@ flate2 = "1.0.30"
 criterion = "0.8.2"
 serde = "1.0.228"
 serde_test = "1.0.177"
+roaring = "0.11.5"
 
 [features]
 default = ["obographs", "csr"]
@@ -37,6 +38,10 @@ serde = ["dep:serde"]
 # to disable `libtest`.
 # See this for more info: https://criterion-rs.github.io/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 bench = false
+
+[[bench]]
+name = "roaring"
+harness = false
 
 [[bench]]
 name = "ontology_io"
