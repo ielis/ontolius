@@ -158,7 +158,7 @@ pub trait TaxonomyTraversal {
 // TODO[0.9.0]: remove
 #[deprecated(
     note = "Use [TaxonomyTraversal](crate::ontology::TaxonomyTraversal) instead.",
-    since = "0.7.6"
+    since = "0.8.0"
 )]
 pub trait HierarchyTraversals<I> {
     /// Get the index of the `query` term or `None` if the term is unknown.
@@ -223,7 +223,7 @@ where
 // TODO[0.9.0]: remove
 #[deprecated(
     note = "Use [TaxonomyWalk](crate::ontology::TaxonomyWalk) instead.",
-    since = "0.7.6"
+    since = "0.8.0"
 )]
 pub trait HierarchyWalks {
     /// Returns an iterator of all nodes which are parents of `query`.
@@ -456,7 +456,7 @@ pub trait TaxonomyQuery {
 // TODO[0.9.0]: remove
 #[deprecated(
     note = "Use [TaxonomyQuery](crate::ontology::TaxonomyQuery) instead.",
-    since = "0.7.6"
+    since = "0.8.0"
 )]
 pub trait HierarchyQueries {
     /// Test if `sub` is child of `obj`.
