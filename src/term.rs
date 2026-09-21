@@ -85,15 +85,18 @@ impl CrossReferenced for Synonym {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Definition {
     pub val: String,
     pub xrefs: Vec<String>,
 }
 
 pub trait Term: MinimalTerm {
+    /// Get a textual definition with the precise meaning of the term
+    /// targeted for a human reader.
     fn definition(&self) -> Option<&Definition>;
 
+    /// Get an optional comment for the term.
     fn comment(&self) -> Option<&str>;
 
     // TODO: add dbXrefs?
