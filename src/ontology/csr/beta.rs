@@ -115,33 +115,6 @@ where
     }
 }
 
-macro_rules! impl_ontology_terms {
-    ($t:ty) => {
-        impl<I, T> OntologyTerms for $t
-        where
-            I: Idx,
-            T: MinimalTerm,
-        {
-            type Term = T;
-            fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a Self::Term>
-            where
-                T: 'a,
-            {
-                (**self).iter_terms()
-            }
-
-            fn term_by_id<ID>(&self, id: &ID) -> Option<&Self::Term>
-            where
-                ID: Identified,
-            {
-                (**self).term_by_id(id)
-            }
-        }
-    };
-}
-impl_ontology_terms!(&CsrOntology<I, T>);
-impl_ontology_terms!(Box<CsrOntology<I, T>>);
-
 impl<I, T> TaxonomyTraversal for CsrOntology<I, T>
 where
     I: Idx + Hash,
@@ -183,45 +156,6 @@ where
         }
     }
 }
-macro_rules! impl_taxonomy_traversal {
-    ($t:ty) => {
-        impl<I, T> TaxonomyTraversal for $t
-        where
-            I: Idx + Hash,
-            T: Identified,
-        {
-            type Idx = I;
-            fn term_index<Q>(&self, query: &Q) -> Option<Self::Idx>
-            where
-                Q: Identified,
-            {
-                (**self).term_index(query)
-            }
-
-            fn idx_to_term_id(&self, query: Self::Idx) -> Option<&TermId> {
-                (**self).idx_to_term_id(query)
-            }
-
-            fn iter_child_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
-                (**self).iter_child_idxs(query)
-            }
-
-            fn iter_descendant_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
-                (**self).iter_descendant_idxs(query)
-            }
-
-            fn iter_parent_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
-                (**self).iter_descendant_idxs(query)
-            }
-
-            fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
-                (**self).iter_ancestor_idxs(query)
-            }
-        }
-    };
-}
-impl_taxonomy_traversal!(&CsrOntology<I, T>);
-impl_taxonomy_traversal!(Box<CsrOntology<I, T>>);
 
 impl<I, T> TaxonomyWalk for CsrOntology<I, T>
 where
@@ -285,46 +219,6 @@ where
     }
 }
 
-macro_rules! impl_taxonomy_walk {
-    ($t:ty) => {
-        impl<I, T> TaxonomyWalk for $t
-        where
-            I: Idx + Hash,
-            T: Identified,
-        {
-            fn iter_parent_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
-            where
-                ID: Identified,
-            {
-                (**self).iter_parent_ids(query)
-            }
-
-            fn iter_child_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
-            where
-                ID: Identified,
-            {
-                (**self).iter_child_ids(query)
-            }
-
-            fn iter_ancestor_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
-            where
-                ID: Identified,
-            {
-                (**self).iter_ancestor_ids(query)
-            }
-
-            fn iter_descendant_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
-            where
-                ID: Identified,
-            {
-                (**self).iter_descendant_ids(query)
-            }
-        }
-    };
-}
-impl_taxonomy_walk!(&CsrOntology<I, T>);
-impl_taxonomy_walk!(Box<CsrOntology<I, T>>);
-
 impl<I, T> TaxonomyQuery for CsrOntology<I, T>
 where
     I: Idx + Hash,
@@ -386,50 +280,6 @@ where
         }
     }
 }
-
-macro_rules! impl_taxonomy_query {
-    ($t:ty) => {
-        impl<I, T> TaxonomyQuery for $t
-        where
-            I: Idx + Hash,
-            T: Identified,
-        {
-            fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
-            where
-                S: Identified,
-                O: Identified,
-            {
-                (**self).is_child_of(sub, obj)
-            }
-
-            fn is_descendant_of<S, O>(&self, sub: &S, obj: &O) -> bool
-            where
-                S: Identified,
-                O: Identified,
-            {
-                (**self).is_descendant_of(sub, obj)
-            }
-
-            fn is_parent_of<S, O>(&self, sub: &S, obj: &O) -> bool
-            where
-                S: Identified,
-                O: Identified,
-            {
-                (**self).is_parent_of(sub, obj)
-            }
-
-            fn is_ancestor_of<S, O>(&self, sub: &S, obj: &O) -> bool
-            where
-                S: Identified,
-                O: Identified,
-            {
-                (**self).is_ancestor_of(sub, obj)
-            }
-        }
-    };
-}
-impl_taxonomy_query!(&CsrOntology<I, T>);
-impl_taxonomy_query!(Box<CsrOntology<I, T>>);
 
 impl<I, T> MetadataAware for CsrOntology<I, T>
 where

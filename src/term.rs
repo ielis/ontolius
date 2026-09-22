@@ -17,6 +17,34 @@ pub trait AltTermIdAware {
     }
 }
 
+impl<T> AltTermIdAware for &'_ T
+where
+    T: AltTermIdAware,
+{
+    type TermIdIter<'a>
+        = T::TermIdIter<'a>
+    where
+        Self: 'a;
+
+    fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
+        (*self).iter_alt_term_ids()
+    }
+}
+
+impl<T> AltTermIdAware for Box<T>
+where
+    T: AltTermIdAware,
+{
+    type TermIdIter<'a>
+        = T::TermIdIter<'a>
+    where
+        Self: 'a;
+
+    fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
+        (**self).iter_alt_term_ids()
+    }
+}
+
 /// `MinimalTerm` describes the minimal requirements of an ontology term.
 ///
 /// On top of inherited traits, such as [`Identified`], [`AltTermIdAware`], and others,
@@ -34,6 +62,31 @@ pub trait MinimalTerm: Identified + AltTermIdAware {
     }
 }
 
+impl<T> MinimalTerm for &'_ T
+where
+    T: MinimalTerm,
+{
+    fn name(&self) -> &str {
+        (*self).name()
+    }
+
+    fn is_current(&self) -> bool {
+        (*self).is_current()
+    }
+}
+
+impl<T> MinimalTerm for Box<T>
+where
+    T: MinimalTerm,
+{
+    fn name(&self) -> &str {
+        (**self).name()
+    }
+
+    fn is_current(&self) -> bool {
+        (**self).is_current()
+    }
+}
 pub trait CrossReferenced {
     fn xrefs(&self) -> &[TermId];
 }
@@ -138,12 +191,6 @@ pub mod simple {
         }
     }
 
-    impl Identified for &SimpleMinimalTerm {
-        fn identifier(&self) -> &TermId {
-            (**self).identifier()
-        }
-    }
-
     impl AltTermIdAware for SimpleMinimalTerm {
         type TermIdIter<'a>
             = std::slice::Iter<'a, TermId>
@@ -159,21 +206,6 @@ pub mod simple {
         }
     }
 
-    impl AltTermIdAware for &SimpleMinimalTerm {
-        type TermIdIter<'a>
-            = std::slice::Iter<'a, TermId>
-        where
-            Self: 'a;
-
-        fn iter_alt_term_ids(&self) -> Self::TermIdIter<'_> {
-            (**self).iter_alt_term_ids()
-        }
-
-        fn alt_term_id_count(&self) -> usize {
-            (**self).alt_term_id_count()
-        }
-    }
-
     impl MinimalTerm for SimpleMinimalTerm {
         fn name(&self) -> &str {
             self.name.as_str()
@@ -181,16 +213,6 @@ pub mod simple {
 
         fn is_current(&self) -> bool {
             !self.is_obsolete
-        }
-    }
-
-    impl MinimalTerm for &SimpleMinimalTerm {
-        fn name(&self) -> &str {
-            (**self).name()
-        }
-
-        fn is_current(&self) -> bool {
-            (**self).is_current()
         }
     }
 
