@@ -58,6 +58,47 @@ pub trait OntologyTerms {
     }
 }
 
+impl<T> OntologyTerms for &'_ T
+where
+    T: OntologyTerms,
+{
+    type Term = T::Term;
+
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a Self::Term>
+    where
+        Self::Term: 'a,
+    {
+        (*self).iter_terms()
+    }
+
+    fn term_by_id<ID>(&self, id: &ID) -> Option<&Self::Term>
+    where
+        ID: Identified,
+    {
+        (*self).term_by_id(id)
+    }
+}
+
+impl<T> OntologyTerms for Box<T>
+where
+    T: OntologyTerms,
+{
+    type Term = T::Term;
+
+    fn iter_terms<'a>(&'a self) -> impl Iterator<Item = &'a Self::Term>
+    where
+        Self::Term: 'a,
+    {
+        (**self).iter_terms()
+    }
+
+    fn term_by_id<ID>(&self, id: &ID) -> Option<&Self::Term>
+    where
+        ID: Identified,
+    {
+        (**self).term_by_id(id)
+    }
+}
 /// Iterator over the *primary* term ids of [`TermAware`].
 pub struct TermIdIter<'a, T> {
     terms: Box<dyn Iterator<Item = &'a T> + 'a>,
@@ -152,6 +193,72 @@ pub trait TaxonomyTraversal {
     fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx>;
 }
 
+impl<T> TaxonomyTraversal for &'_ T
+where
+    T: TaxonomyTraversal,
+{
+    type Idx = T::Idx;
+
+    fn term_index<Q>(&self, query: &Q) -> Option<Self::Idx>
+    where
+        Q: Identified,
+    {
+        (*self).term_index(query)
+    }
+
+    fn idx_to_term_id(&self, query: Self::Idx) -> Option<&TermId> {
+        (*self).idx_to_term_id(query)
+    }
+
+    fn iter_child_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (**self).iter_child_idxs(query)
+    }
+
+    fn iter_descendant_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (*self).iter_descendant_idxs(query)
+    }
+
+    fn iter_parent_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (*self).iter_parent_idxs(query)
+    }
+
+    fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (*self).iter_ancestor_idxs(query)
+    }
+}
+
+impl<T> TaxonomyTraversal for Box<T>
+where
+    T: TaxonomyTraversal,
+{
+    type Idx = T::Idx;
+    fn term_index<Q>(&self, query: &Q) -> Option<Self::Idx>
+    where
+        Q: Identified,
+    {
+        (**self).term_index(query)
+    }
+
+    fn idx_to_term_id(&self, query: Self::Idx) -> Option<&TermId> {
+        (**self).idx_to_term_id(query)
+    }
+
+    fn iter_child_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (**self).iter_child_idxs(query)
+    }
+
+    fn iter_descendant_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (**self).iter_descendant_idxs(query)
+    }
+
+    fn iter_parent_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (**self).iter_descendant_idxs(query)
+    }
+
+    fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
+        (**self).iter_ancestor_idxs(query)
+    }
+}
 /// Traversals in the ontology index space.
 ///
 /// The child-parent relationship is established solely via the `is_a` relationship.
@@ -343,6 +450,72 @@ pub trait TaxonomyWalk {
     }
 }
 
+impl<T> TaxonomyWalk for &'_ T
+where
+    T: TaxonomyWalk,
+{
+    fn iter_parent_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        (*self).iter_parent_ids(query)
+    }
+
+    fn iter_child_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        (*self).iter_child_ids(query)
+    }
+
+    fn iter_ancestor_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        (*self).iter_ancestor_ids(query)
+    }
+
+    fn iter_descendant_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
+    where
+        I: Identified,
+    {
+        (*self).iter_descendant_ids(query)
+    }
+}
+
+impl<T> TaxonomyWalk for Box<T>
+where
+    T: TaxonomyWalk,
+{
+    fn iter_parent_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+    where
+        ID: Identified,
+    {
+        (**self).iter_parent_ids(query)
+    }
+
+    fn iter_child_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+    where
+        ID: Identified,
+    {
+        (**self).iter_child_ids(query)
+    }
+
+    fn iter_ancestor_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+    where
+        ID: Identified,
+    {
+        (**self).iter_ancestor_ids(query)
+    }
+
+    fn iter_descendant_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
+    where
+        ID: Identified,
+    {
+        (**self).iter_descendant_ids(query)
+    }
+}
+
 #[allow(deprecated)]
 impl<T> HierarchyWalks for T
 where
@@ -447,6 +620,80 @@ pub trait TaxonomyQuery {
         O: Identified,
     {
         sub.identifier() == obj.identifier() || self.is_ancestor_of(sub, obj)
+    }
+}
+
+impl<T> TaxonomyQuery for &'_ T
+where
+    T: TaxonomyQuery,
+{
+    fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (*self).is_child_of(sub, obj)
+    }
+
+    fn is_descendant_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (*self).is_descendant_of(sub, obj)
+    }
+
+    fn is_parent_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (*self).is_parent_of(sub, obj)
+    }
+
+    fn is_ancestor_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (*self).is_ancestor_of(sub, obj)
+    }
+}
+
+impl<T> TaxonomyQuery for Box<T>
+where
+    T: TaxonomyQuery,
+{
+    fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (**self).is_child_of(sub, obj)
+    }
+
+    fn is_descendant_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (**self).is_descendant_of(sub, obj)
+    }
+
+    fn is_parent_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (**self).is_parent_of(sub, obj)
+    }
+
+    fn is_ancestor_of<S, O>(&self, sub: &S, obj: &O) -> bool
+    where
+        S: Identified,
+        O: Identified,
+    {
+        (**self).is_ancestor_of(sub, obj)
     }
 }
 
@@ -573,4 +820,22 @@ where
 pub trait MetadataAware {
     /// Get the version of the ontology.
     fn version(&self) -> &str;
+}
+
+impl<T> MetadataAware for &'_ T
+where
+    T: MetadataAware,
+{
+    fn version(&self) -> &str {
+        (*self).version()
+    }
+}
+
+impl<T> MetadataAware for Box<T>
+where
+    T: MetadataAware,
+{
+    fn version(&self) -> &str {
+        (**self).version()
+    }
 }
