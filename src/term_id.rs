@@ -24,6 +24,24 @@ pub trait Identified {
     fn identifier(&self) -> &TermId;
 }
 
+impl<T> Identified for &'_ T
+where
+    T: Identified + ?Sized,
+{
+    fn identifier(&self) -> &TermId {
+        (*self).identifier()
+    }
+}
+
+impl<T> Identified for Box<T>
+where
+    T: Identified + ?Sized,
+{
+    fn identifier(&self) -> &TermId {
+        (**self).identifier()
+    }
+}
+
 /// Identifier of an ontology concept.
 ///
 /// ## Examples
