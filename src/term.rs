@@ -19,7 +19,7 @@ pub trait AltTermIdAware {
 
 impl<T> AltTermIdAware for &'_ T
 where
-    T: AltTermIdAware,
+    T: AltTermIdAware + ?Sized,
 {
     type TermIdIter<'a>
         = T::TermIdIter<'a>
@@ -33,7 +33,7 @@ where
 
 impl<T> AltTermIdAware for Box<T>
 where
-    T: AltTermIdAware,
+    T: AltTermIdAware + ?Sized,
 {
     type TermIdIter<'a>
         = T::TermIdIter<'a>
@@ -64,7 +64,7 @@ pub trait MinimalTerm: Identified + AltTermIdAware {
 
 impl<T> MinimalTerm for &'_ T
 where
-    T: MinimalTerm,
+    T: MinimalTerm + ?Sized,
 {
     fn name(&self) -> &str {
         (*self).name()
@@ -77,7 +77,7 @@ where
 
 impl<T> MinimalTerm for Box<T>
 where
-    T: MinimalTerm,
+    T: MinimalTerm + ?Sized,
 {
     fn name(&self) -> &str {
         (**self).name()

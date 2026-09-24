@@ -60,7 +60,7 @@ pub trait OntologyTerms {
 
 impl<T> OntologyTerms for &'_ T
 where
-    T: OntologyTerms,
+    T: OntologyTerms + ?Sized,
 {
     type Term = T::Term;
 
@@ -81,7 +81,7 @@ where
 
 impl<T> OntologyTerms for Box<T>
 where
-    T: OntologyTerms,
+    T: OntologyTerms + ?Sized,
 {
     type Term = T::Term;
 
@@ -195,7 +195,7 @@ pub trait TaxonomyTraversal {
 
 impl<T> TaxonomyTraversal for &'_ T
 where
-    T: TaxonomyTraversal,
+    T: TaxonomyTraversal + ?Sized,
 {
     type Idx = T::Idx;
 
@@ -229,7 +229,7 @@ where
 
 impl<T> TaxonomyTraversal for Box<T>
 where
-    T: TaxonomyTraversal,
+    T: TaxonomyTraversal + ?Sized,
 {
     type Idx = T::Idx;
     fn term_index<Q>(&self, query: &Q) -> Option<Self::Idx>
@@ -452,7 +452,7 @@ pub trait TaxonomyWalk {
 
 impl<T> TaxonomyWalk for &'_ T
 where
-    T: TaxonomyWalk,
+    T: TaxonomyWalk + ?Sized,
 {
     fn iter_parent_ids<'a, I>(&'a self, query: &I) -> impl Iterator<Item = &'a TermId>
     where
@@ -485,7 +485,7 @@ where
 
 impl<T> TaxonomyWalk for Box<T>
 where
-    T: TaxonomyWalk,
+    T: TaxonomyWalk + ?Sized,
 {
     fn iter_parent_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
     where
@@ -625,7 +625,7 @@ pub trait TaxonomyQuery {
 
 impl<T> TaxonomyQuery for &'_ T
 where
-    T: TaxonomyQuery,
+    T: TaxonomyQuery + ?Sized,
 {
     fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
     where
@@ -662,7 +662,7 @@ where
 
 impl<T> TaxonomyQuery for Box<T>
 where
-    T: TaxonomyQuery,
+    T: TaxonomyQuery + ?Sized,
 {
     fn is_child_of<S, O>(&self, sub: &S, obj: &O) -> bool
     where
@@ -824,7 +824,7 @@ pub trait MetadataAware {
 
 impl<T> MetadataAware for &'_ T
 where
-    T: MetadataAware,
+    T: MetadataAware + ?Sized,
 {
     fn version(&self) -> &str {
         (*self).version()
@@ -833,7 +833,7 @@ where
 
 impl<T> MetadataAware for Box<T>
 where
-    T: MetadataAware,
+    T: MetadataAware + ?Sized,
 {
     fn version(&self) -> &str {
         (**self).version()
