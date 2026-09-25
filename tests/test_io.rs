@@ -10,7 +10,7 @@ mod human_phenotype_ontology {
     use ontolius::ontology::csr::{CsrOntology, MinimalCsrOntology};
     use ontolius::ontology::{MetadataAware, OntologyTerms, TaxonomyWalk};
     use ontolius::term::simple::SimpleTerm;
-    use ontolius::term::{MinimalTerm, Term};
+    use ontolius::term::MinimalTerm;
     use ontolius::TermId;
 
     const HPO_PATH: &str = "resources/hp.v2024-08-13.json.gz";
@@ -30,7 +30,7 @@ mod human_phenotype_ontology {
         })
     }
 
-    macro_rules! test_hierarchy_walks {
+    macro_rules! test_taxonomy_walk {
         ($($name:ident: $value:expr,)*) => {
             $(
                 #[test]
@@ -52,7 +52,7 @@ mod human_phenotype_ontology {
         };
     }
 
-    test_hierarchy_walks! {
+    test_taxonomy_walk! {
         // Generalized-onset motor seizure
         test_iter_child_ids: (TaxonomyWalk::iter_child_ids, "HP:0032677", [
             "Bilateral tonic-clonic seizure with generalized onset",
@@ -146,9 +146,7 @@ mod human_phenotype_ontology {
 
         let hpo: CsrOntology<u32, SimpleTerm> = loader.load_from_read(reader).unwrap();
 
-        for ft in hpo.iter_terms() {
-            println!("{:?}", ft.definition())
-        }
+        std::hint::black_box(hpo);
     }
 }
 
