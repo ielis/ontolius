@@ -46,7 +46,7 @@ where
 
 impl<I, T> TryFrom<OntologyData<I, T>> for CsrOntology<I, T>
 where
-    I: Idx + Clone + Hash,
+    I: Idx + Hash,
     T: Identified + AltTermIdAware,
 {
     type Error = Error;
