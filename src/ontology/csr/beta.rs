@@ -3,7 +3,7 @@ use graph_builder::{
     index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, Graph, GraphBuilder,
 };
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque},
     hash::Hash,
     iter::once,
 };
@@ -23,7 +23,7 @@ where
     adjacency_matrix: DirectedCsrGraph<I>,
     terms: Box<[T]>,
     term_id_to_idx: HashMap<TermId, I>,
-    term_id_to_ancs: HashMap<I, HashSet<I>>,
+    idx_to_ancs: BTreeMap<I, HashSet<I>>,
     metadata: HashMap<String, String>,
 }
 
@@ -72,13 +72,13 @@ where
             })
             .collect();
 
-        let mut term_id_to_ancs = HashMap::new();
+        let mut idx_to_ancs = BTreeMap::new();
         for (sub, _obj) in make_edge_iterator(&value.edges) {
             // Only visit each subject once.
-            let _entry = term_id_to_ancs.entry(sub).or_insert({
+            let _entry = idx_to_ancs.entry(sub).or_insert({
                 let iter = DfsIter {
                     source: |x| adjacency_matrix.out_neighbors(x).copied(),
-                    seen: HashSet::new(),
+                    seen: BTreeSet::new(),
                     queue: VecDeque::from_iter(adjacency_matrix.out_neighbors(sub).copied()),
                 };
                 iter.collect()
@@ -89,7 +89,7 @@ where
             adjacency_matrix,
             terms,
             term_id_to_idx,
-            term_id_to_ancs,
+            idx_to_ancs,
             metadata: value.metadata,
         })
     }
@@ -103,14 +103,8 @@ where
     graph_edges.into_iter().flat_map(|edge| {
         match edge.pred {
             // `sub -> is_a -> obj` is what we want!
-            Relationship::Child => Some((
-                Clone::clone(&edge.sub),
-                Clone::clone(&edge.obj),
-            )),
-            Relationship::Parent => Some((
-                Clone::clone(&edge.obj),
-                Clone::clone(&edge.sub),
-            )),
+            Relationship::Child => Some((Clone::clone(&edge.sub), Clone::clone(&edge.obj))),
+            Relationship::Parent => Some((Clone::clone(&edge.obj), Clone::clone(&edge.sub))),
             _ => None,
         }
     })
@@ -141,7 +135,7 @@ where
 
 impl<I, T> TaxonomyTraversal for CsrOntology<I, T>
 where
-    I: Idx + Hash,
+    I: Idx,
     T: Identified,
 {
     type Idx = I;
@@ -163,7 +157,7 @@ where
     fn iter_descendant_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
         DfsIter {
             source: |x| self.adjacency_matrix.in_neighbors(x).copied(),
-            seen: HashSet::new(),
+            seen: BTreeSet::new(),
             queue: VecDeque::from_iter(self.adjacency_matrix.in_neighbors(query).copied()),
         }
     }
@@ -173,18 +167,15 @@ where
     }
 
     fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
-        AncIter {
-            inner: self
-                .term_id_to_ancs
-                .get(&query)
-                .map(|bm| bm.iter().cloned()),
+        OptionalIter {
+            inner: self.idx_to_ancs.get(&query).map(|bm| bm.iter().cloned()),
         }
     }
 }
 
 impl<I, T> TaxonomyWalk for CsrOntology<I, T>
 where
-    I: Idx + Hash,
+    I: Idx,
     T: Identified,
 {
     fn iter_parent_ids<'a, ID>(&'a self, query: &ID) -> impl Iterator<Item = &'a TermId>
@@ -272,7 +263,11 @@ where
             self.term_id_to_idx.get(sub.identifier()),
             self.term_id_to_idx.get(obj.identifier()),
         ) {
-            (Some(&sub), Some(&obj)) => self.iter_ancestor_idxs(sub).any(|anc| anc == obj),
+            (Some(sub), Some(obj)) => self
+                .idx_to_ancs
+                .get(sub)
+                .map(|ancs| ancs.contains(obj))
+                .unwrap_or(false),
             _ => false,
         }
     }
@@ -300,7 +295,11 @@ where
             self.term_id_to_idx.get(sub.identifier()),
             self.term_id_to_idx.get(obj.identifier()),
         ) {
-            (Some(&sub), Some(&obj)) => self.iter_ancestor_idxs(obj).any(|anc| anc == sub),
+            (Some(sub), Some(obj)) => self
+                .idx_to_ancs
+                .get(obj)
+                .map(|ancs| ancs.contains(sub))
+                .unwrap_or(false),
             _ => false,
         }
     }
@@ -318,15 +317,17 @@ where
     }
 }
 
-struct AncIter<I> {
-    inner: Option<I>,
+/// Iterates if the inner is `Some`, otherwise no iteration
+/// happens.
+struct OptionalIter<T> {
+    inner: Option<T>,
 }
 
-impl<I, J> Iterator for AncIter<I>
+impl<T, I> Iterator for OptionalIter<T>
 where
-    I: Iterator<Item = J>,
+    T: Iterator<Item = I>,
 {
-    type Item = J;
+    type Item = I;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.inner.as_mut() {
@@ -342,7 +343,7 @@ where
 /// `I`: element type.
 struct DfsIter<F, T> {
     source: F,
-    seen: HashSet<T>,
+    seen: BTreeSet<T>,
     queue: VecDeque<T>,
 }
 
@@ -352,7 +353,7 @@ struct DfsIter<F, T> {
 impl<F, T, I> Iterator for DfsIter<F, T>
 where
     F: Fn(T) -> I,
-    T: Eq + Hash + Copy,
+    T: Ord + Copy,
     I: Iterator<Item = T>,
 {
     type Item = T;
@@ -400,7 +401,7 @@ mod test_csr_ontology {
 
     use crate::{io::OntologyData, ontology::csr::CsrOntology, term::simple::SimpleMinimalTerm};
 
-    fn make_ontology_data<T>() -> OntologyData<u32, T> {
+    fn make_ontology_data<I, T>() -> OntologyData<I, T> {
         OntologyData {
             terms: vec![],
             edges: vec![],
@@ -410,7 +411,7 @@ mod test_csr_ontology {
 
     #[test]
     fn test_debug() {
-        let toy: CsrOntology<u32, SimpleMinimalTerm> = make_ontology_data()
+        let toy: CsrOntology<u8, SimpleMinimalTerm> = make_ontology_data()
             .try_into()
             .expect("Parsing should not fail");
 
@@ -420,7 +421,7 @@ mod test_csr_ontology {
         assert_eq!(&val, "CsrOntology { n_terms: 0, adjacency_matrix: { n_nodes: 1, n_edges: 0 }, metadata: {} }");
     }
 
-    mod hierarchy_traversals {
+    mod taxonomy_traversals {
         use crate::{
             common::hpo::PHENOTYPIC_ABNORMALITY,
             ontology::{TaxonomyTraversal, TaxonomyWalk},
@@ -438,6 +439,58 @@ mod test_csr_ontology {
                 let other = hpo.idx_to_term_id(idx).expect("Term id must be present");
                 assert_eq!(term_id, other);
             }
+        }
+    }
+
+    mod taxonomy_query {
+        use super::super::TaxonomyQuery;
+        use crate::{test::hpo, TermId};
+
+        #[test]
+        fn test_is_child_of() {
+            let hpo = hpo();
+
+            let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+            let long_fingers: TermId = "HP:0100807".parse().unwrap();
+            let abn_finger_morph: TermId = "HP:0001167".parse().unwrap();
+
+            assert!(hpo.is_child_of(&arachnodactyly, &long_fingers));
+            assert!(!hpo.is_child_of(&arachnodactyly, &abn_finger_morph));
+        }
+
+        #[test]
+        fn test_is_descendant_of() {
+            let hpo = hpo();
+            let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+            let long_fingers: TermId = "HP:0100807".parse().unwrap();
+            let abn_finger_morph: TermId = "HP:0001167".parse().unwrap();
+
+            assert!(hpo.is_descendant_of(&arachnodactyly, &long_fingers));
+            assert!(hpo.is_descendant_of(&arachnodactyly, &abn_finger_morph));
+        }
+
+        #[test]
+        fn test_is_parent_of() {
+            let hpo = hpo();
+
+            let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+            let long_fingers: TermId = "HP:0100807".parse().unwrap();
+            let abn_finger_morph: TermId = "HP:0001167".parse().unwrap();
+
+            assert!(hpo.is_parent_of(&long_fingers, &arachnodactyly));
+            assert!(!hpo.is_parent_of(&abn_finger_morph, &arachnodactyly));
+        }
+
+        #[test]
+        fn test_is_ancestor_of() {
+            let hpo = hpo();
+
+            let arachnodactyly: TermId = "HP:0001166".parse().unwrap();
+            let long_fingers: TermId = "HP:0100807".parse().unwrap();
+            let abn_finger_morph: TermId = "HP:0001167".parse().unwrap();
+
+            assert!(hpo.is_ancestor_of(&long_fingers, &arachnodactyly));
+            assert!(hpo.is_ancestor_of(&abn_finger_morph, &arachnodactyly));
         }
     }
 }

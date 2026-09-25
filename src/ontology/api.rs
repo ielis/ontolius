@@ -169,7 +169,7 @@ where
 /// The parent-child relationship is established solely via the `is_a` relationship.
 pub trait TaxonomyTraversal {
     /// The ontology index type
-    type Idx: Eq + Clone + std::hash::Hash + std::fmt::Debug;
+    type Idx: Eq + Clone + std::fmt::Debug;
 
     /// Get the index of the `query` term or `None` if the term is unknown.
     fn term_index<Q>(&self, query: &Q) -> Option<Self::Idx>
