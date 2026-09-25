@@ -1,12 +1,11 @@
 use anyhow::Error;
+use graph_builder::{
+    index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, Graph, GraphBuilder,
+};
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     hash::Hash,
     iter::once,
-};
-
-use graph_builder::{
-    index::Idx, CsrLayout, DirectedCsrGraph, DirectedNeighbors, Graph, GraphBuilder,
 };
 
 use crate::{
@@ -24,6 +23,7 @@ where
     adjacency_matrix: DirectedCsrGraph<I>,
     terms: Box<[T]>,
     term_id_to_idx: HashMap<TermId, I>,
+    term_id_to_ancs: HashMap<I, HashSet<I>>,
     metadata: HashMap<String, String>,
 }
 
@@ -46,17 +46,17 @@ where
 
 impl<I, T> TryFrom<OntologyData<I, T>> for CsrOntology<I, T>
 where
-    I: Idx,
+    I: Idx + Clone + Hash,
     T: Identified + AltTermIdAware,
 {
     type Error = Error;
 
     fn try_from(value: OntologyData<I, T>) -> Result<Self, Self::Error> {
-        let adjacency_matrix = GraphBuilder::new()
+        let adjacency_matrix: DirectedCsrGraph<_> = GraphBuilder::new()
             // No performance difference was observed for `CsrLayout::Sorted`
             // in IO and traversal benches.
             .csr_layout(CsrLayout::Unsorted)
-            .edges(make_edge_iterator(value.edges))
+            .edges(make_edge_iterator(&value.edges))
             .build();
 
         let terms = value.terms.into_boxed_slice();
@@ -72,21 +72,45 @@ where
             })
             .collect();
 
+        let mut term_id_to_ancs = HashMap::new();
+        for (sub, _obj) in make_edge_iterator(&value.edges) {
+            // Only visit each subject once.
+            let _entry = term_id_to_ancs.entry(sub).or_insert({
+                let iter = DfsIter {
+                    source: |x| adjacency_matrix.out_neighbors(x).copied(),
+                    seen: HashSet::new(),
+                    queue: VecDeque::from_iter(adjacency_matrix.out_neighbors(sub).copied()),
+                };
+                iter.collect()
+            });
+        }
+
         Ok(Self {
             adjacency_matrix,
             terms,
             term_id_to_idx,
+            term_id_to_ancs,
             metadata: value.metadata,
         })
     }
 }
 
-fn make_edge_iterator<I>(graph_edges: Vec<GraphEdge<I>>) -> impl Iterator<Item = (I, I)> {
+fn make_edge_iterator<'a, T, I>(graph_edges: T) -> impl Iterator<Item = (I, I)> + use<'a, T, I>
+where
+    T: IntoIterator<Item = &'a GraphEdge<I>>,
+    I: Clone + 'a,
+{
     graph_edges.into_iter().flat_map(|edge| {
         match edge.pred {
             // `sub -> is_a -> obj` is what we want!
-            Relationship::Child => Some((edge.sub, edge.obj)),
-            Relationship::Parent => Some((edge.obj, edge.sub)),
+            Relationship::Child => Some((
+                Clone::clone(&edge.sub),
+                Clone::clone(&edge.obj),
+            )),
+            Relationship::Parent => Some((
+                Clone::clone(&edge.obj),
+                Clone::clone(&edge.sub),
+            )),
             _ => None,
         }
     })
@@ -149,10 +173,11 @@ where
     }
 
     fn iter_ancestor_idxs(&self, query: Self::Idx) -> impl Iterator<Item = Self::Idx> {
-        DfsIter {
-            source: |x| self.adjacency_matrix.out_neighbors(x).copied(),
-            seen: HashSet::new(),
-            queue: VecDeque::from_iter(self.adjacency_matrix.out_neighbors(query).copied()),
+        AncIter {
+            inner: self
+                .term_id_to_ancs
+                .get(&query)
+                .map(|bm| bm.iter().cloned()),
         }
     }
 }
@@ -293,6 +318,24 @@ where
     }
 }
 
+struct AncIter<I> {
+    inner: Option<I>,
+}
+
+impl<I, J> Iterator for AncIter<I>
+where
+    I: Iterator<Item = J>,
+{
+    type Item = J;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.inner.as_mut() {
+            Some(i) => i.next(),
+            None => None,
+        }
+    }
+}
+
 /// An iterator for traversing the source elements in a depth-first fashion.
 ///
 /// `F`: a function for supplying elements.
@@ -305,7 +348,7 @@ struct DfsIter<F, T> {
 
 /// Implement iterator if `F` is a supplier of items `I` that are supplied from `F`.
 ///
-/// An example `F` can include a function that provides e.g.
+/// For instance, `F` can be a function that gets the parents or children of a term `I`.
 impl<F, T, I> Iterator for DfsIter<F, T>
 where
     F: Fn(T) -> I,
@@ -315,11 +358,11 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(i) = self.queue.pop_front() {
-            if self.seen.insert(i) {
+        while let Some(t) = self.queue.pop_front() {
+            if self.seen.insert(t) {
                 // newly inserted
-                self.queue.extend((self.source)(i));
-                return Some(i);
+                self.queue.extend((self.source)(t));
+                return Some(t);
             }
         }
         None
@@ -357,7 +400,7 @@ mod test_csr_ontology {
 
     use crate::{io::OntologyData, ontology::csr::CsrOntology, term::simple::SimpleMinimalTerm};
 
-    fn make_ontology_data<I, T>() -> OntologyData<I, T> {
+    fn make_ontology_data<T>() -> OntologyData<u32, T> {
         OntologyData {
             terms: vec![],
             edges: vec![],
@@ -367,7 +410,7 @@ mod test_csr_ontology {
 
     #[test]
     fn test_debug() {
-        let toy: CsrOntology<u8, SimpleMinimalTerm> = make_ontology_data()
+        let toy: CsrOntology<u32, SimpleMinimalTerm> = make_ontology_data()
             .try_into()
             .expect("Parsing should not fail");
 
