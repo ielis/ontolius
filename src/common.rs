@@ -1,4 +1,4 @@
-//! The module with constants for working with various ontologies.
+//! The module with constants from various ontologies.
 
 use crate::{
     term_id::{InnerTermId, KnownPrefix},
@@ -10,7 +10,6 @@ const fn make_term_id(prefix: KnownPrefix, id: u32, len: u8) -> TermId {
     TermId::from_inner(InnerTermId::Known(prefix, id, len))
 }
 
-// TODO: should in fact be static constants!
 /// Constants for working with Human Phenotype Ontology (HPO).
 pub mod hpo {
     use crate::{term_id::KnownPrefix, TermId};

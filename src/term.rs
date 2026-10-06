@@ -19,7 +19,7 @@ pub trait AltTermIdAware {
 
 impl<T> AltTermIdAware for &T
 where
-    T: AltTermIdAware,
+    T: AltTermIdAware + ?Sized,
 {
     type TermIdIter<'a>
         = T::TermIdIter<'a>
@@ -33,7 +33,7 @@ where
 
 impl<T> AltTermIdAware for Box<T>
 where
-    T: AltTermIdAware,
+    T: AltTermIdAware + ?Sized,
 {
     type TermIdIter<'a>
         = T::TermIdIter<'a>
@@ -62,6 +62,31 @@ pub trait MinimalTerm: Identified + AltTermIdAware {
     }
 }
 
+impl<T> MinimalTerm for &'_ T
+where
+    T: MinimalTerm + ?Sized,
+{
+    fn name(&self) -> &str {
+        (*self).name()
+    }
+
+    fn is_current(&self) -> bool {
+        (*self).is_current()
+    }
+}
+
+impl<T> MinimalTerm for Box<T>
+where
+    T: MinimalTerm + ?Sized,
+{
+    fn name(&self) -> &str {
+        (**self).name()
+    }
+
+    fn is_current(&self) -> bool {
+        (**self).is_current()
+    }
+}
 pub trait CrossReferenced {
     fn xrefs(&self) -> &[TermId];
 }
@@ -113,15 +138,18 @@ impl CrossReferenced for Synonym {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Definition {
     pub val: String,
     pub xrefs: Vec<String>,
 }
 
 pub trait Term: MinimalTerm {
+    /// Get a textual definition with the precise meaning of the term
+    /// targeted for a human reader.
     fn definition(&self) -> Option<&Definition>;
 
+    /// Get an optional comment for the term.
     fn comment(&self) -> Option<&str>;
 
     // TODO: add dbXrefs?
@@ -185,16 +213,6 @@ pub mod simple {
 
         fn is_current(&self) -> bool {
             !self.is_obsolete
-        }
-    }
-
-    impl MinimalTerm for &SimpleMinimalTerm {
-        fn name(&self) -> &str {
-            (**self).name()
-        }
-
-        fn is_current(&self) -> bool {
-            (**self).is_current()
         }
     }
 
