@@ -1,6 +1,6 @@
 [package]
 name = "ontolius"
-version = "0.8.1"
+version = "0.8.2"
 description = "A fast and safe crate for working with biomedical ontologies."
 keywords = ["ontology", "bioinformatics", "HPO", "MAxO", "GO"]
 edition = "2021"
@@ -32,6 +32,11 @@ csr = ["dep:graph_builder"]
 obographs = ["dep:obographs-dev", "dep:curieosa"]
 pyo3 = ["dep:pyo3"]
 serde = ["dep:serde"]
+
+[lib]
+# to disable `libtest`.
+# See this for more info: https://criterion-rs.github.io/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+bench = false
 
 [[bench]]
 name = "ontology_io"

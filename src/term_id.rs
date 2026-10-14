@@ -26,7 +26,7 @@ pub trait Identified {
 
 impl<T> Identified for &'_ T
 where
-    T: Identified,
+    T: Identified + ?Sized,
 {
     fn identifier(&self) -> &TermId {
         (*self).identifier()
@@ -35,7 +35,7 @@ where
 
 impl<T> Identified for Box<T>
 where
-    T: Identified,
+    T: Identified + ?Sized,
 {
     fn identifier(&self) -> &TermId {
         (**self).identifier()
