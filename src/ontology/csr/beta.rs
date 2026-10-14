@@ -74,8 +74,9 @@ where
 
         let mut idx_to_ancs = BTreeMap::new();
         for (sub, _obj) in make_edge_iterator(&value.edges) {
-            // Only visit each subject once.
-            let _entry = idx_to_ancs.entry(sub).or_insert({
+            // Visit each subject at most once.
+            // No iteration occurs if the entry already contains a value.
+            idx_to_ancs.entry(sub).or_insert({
                 let iter = DfsIter {
                     source: |x| adjacency_matrix.out_neighbors(x).copied(),
                     seen: BTreeSet::new(),
