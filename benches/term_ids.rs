@@ -1,10 +1,14 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use ontolius::TermId;
-use std::hint::black_box;
+use std::{
+    hash::{DefaultHasher, Hash},
+    hint::black_box,
+};
 
 fn bench_term_id(c: &mut Criterion) {
     // Bench parsing CURIE parts.
     let mut group = c.benchmark_group("TermId");
+    group.throughput(criterion::Throughput::Elements(1));
     group.bench_function(BenchmarkId::from_parameter("TermId::from known"), |b| {
         b.iter(|| {
             black_box(TermId::from(("HP", "0001250")));
@@ -33,13 +37,29 @@ fn bench_term_id(c: &mut Criterion) {
         |b| {
             b.iter(|| {
                 black_box(
-                    "MP:0001250"
+                    "ABC:0001250"
                         .parse::<TermId>()
                         .expect("This curie should be parsable!"),
                 );
             })
         },
     );
+
+    group.bench_function(BenchmarkId::from_parameter("TermId::hash known"), |b| {
+        let known: TermId = "HP:0001250".parse().expect("The curie is OK");
+        b.iter(|| {
+            let mut h = DefaultHasher::new();
+            black_box(black_box(&known).hash(&mut h));
+        });
+    });
+
+    group.bench_function(BenchmarkId::from_parameter("TermId::hash random"), |b| {
+        let known: TermId = "ABC:0001250".parse().expect("The curie is OK");
+        b.iter(|| {
+            let mut h = DefaultHasher::new();
+            black_box(black_box(&known).hash(&mut h));
+        });
+    });
     group.finish();
 }
 
